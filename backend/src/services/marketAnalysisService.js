@@ -1,50 +1,45 @@
 import { eodService, marketService } from './apiServices.js';
 
 class MarketAnalysisService {
-  async getMarketSnapshot() {
-    try {
-      return await marketService.getData();
-    } catch (error) {
-      console.error('Error getting market snapshot:', error);
-      throw error;
-    }
-  }
-
   async getTopMover() {
     try {
-      const movers = await eodService.getMarketMovers();
-      const topMover = movers.gainers[0] || movers.losers[0];
-      
-      if (!topMover) {
-        return {
-          symbol: 'SPY',
-          price: 0,
-          changePercent: 0,
-          reason: 'No significant market moves'
-        };
-      }
+      const sp500Data = await eodService.getSP500Components();
+      const quotes = await Promise.all(
+        sp500Data.slice(0, 100).map(symbol => eodService.getRealTimeQuote(symbol))
+      );
+
+      // Filter valid quotes and sort by absolute change
+      const validQuotes = quotes
+        .filter(quote => quote && quote.change_p)
+        .sort((a, b) => Math.abs(b.change_p) - Math.abs(a.change_p));
+
+      if (!validQuotes.length) return null;
+
+      const topMover = validQuotes[0];
+      const history = await eodService.getHistoricalData(topMover.symbol);
 
       return {
         symbol: topMover.symbol,
         price: topMover.close,
         changePercent: topMover.change_p,
-        reason: `${topMover.symbol} moved ${topMover.change_p.toFixed(2)}% today`
+        reason: `Significant price movement of ${Math.abs(topMover.change_p).toFixed(2)}%`,
+        history: history.map(item => ({
+          ...item,
+          price: item.price,
+          ma200: this.calculate200MA(history, history.indexOf(item))
+        }))
       };
     } catch (error) {
       console.error('Error getting top mover:', error);
-      throw error;
+      return null;
     }
   }
 
-  async searchStocks(query) {
-    // Basic symbol search
-    const symbols = ['SPY', 'QQQ', 'DIA', 'IWM', 'TLT'];
-    return symbols
-      .filter(symbol => symbol.toLowerCase().includes(query.toLowerCase()))
-      .map(symbol => ({
-        symbol,
-        type: 'ETF'
-      }));
+  calculate200MA(data, currentIndex) {
+    const startIndex = Math.max(0, currentIndex - 199);
+    const slice = data.slice(startIndex, currentIndex + 1);
+    const sum = slice.reduce((acc, item) => acc + item.price, 0);
+    return sum / slice.length;
   }
 }
 

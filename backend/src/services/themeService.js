@@ -1,102 +1,130 @@
-import { getStockData } from './stockService.js';
+import axios from 'axios';
+import NodeCache from 'node-cache';
 
-// Define market themes
-const THEMES = [
-    {
-        id: 'ai',
-        name: 'Artificial Intelligence',
-        description: 'Companies leading in AI and machine learning',
-        stocks: ['NVDA', 'MSFT', 'GOOGL'],
-        color: 'blue'
-    },
-    {
-        id: 'semiconductors',
-        name: 'Semiconductors',
-        description: 'Leading semiconductor manufacturers and designers',
-        stocks: ['NVDA', 'AMD', 'INTC'],
-        color: 'purple'
-    },
-    {
-        id: 'financials',
-        name: 'Financial Services',
-        description: 'Major financial institutions and services',
-        stocks: ['JPM', 'GS', 'MS'],
-        color: 'green'
-    },
-    {
-        id: 'energy',
-        name: 'Energy Sector',
-        description: 'Traditional and renewable energy companies',
-        stocks: ['XLE', 'CVX', 'XOM'],
-        color: 'yellow'
-    }
-];
+const cache = new NodeCache({ stdTTL: 3600 }); // Cache for 1 hour
 
-export const getMarketThemes = async () => {
+class ThemeService {
+  constructor() {
+    this.themes = [
+      {
+        id: 'ai-semi',
+        title: "AI & Semiconductor Supercycle",
+        description: "The AI revolution is driving unprecedented demand for advanced computing power, leading to a semiconductor supercycle.",
+        stocks: ['NVDA', 'AMD', 'MRVL', 'ASML']
+      },
+      {
+        id: 'digital-payments',
+        title: "Digital Payments Evolution",
+        description: "Digital payment adoption continues to accelerate globally, with fintech companies innovating in payments.",
+        stocks: ['MA', 'PYPL', 'ADYEY', 'SQ']
+      },
+      {
+        id: 'infrastructure',
+        title: "Infrastructure Modernization",
+        description: "Major government initiatives and aging infrastructure are driving significant investments in upgrades.",
+        stocks: ['CAT', 'VMC', 'PWR', 'AMT']
+      },
+      {
+        id: 'healthcare',
+        title: "Healthcare Innovation",
+        description: "Breakthrough technologies in biotech, coupled with aging populations, are creating opportunities in medicine.",
+        stocks: ['LLY', 'DXCM', 'ISRG', 'VEEV']
+      }
+    ];
+  }
+
+  async getCurrentThemes() {
+    const cacheKey = 'current_themes';
+    const cachedThemes = cache.get(cacheKey);
+    if (cachedThemes) return cachedThemes;
+
     try {
-        // Process each theme
-        const themePromises = THEMES.map(async (theme) => {
-            try {
-                // Get real-time data for each stock in the theme
-                const stockPromises = theme.stocks.map(symbol => 
-                    getStockData(symbol).catch(error => {
-                        console.warn(`Error fetching ${symbol}:`, error);
-                        return null;
-                    })
-                );
+      // Get detailed stock info for each theme
+      const themesWithDetails = await Promise.all(
+        this.themes.map(async (theme) => {
+          const stockDetails = await this.getStockDetails(theme.stocks);
+          
+          // Calculate theme strength based on stock performance
+          const avgPerformance = stockDetails.reduce((sum, stock) => sum + (stock.change_p || 0), 0) / stockDetails.length;
+          
+          return {
+            ...theme,
+            strength: avgPerformance,
+            stocks: stockDetails.map(stock => ({
+              symbol: stock.symbol,
+              name: stock.name || stock.symbol,
+              change_p: stock.change_p,
+              themeContext: this.getThemeContext(theme.id, stock.symbol)
+            }))
+          };
+        })
+      );
 
-                const stocksData = await Promise.all(stockPromises);
-                const validStocksData = stocksData.filter(Boolean);
-
-                // Calculate theme performance
-                const performance = calculateThemePerformance(validStocksData);
-
-                return {
-                    ...theme,
-                    performance,
-                    stocks: validStocksData.map(stock => ({
-                        symbol: stock.symbol,
-                        price: stock.price.current,
-                        change: stock.price.change,
-                        changePercent: stock.price.changePercent
-                    }))
-                };
-            } catch (error) {
-                console.error(`Error processing theme ${theme.name}:`, error);
-                return null;
-            }
-        });
-
-        const themes = await Promise.all(themePromises);
-        return themes.filter(Boolean); // Remove any failed themes
-
+      // Sort themes by strength
+      const sortedThemes = themesWithDetails.sort((a, b) => Math.abs(b.strength) - Math.abs(a.strength));
+      
+      cache.set(cacheKey, sortedThemes);
+      return sortedThemes;
     } catch (error) {
-        console.error('Error fetching market themes:', error);
-        throw new Error('Failed to fetch market themes');
+      console.error('Error fetching theme data:', error);
+      throw error;
     }
-};
+  }
 
-const calculateThemePerformance = (stocks) => {
-    if (!stocks || stocks.length === 0) {
-        return {
-            daily: 0,
-            trend: 'neutral',
-            strength: 'weak'
-        };
+  async getStockDetails(symbols) {
+    try {
+      const responses = await Promise.all(
+        symbols.map(symbol => 
+          axios.get(`https://eodhistoricaldata.com/api/real-time/${symbol}`, {
+            params: {
+              api_token: process.env.EOD_API_KEY,
+              fmt: 'json'
+            }
+          })
+        )
+      );
+
+      return responses.map((response, index) => ({
+        symbol: symbols[index],
+        ...response.data
+      }));
+    } catch (error) {
+      console.error('Error fetching stock details:', error);
+      return symbols.map(symbol => ({ symbol }));
     }
+  }
 
-    // Calculate average performance
-    const totalChange = stocks.reduce((sum, stock) => {
-        const change = parseFloat(stock.price.changePercent) || 0;
-        return sum + change;
-    }, 0);
-
-    const avgChange = totalChange / stocks.length;
-
-    // Determine trend and strength
-    return {
-        daily: avgChange,
-        trend: avgChange >= 0 ? 'up' : 'down',
-        strength: Math.abs(avgChange) >= 1 ? 'strong' : 'moderate'
+  getThemeContext(themeId, symbol) {
+    // Detailed context for each stock's role in its theme
+    const contextMap = {
+      'ai-semi': {
+        'NVDA': 'Leading provider of AI GPUs and accelerated computing solutions, central to AI training and inference.',
+        'AMD': 'Growing presence in AI chips with MI300 series, challenging NVIDIA in data center.',
+        'MRVL': 'Custom AI chip solutions and networking infrastructure critical for AI deployments.',
+        'ASML': 'Monopoly in EUV lithography machines essential for advanced chip manufacturing.'
+      },
+      'digital-payments': {
+        'MA': 'Global payments network benefiting from shift to digital transactions.',
+        'PYPL': 'Leading digital wallet and payment solutions provider with Venmo growth.',
+        'ADYEY': 'Advanced payment processing platform preferred by large enterprise customers.',
+        'SQ': 'Innovative fintech ecosystem with Cash App and seller solutions.'
+      },
+      'infrastructure': {
+        'CAT': 'Construction equipment essential for infrastructure projects.',
+        'VMC': 'Largest producer of construction aggregates in the US.',
+        'PWR': 'Specialized infrastructure solutions for utilities and renewable energy.',
+        'AMT': 'Cell tower REIT benefiting from 5G infrastructure buildout.'
+      },
+      'healthcare': {
+        'LLY': 'Leading GLP-1 treatments for diabetes and obesity, expanding pipeline.',
+        'DXCM': 'Continuous glucose monitoring systems revolutionizing diabetes care.',
+        'ISRG': 'Dominant in robotic surgery with expanding procedure types.',
+        'VEEV': 'Cloud solutions specifically designed for life sciences industry.'
+      }
     };
-};
+
+    return contextMap[themeId]?.[symbol] || 'Key player in this theme';
+  }
+}
+
+export default new ThemeService();

@@ -1,17 +1,39 @@
-import axios from 'axios';
+const API_BASE_URL = 'http://localhost:5000/api';
 
-const API_URL = 'http://localhost:5000/api';
-
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-export const fetchHealthCheck = async () => {
-  const { data } = await api.get('/health');
-  return data;
+export const fetchWithConfig = async (endpoint) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
+  }
 };
 
-export default api;
+export const marketApi = {
+  getData: () => fetchWithConfig('/market/data'),
+  getSectors: () => fetchWithConfig('/market/sectors'),
+  getMover: () => fetchWithConfig('/market/mover'),
+  getMacro: () => fetchWithConfig('/market/macro'),
+  getSectorRotation: () => fetchWithConfig('/market/sector-rotation'),
+  getQuote: (symbol) => fetchWithConfig(`/market/quote/${symbol}`),
+  getThemes: () => fetchWithConfig('/market/themes'),
+  getInsights: () => fetchWithConfig('/market/insights'),
+  getHistory: async (symbol) => {
+    const data = await fetchWithConfig(`/market/history/${symbol}`);
+    return data.map(item => ({
+      date: item.date,
+      price: item.price || 0  // Changed from item.close to item.price
+    }));
+  }
+};
