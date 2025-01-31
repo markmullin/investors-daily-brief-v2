@@ -33,7 +33,8 @@ export const marketApi = {
     const data = await fetchWithConfig(`/market/history/${symbol}`);
     return data.map(item => ({
       date: item.date,
-      price: item.price || 0  // Changed from item.close to item.price
+      price: item.price || 0,  // Changed from item.close to item.price
+      ma200: typeof item.ma200 === 'number' ? item.ma200 : null
     }));
   }
 };

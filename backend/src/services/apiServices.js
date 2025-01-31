@@ -96,14 +96,14 @@ const eodService = {
     if (cached) return cached;
   
     try {
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   
       const response = await axios.get(`${this.baseURL}/eod/${symbol}`, {
         params: {
           api_token: process.env.EOD_API_KEY,
           fmt: 'json',
-          from: sixMonthsAgo.toISOString().split('T')[0],
+          from: oneYearAgo.toISOString().split('T')[0],
           to: new Date().toISOString().split('T')[0]
         }
       });
@@ -114,15 +114,28 @@ const eodService = {
         return [];
       }
   
-      const formattedData = data
+      // Process all data first to ensure proper MA calculation
+      const processedData = data
         .filter(day => day.close != null)
         .map(day => ({
           date: day.date,
-          price: parseFloat(day.close)  // Make sure this is a number
+          price: parseFloat(day.close)
         }))
         .sort((a, b) => new Date(a.date) - new Date(b.date));
-  
-      console.log(`Formatted data sample for ${symbol}:`, formattedData[0]);
+
+      // Now calculate MA using the complete dataset
+      const formattedData = processedData.map((day, index, array) => {
+        const startIndex = Math.max(0, index - 199);
+        const window = array.slice(startIndex, index + 1);
+        const sum = window.reduce((acc, d) => acc + d.price, 0);
+        
+        return {
+          ...day,
+          ma200: parseFloat((sum / window.length).toFixed(2))
+        };
+      });
+
+      console.log(`Calculated MA data for ${symbol}:`, formattedData[0]);  // Log for verification
       cache.set(cacheKey, formattedData, 3600);
       return formattedData;
     } catch (error) {

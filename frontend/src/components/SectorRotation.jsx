@@ -41,7 +41,22 @@ const SectorRotation = () => {
         <div className="space-y-6">
             <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="text-xl font-bold mb-4">Market Cycle Analysis</h2>
-                <div className="text-gray-600">{analysis.interpretation}</div>
+                <div className="space-y-4">
+                    <div className="text-lg font-semibold text-blue-600">
+                        {analysis.marketPhase}
+                    </div>
+                    <div className="text-gray-600">
+                        {analysis.interpretation.phase}
+                    </div>
+                    <div className="mt-4">
+                        <h3 className="font-semibold mb-2">Actionable Insights:</h3>
+                        <ul className="list-disc list-inside space-y-2">
+                            {analysis.interpretation.actionItems.map((item, index) => (
+                                <li key={index} className="text-gray-600">{item}</li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

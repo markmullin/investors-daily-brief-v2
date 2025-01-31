@@ -21,20 +21,6 @@ import KeyInsights from './components/KeyInsights';
 function MarketMetricCard({ data, historicalData, description }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const chartData = useMemo(() => {
-    if (!Array.isArray(historicalData)) {
-      console.log('historicalData is not an array:', historicalData);
-      return [];
-    }
-    
-    return historicalData
-      .filter(item => item.price !== 0)
-      .map(item => ({
-        date: new Date(item.date).toISOString().split('T')[0],
-        price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
-      }));
-  }, [historicalData]);
-
   const getDisplayName = (rawSymbol) => {
     const shortSymbol = rawSymbol.replace('.US', '');
     switch (shortSymbol) {
@@ -50,6 +36,21 @@ function MarketMetricCard({ data, historicalData, description }) {
         return rawSymbol;
     }
   };
+
+  const chartData = useMemo(() => {
+    if (!Array.isArray(historicalData)) {
+      console.log('historicalData is not an array:', historicalData);
+      return [];
+    }
+    
+    return historicalData
+      .filter(item => item.price !== 0)
+      .map(item => ({
+        date: new Date(item.date).toISOString().split('T')[0],
+        price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+        ma200: typeof item.ma200 === 'number' ? item.ma200 : null
+      }));
+  }, [historicalData]);
 
   return (
     <div
@@ -92,7 +93,7 @@ function MarketMetricCard({ data, historicalData, description }) {
           {/* Mini Chart */}
           <div className="h-16 w-24">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart data={chartData.slice(-30)}>
                 <Line
                   type="monotone"
                   dataKey="price"
@@ -126,7 +127,11 @@ function MarketMetricCard({ data, historicalData, description }) {
                   />
                   <Tooltip
                     labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                    formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Price']}
+                    formatter={(value, name) => {
+                      if (name === 'price') return [`$${Number(value).toFixed(2)}`, 'Price'];
+                      if (name === 'ma200') return [`$${Number(value).toFixed(2)}`, '200-day MA'];
+                      return [value, name];
+                    }}
                   />
                   <Line
                     type="monotone"
@@ -134,6 +139,15 @@ function MarketMetricCard({ data, historicalData, description }) {
                     stroke={Number(data.change_p) >= 0 ? '#22c55e' : '#ef4444'}
                     dot={false}
                     strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="ma200"
+                    stroke="#dc2626"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    dot={false}
+                    name="200-day MA"
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -155,24 +169,22 @@ function MarketMetricCard({ data, historicalData, description }) {
 }
 
 function App() {
-  // ---------------------- STATE ----------------------
+  // State Management
   const [marketData, setMarketData] = useState([]);
   const [macroData, setMacroData] = useState({});
   const [marketMover, setMarketMover] = useState(null);
-  const [moverHistory, setMoverHistory] = useState([]);
   const [sectorData, setSectorData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [rotationData, setRotationData] = useState(null);
   const [selectedStock, setSelectedStock] = useState(null);
   const [stockHistory, setStockHistory] = useState([]);
   const [historicalPrices, setHistoricalPrices] = useState({});
 
-  // ---------------------- DATA FETCH ----------------------
+  // Data Fetching
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1) Fetch main sets of data
+        // Fetch main sets of data
         const [market, macro, mover, sectors] = await Promise.all([
           marketApi.getData(),
           marketApi.getMacro(),
@@ -180,25 +192,40 @@ function App() {
           marketApi.getSectors()
         ]);
 
-        // Convert object => array
+        console.log('Received mover data:', mover);
+
+        // Convert object to array
         const marketArray = Object.entries(market).map(([symbol, info]) => ({
           symbol,
           ...info
         }));
         setMarketData(marketArray);
-
-        // macros, mover, sectors
         setMacroData(macro);
-        setMarketMover({
-          symbol: mover.symbol,
-          price: mover.price,
-          changePercent: mover.changePercent,
-          reason: mover.reason
-        });
-        setMoverHistory(mover.history || []);
         setSectorData(sectors);
 
-        // With this updated version:
+        // Update market mover data properly
+        if (mover && mover.symbol) {
+          const moverHistory = await marketApi.getHistory(mover.symbol, 12);
+          
+          setMarketMover({
+            symbol: mover.symbol,
+            price: mover.price,
+            changePercent: mover.changePercent,  // Use direct values from mover data
+            dailyChange: parseFloat((mover.price * mover.changePercent / 100).toFixed(2)),  // Calculate daily change
+            reason: `${mover.symbol} moved ${mover.changePercent >= 0 ? 'up' : 'down'} ${Math.abs(Number(mover.changePercent)).toFixed(2)}%`,
+            history: moverHistory.map(day => ({
+              ...day,
+              ma200: day.ma200 || null
+            }))
+          });
+
+          console.log('Set market mover state');
+        } else {
+          console.log('No valid mover data received');
+          setMarketMover(null);
+        }
+
+        // Fetch historical data for indices
         const indices = ['SPY.US', 'QQQ.US', 'DIA.US', 'IWM.US'];
         const histories = {};
         for (const sym of indices) {
@@ -213,7 +240,6 @@ function App() {
 
         console.log('Fetched historical data:', histories);
         setHistoricalPrices(histories);
-
         setError(null);
       } catch (error) {
         console.error('Data fetching error:', error);
@@ -224,11 +250,11 @@ function App() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 60000);
+    const interval = setInterval(fetchData, 300000); // 5 minutes
     return () => clearInterval(interval);
   }, []);
 
-  // ---------------------- SEARCH ----------------------
+  // Search Handler
   const handleSearch = async (symbol) => {
     try {
       const [stockData, historyData] = await Promise.all([
@@ -244,7 +270,7 @@ function App() {
     }
   };
 
-  // ---------------------- LOADING STATE ----------------------
+  // Loading State
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -253,7 +279,7 @@ function App() {
     );
   }
 
-  // mainIndices => we focus on .US tickers
+  // Filter main indices
   const mainIndices = marketData.filter((item) =>
     ['SPY.US', 'QQQ.US', 'DIA.US', 'IWM.US'].includes(item.symbol)
   );
@@ -263,6 +289,7 @@ function App() {
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-4xl font-bold" style={{ fontFamily: "'Google Sans', 'Roboto', sans-serif" }}>
           Investor's Daily Brief
@@ -270,6 +297,7 @@ function App() {
         <SearchBar onSearch={handleSearch} />
       </div>
 
+      {/* Error Display */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
           <AlertCircle className="text-red-500" />
@@ -277,40 +305,48 @@ function App() {
         </div>
       )}
 
+      {/* Key Insights Section */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3 text-gray-700">Key Market Insights</h2>
         <KeyInsights />
       </section>
 
       <div className="space-y-8">
-
-        {/* MARKET METRICS */}
+        {/* Market Metrics Section */}
         <section>
           <h2 className="text-xl font-semibold mb-3 text-gray-700">Market Metrics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-            {mainIndices.map((data) => {
-              // e.g. data.symbol === "DIA.US"
-              const histData = historicalPrices[data.symbol] || [];
-
-              return (
-                <MarketMetricCard
-                  key={data.symbol}
-                  data={data}
-                  description={
-                    data.symbol.includes('SPY') ? "S&P 500..."
-                    : data.symbol.includes('QQQ') ? "Nasdaq 100..."
-                    : data.symbol.includes('DIA') ? "Dow Jones Industrial Average..."
-                    : data.symbol.includes('IWM') ? "Russell 2000..."
-                    : data.symbol
-                  }
-                  historicalData={histData}
-                />
-              );
-            })}
+            {[...mainIndices]
+              .sort((a, b) => {
+                const order = {
+                  'SPY.US': 1,
+                  'QQQ.US': 2,
+                  'DIA.US': 3,
+                  'IWM.US': 4
+                };
+                return order[a.symbol] - order[b.symbol];
+              })
+              .map((data) => {
+                const histData = historicalPrices[data.symbol] || [];
+                return (
+                  <MarketMetricCard
+                    key={data.symbol}
+                    data={data}
+                    description={
+                      data.symbol.includes('SPY') ? "S&P 500 tracks the performance of the 500 largest US companies."
+                        : data.symbol.includes('QQQ') ? "Nasdaq 100 represents the largest non-financial companies listed on the Nasdaq."
+                          : data.symbol.includes('DIA') ? "Dow Jones Industrial Average follows 30 prominent companies listed on US stock exchanges."
+                            : data.symbol.includes('IWM') ? "Russell 2000 measures the performance of 2000 smaller US companies."
+                              : data.symbol
+                    }
+                    historicalData={histData}
+                  />
+                );
+              })}
           </div>
         </section>
 
-        {/* SECTOR PERFORMANCE */}
+        {/* Performance Section */}
         <section>
           <h2 className="text-xl font-semibold mb-3 text-gray-700">Sector Performance</h2>
           <div className="bg-white p-6 rounded-lg shadow">
@@ -318,22 +354,21 @@ function App() {
           </div>
         </section>
 
+        {/* Sector Rotation Section */}
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-3 text-gray-700">Sector Rotation Analysis</h2>
           <SectorRotation />
         </section>
 
-        {/* MACRO ENVIRONMENT */}
+        {/* Macroeconomic Environment Section */}
         <section>
           <h2 className="text-xl font-semibold mb-3 text-gray-700">Macroeconomic Environment</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* TLT Card */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2 flex items-center">
+              <h3 className="text-gray-600 mb-2 flex items-center gap-2">
                 Treasury Bonds (TLT)
-                <InfoTooltip content={
-                  "Treasury bonds are considered a key indicator of economic health and monetary policy. Rising TLT suggests flight to safety..."
-                } />
+                <InfoTooltip content="Treasury bonds are considered a key indicator of economic health and monetary policy. Rising TLT suggests flight to safety..." />
               </h3>
               <p className="text-2xl font-bold">
                 ${typeof macroData.tlt?.price === 'number' ? macroData.tlt.price.toFixed(2) : '0.00'}
@@ -344,26 +379,21 @@ function App() {
                 ) : (
                   <ArrowDown className="text-red-500" size={20} />
                 )}
-                <span className={
-                  (macroData.tlt?.change || 0) >= 0
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }>
-                  {typeof macroData.tlt?.change === 'number'
-                    ? macroData.tlt.change.toFixed(2)
-                    : '0.00'}
-                  %
+                <span
+                  className={
+                    (macroData.tlt?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  }
+                >
+                  {typeof macroData.tlt?.change === 'number' ? macroData.tlt.change.toFixed(2) : '0.00'}%
                 </span>
               </div>
             </div>
 
             {/* UUP Card */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2 flex items-center">
+              <h3 className="text-gray-600 mb-2 flex items-center gap-2">
                 US Dollar (UUP)
-                <InfoTooltip content={
-                  "The US Dollar Index ETF measures the dollar's strength against major global currencies. Dollar strength impacts global trade..."
-                } />
+                <InfoTooltip content="The US Dollar Index ETF measures the dollar's strength against major global currencies. Dollar strength impacts global trade..." />
               </h3>
               <p className="text-2xl font-bold">
                 ${typeof macroData.uup?.price === 'number' ? macroData.uup.price.toFixed(2) : '0.00'}
@@ -374,86 +404,21 @@ function App() {
                 ) : (
                   <ArrowDown className="text-red-500" size={20} />
                 )}
-                <span className={
-                  (macroData.uup?.change || 0) >= 0
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }>
-                  {typeof macroData.uup?.change === 'number'
-                    ? macroData.uup.change.toFixed(2)
-                    : '0.00'}
-                  %
-                </span>
-              </div>
-            </div>
-
-            {/* GLD Card */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2 flex items-center">
-                Gold (GLD)
-                <InfoTooltip content={
-                  "Gold has historically been viewed as a store of value and hedge against uncertainty. Strong gold prices often reflect inflation concerns..."
-                } />
-              </h3>
-              <p className="text-2xl font-bold">
-                ${typeof macroData.gld?.price === 'number' ? macroData.gld.price.toFixed(2) : '0.00'}
-              </p>
-              <div className="flex items-center gap-1 mt-2">
-                {(macroData.gld?.change || 0) >= 0 ? (
-                  <ArrowUp className="text-green-500" size={20} />
-                ) : (
-                  <ArrowDown className="text-red-500" size={20} />
-                )}
-                <span className={
-                  (macroData.gld?.change || 0) >= 0
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }>
-                  {typeof macroData.gld?.change === 'number'
-                    ? macroData.gld.change.toFixed(2)
-                    : '0.00'}
-                  %
-                </span>
-              </div>
-            </div>
-
-            {/* VIX Card */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2 flex items-center">
-                Volatility (VIX)
-                <InfoTooltip content={
-                  "Wall Street's 'fear gauge'. High VIX => big swings, risk-off environment..."
-                } />
-              </h3>
-              <p className="text-2xl font-bold">
-                ${typeof macroData.vix?.price === 'number' ? macroData.vix.price.toFixed(2) : '0.00'}
-              </p>
-              <div className="flex items-center gap-1 mt-2">
-                {(macroData.vix?.change || 0) >= 0 ? (
-                  <ArrowUp className="text-green-500" size={20} />
-                ) : (
-                  <ArrowDown className="text-red-500" size={20} />
-                )}
-                <span className={
-                  (macroData.vix?.change || 0) >= 0
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }>
-                  {typeof macroData.vix?.change === 'number'
-                    ? macroData.vix.change.toFixed(2)
-                    : '0.00'}
-                  %
+                <span
+                  className={
+                    (macroData.uup?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  }
+                >
+                  {typeof macroData.uup?.change === 'number' ? macroData.uup.change.toFixed(2) : '0.00'}%
                 </span>
               </div>
             </div>
 
             {/* USO Card */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2 flex items-center">
+              <h3 className="text-gray-600 mb-2 flex items-center gap-2">
                 Oil Fund (USO)
-                <InfoTooltip content={
-                  "Tracks crude oil. High oil can raise inflation & transport costs, affecting consumer spending..."
-                } />
+                <InfoTooltip content="Tracks crude oil. High oil can raise inflation & transport costs, affecting consumer spending..." />
               </h3>
               <p className="text-2xl font-bold">
                 ${typeof macroData.uso?.price === 'number' ? macroData.uso.price.toFixed(2) : '0.00'}
@@ -464,26 +429,71 @@ function App() {
                 ) : (
                   <ArrowDown className="text-red-500" size={20} />
                 )}
-                <span className={
-                  (macroData.uso?.change || 0) >= 0
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }>
-                  {typeof macroData.uso?.change === 'number'
-                    ? macroData.uso.change.toFixed(2)
-                    : '0.00'}
-                  %
+                <span
+                  className={
+                    (macroData.uso?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  }
+                >
+                  {typeof macroData.uso?.change === 'number' ? macroData.uso.change.toFixed(2) : '0.00'}%
+                </span>
+              </div>
+            </div>
+
+            {/* GLD Card */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-gray-600 mb-2 flex items-center gap-2">
+                Gold (GLD)
+                <InfoTooltip content="Gold has historically been viewed as a store of value and hedge against uncertainty. Strong gold prices often reflect inflation concerns..." />
+              </h3>
+              <p className="text-2xl font-bold">
+                ${typeof macroData.gld?.price === 'number' ? macroData.gld.price.toFixed(2) : '0.00'}
+              </p>
+              <div className="flex items-center gap-1 mt-2">
+                {(macroData.gld?.change || 0) >= 0 ? (
+                  <ArrowUp className="text-green-500" size={20} />
+                ) : (
+                  <ArrowDown className="text-red-500" size={20} />
+                )}
+                <span
+                  className={
+                    (macroData.gld?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  }
+                >
+                  {typeof macroData.gld?.change === 'number' ? macroData.gld.change.toFixed(2) : '0.00'}%
+                </span>
+              </div>
+            </div>
+
+            {/* VIX Card */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-gray-600 mb-2 flex items-center gap-2">
+                VIX Index
+                <InfoTooltip content="Wall Street's 'fear gauge'. High VIX => big swings, risk-off environment..." />
+              </h3>
+              <p className="text-2xl font-bold">
+                ${typeof macroData.vix?.price === 'number' ? macroData.vix.price.toFixed(2) : '0.00'}
+              </p>
+              <div className="flex items-center gap-1 mt-2">
+                {(macroData.vix?.change || 0) >= 0 ? (
+                  <ArrowUp className="text-red-500" size={20} />
+                ) : (
+                  <ArrowDown className="text-green-500" size={20} />
+                )}
+                <span
+                  className={
+                    (macroData.vix?.change || 0) >= 0 ? 'text-red-500' : 'text-green-500'
+                  }
+                >
+                  {typeof macroData.vix?.change === 'number' ? macroData.vix.change.toFixed(2) : '0.00'}%
                 </span>
               </div>
             </div>
 
             {/* EEM Card */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2 flex items-center">
+              <h3 className="text-gray-600 mb-2 flex items-center gap-2">
                 Emerging Markets (EEM)
-                <InfoTooltip content={
-                  "A gauge of global growth & risk appetite, especially in developing economies."
-                } />
+                <InfoTooltip content="A gauge of global growth & risk appetite, especially in developing economies." />
               </h3>
               <p className="text-2xl font-bold">
                 ${typeof macroData.eem?.price === 'number' ? macroData.eem.price.toFixed(2) : '0.00'}
@@ -494,26 +504,21 @@ function App() {
                 ) : (
                   <ArrowDown className="text-red-500" size={20} />
                 )}
-                <span className={
-                  (macroData.eem?.change || 0) >= 0
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }>
-                  {typeof macroData.eem?.change === 'number'
-                    ? macroData.eem.change.toFixed(2)
-                    : '0.00'}
-                  %
+                <span
+                  className={
+                    (macroData.eem?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  }
+                >
+                  {typeof macroData.eem?.change === 'number' ? macroData.eem.change.toFixed(2) : '0.00'}%
                 </span>
               </div>
             </div>
 
             {/* IBIT Card */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2 flex items-center">
+              <h3 className="text-gray-600 mb-2 flex items-center gap-2">
                 Bitcoin ETF (IBIT)
-                <InfoTooltip content={
-                  "Reflects mainstream adoption of crypto markets, risk appetite in alternative assets."
-                } />
+                <InfoTooltip content="The first spot Bitcoin ETF tracking the cryptocurrency market." />
               </h3>
               <p className="text-2xl font-bold">
                 ${typeof macroData.ibit?.price === 'number' ? macroData.ibit.price.toFixed(2) : '0.00'}
@@ -524,26 +529,21 @@ function App() {
                 ) : (
                   <ArrowDown className="text-red-500" size={20} />
                 )}
-                <span className={
-                  (macroData.ibit?.change || 0) >= 0
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }>
-                  {typeof macroData.ibit?.change === 'number'
-                    ? macroData.ibit.change.toFixed(2)
-                    : '0.00'}
-                  %
+                <span
+                  className={
+                    (macroData.ibit?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  }
+                >
+                  {typeof macroData.ibit?.change === 'number' ? macroData.ibit.change.toFixed(2) : '0.00'}%
                 </span>
               </div>
             </div>
 
             {/* JNK Card */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2 flex items-center">
+              <h3 className="text-gray-600 mb-2 flex items-center gap-2">
                 High Yield Bonds (JNK)
-                <InfoTooltip content={
-                  "Tracks 'junk' bonds. If JNK is strong, markets are risk-on and seeking higher yields in riskier credit."
-                } />
+                <InfoTooltip content="Tracks high-yield corporate bonds. A gauge of risk appetite and credit conditions." />
               </h3>
               <p className="text-2xl font-bold">
                 ${typeof macroData.jnk?.price === 'number' ? macroData.jnk.price.toFixed(2) : '0.00'}
@@ -554,122 +554,103 @@ function App() {
                 ) : (
                   <ArrowDown className="text-red-500" size={20} />
                 )}
-                <span className={
-                  (macroData.jnk?.change || 0) >= 0
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }>
-                  {typeof macroData.jnk?.change === 'number'
-                    ? macroData.jnk.change.toFixed(2)
-                    : '0.00'}
-                  %
+                <span
+                  className={
+                    (macroData.jnk?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  }
+                >
+                  {typeof macroData.jnk?.change === 'number' ? macroData.jnk.change.toFixed(2) : '0.00'}%
                 </span>
               </div>
             </div>
-          </div>
-        </section>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3 text-gray-700">Market Themes</h2>
-          <MarketThemes />
-        </section>
-
-        {/* MARKET MOVER + 200DAY MA */}
-        {marketMover && (
-          <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-3 text-gray-700 flex items-center gap-2">
-              <TrendingUp className="text-blue-500" />
-              Top Market Mover
-              <InfoTooltip content={
-                "Shows the most significant daily mover in the S&P 500, with 6-month history + a 200-day MA for trend analysis."
-              } />
-            </h2>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold mb-2">
-                    {marketMover.symbol}
-                  </h3>
-                  <p className="text-3xl font-bold">
-                    ${Number(marketMover.price).toFixed(2)}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    {Number(marketMover.changePercent) >= 0 ? (
-                      <ArrowUp className="text-green-500" size={24} />
-                    ) : (
-                      <ArrowDown className="text-red-500" size={24} />
-                    )}
-                    <span
-                      className={
-                        Number(marketMover.changePercent) >= 0
-                          ? 'text-green-500 text-xl'
-                          : 'text-red-500 text-xl'
-                      }
-                    >
-                      {Number(marketMover.changePercent).toFixed(2)}%
-                    </span>
+            {/* Market Mover Card (UPDATED) */}
+            {marketMover && (
+              <div className="col-span-4 bg-white p-4 rounded-lg shadow">
+                <h3 className="text-gray-600 mb-2 flex items-center gap-2">
+                  Market Mover: {marketMover.symbol}
+                  <InfoTooltip content="Significant stock making notable moves today." />
+                </h3>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="text-2xl font-bold">
+                      ${typeof marketMover.price === 'number' ? marketMover.price.toFixed(2) : '0.00'}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      {(marketMover.changePercent || 0) >= 0 ? (
+                        <ArrowUp className="text-green-500" size={20} />
+                      ) : (
+                        <ArrowDown className="text-red-500" size={20} />
+                      )}
+                      <span className={
+                        (marketMover.changePercent || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                      }>
+                        {Math.abs(Number(marketMover.changePercent)).toFixed(2)}%
+                        {' '}
+                        (${Math.abs(Number(marketMover.price * marketMover.changePercent / 100)).toFixed(2)})
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="max-w-2xl">
-                  <p className="text-gray-600 text-lg">{marketMover.reason}</p>
-                </div>
+                <p className="text-gray-600 mt-2">
+                  {marketMover.symbol} moved {marketMover.changePercent >= 0 ? 'up' : 'down'} {Math.abs(Number(marketMover.changePercent || 0)).toFixed(2)}%
+                </p>
+                {marketMover.history && marketMover.history.length > 0 && (
+                  <div className="h-40 mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={marketMover.history}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={(date) => {
+                            const d = new Date(date);
+                            return `${d.getMonth() + 1}/${d.getDate()}`;
+                          }}
+                        />
+                        <YAxis
+                          domain={['auto', 'auto']}
+                          tickFormatter={(val) => `$${Number(val).toFixed(2)}`}
+                        />
+                        <Tooltip
+                          labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                          formatter={(value, name) => {
+                            if (name === 'price') return [`$${Number(value).toFixed(2)}`, 'Price'];
+                            if (name === 'ma200') return [`$${Number(value).toFixed(2)}`, '200-day MA'];
+                            return [value, name];
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke="#2563eb"
+                          dot={false}
+                          strokeWidth={2}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="ma200"
+                          stroke="#dc2626"
+                          strokeDasharray="5 5"
+                          strokeWidth={2}
+                          dot={false}
+                          name="200-day MA"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </div>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={moverHistory || []}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={(date) => new Date(date).toLocaleDateString()}
-                    />
-                    <YAxis
-                      domain={['auto', 'auto']}
-                      tickFormatter={(value) => `$${value.toFixed(2)}`}
-                    />
-                    <Tooltip
-                      labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                      formatter={(value, name) => {
-                        if (name === 'price') {
-                          return [`$${value.toFixed(2)}`, 'Price'];
-                        }
-                        if (name === 'ma200') {
-                          return [`$${value.toFixed(2)}`, '200-day MA'];
-                        }
-                        return [value, name];
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="price"
-                      stroke="#2563eb"
-                      strokeWidth={2}
-                      dot={false}
-                      name="price"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="ma200"
-                      stroke="#dc2626"
-                      strokeDasharray="5 5"
-                      strokeWidth={2}
-                      dot={false}
-                      name="ma200"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </section>
-        )}
+            )}
+          </div>
+        </section>
       </div>
 
-      {selectedStock && (
-        <StockModal
-          stock={selectedStock}
-          historicalData={stockHistory}
-          onClose={() => setSelectedStock(null)}
-        />
-      )}
+      {/* Stock Search Modal */}
+      <StockModal
+        isOpen={selectedStock !== null}
+        onClose={() => setSelectedStock(null)}
+        stock={selectedStock}
+      />
     </div>
   );
 }

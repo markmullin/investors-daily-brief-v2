@@ -53,7 +53,8 @@ router.get('/sectors', async (req, res, next) => {
       XLY: { name: 'Consumer Discretionary', color: '#db2777' },
       XLB: { name: 'Materials', color: '#a16207' },
       XLRE: { name: 'Real Estate', color: '#65a30d' },
-      XLU: { name: 'Utilities', color: '#475569' }
+      XLU: { name: 'Utilities', color: '#475569' },
+      XLC: { name: 'Communication', color: '#0891b2' }  // Added XLC
     };
 
     const symbols = Object.keys(sectorETFs);
@@ -78,7 +79,8 @@ router.get('/sectors', async (req, res, next) => {
 router.get('/macro', async (req, res, next) => {
   try {
     console.log('Fetching macro data...');
-    const macroSymbols = ['TLT', 'UUP', 'GLD', 'VIX', 'USO', 'EEM', 'IBIT', 'JNK'];
+    // Update VIX symbol to match EOD format
+    const macroSymbols = ['TLT', 'UUP', 'GLD', 'VIXY', 'USO', 'EEM', 'IBIT', 'JNK'];
     const macroData = await marketService.getDataForSymbols(macroSymbols);
     console.log('Macro data:', macroData);
     
@@ -95,9 +97,9 @@ router.get('/macro', async (req, res, next) => {
         price: macroData.GLD?.close || 0,
         change: macroData.GLD?.change_p || 0
       },
-      vix: {
-        price: macroData.VIX?.close || 0,
-        change: macroData.VIX?.change_p || 0
+      vix: {  // we keep 'vix' as the key for frontend compatibility
+        price: macroData.VIXY?.close || 0,
+        change: macroData.VIXY?.change_p || 0
       },
       uso: {
         price: macroData.USO?.close || 0,
@@ -136,26 +138,24 @@ router.get('/themes', async (req, res, next) => {
 router.get('/mover', async (req, res, next) => {
   try {
     const mover = await marketAnalysisService.getTopMover();
+    console.log('Sending mover data:', mover);
     if (!mover) {
       return res.json({
-        symbol: 'SPY',
+        symbol: null,
         price: 0,
         changePercent: 0,
+        dailyChange: 0,
         reason: 'No significant market moves',
         history: []
       });
     }
     
-    // Get the historical data
-    const history = await marketService.getHistoricalData(mover.symbol);
+    // Calculate daily change if not present
+    if (!mover.dailyChange) {
+      mover.dailyChange = (mover.price * mover.changePercent / 100);
+    }
     
-    res.json({
-      symbol: mover.symbol,
-      price: mover.price,
-      changePercent: mover.changePercent,
-      reason: mover.reason,
-      history: history
-    });
+    res.json(mover);
   } catch (error) {
     console.error('Market mover error:', error);
     next(error);
