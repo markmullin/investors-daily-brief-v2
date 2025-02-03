@@ -5,6 +5,8 @@ import http from 'http';
 import marketRoutes from './routes/marketRoutes.js';
 import websocketService from './services/websocketService.js';
 import errorTracker from './utils/errorTracker.js';
+import marketEnvironmentRoutes from './routes/marketEnvironmentRoutes.js';
+import industryAnalysisRoutes from './routes/industryAnalysis.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -60,6 +62,8 @@ app.use((req, res, next) => {
 // Routes
 console.log('Mounting market routes at /api/market');
 app.use('/api/market', marketRoutes);
+app.use('/api/market-environment', marketEnvironmentRoutes);
+app.use('/api/industry-analysis', industryAnalysisRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Info } from 'lucide-react';
+import { useViewMode } from '../context/ViewModeContext';
 
-const InfoTooltip = ({ content }) => {
+const InfoTooltip = ({ basicContent, advancedContent }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const { viewMode } = useViewMode();
 
   return (
     <div className="relative inline-block ml-2">
@@ -13,8 +15,10 @@ const InfoTooltip = ({ content }) => {
         onMouseLeave={() => setIsVisible(false)}
       />
       {isVisible && (
-        <div className="absolute z-50 w-64 p-4 mt-2 text-sm bg-white rounded-lg shadow-xl border border-gray-100 -left-1/2 transform -translate-x-1/2">
-          <div className="text-gray-700">{content}</div>
+        <div className="absolute z-50 w-72 p-4 mt-2 text-sm bg-white rounded-lg shadow-xl border border-gray-100 -left-1/2 transform -translate-x-1/2">
+          <div className="text-gray-700">
+            {viewMode === 'basic' ? basicContent : advancedContent}
+          </div>
         </div>
       )}
     </div>
