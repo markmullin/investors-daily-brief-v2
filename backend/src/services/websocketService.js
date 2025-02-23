@@ -1,4 +1,4 @@
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 import { marketService } from './apiServices.js';
 
 class WebSocketService {
@@ -11,14 +11,27 @@ class WebSocketService {
   }
 
   initialize(server) {
-    this.wss = new WebSocketServer({ server });
+    // Ensure single WebSocket instance
+    if (this.wss) {
+      console.log('WebSocket server already initialized');
+      return;
+    }
+    const wss = new WebSocketServer({ 
+      server,
+      path: '/ws/market',
+      clientTracking: true
+    });
     
+    // Add this line right here, before the this.wss.on line:
+    this.wss = wss;
+
+    // Then continue with the existing code:
     this.wss.on('connection', (ws) => {
       this.handleConnection(ws);
     });
 
     this.startDataUpdates();
-  }
+}
 
   handleConnection(ws) {
     this.clients.add(ws);

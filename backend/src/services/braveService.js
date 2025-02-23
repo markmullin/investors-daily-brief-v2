@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// Define delay function at the top level
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 class BraveService {
   constructor() {
     this.apiKey = process.env.BRAVE_API_KEY;
@@ -8,32 +11,38 @@ class BraveService {
 
   async getMarketSentiment(symbol) {
     try {
-      const response = await axios.get(`${this.baseUrl}/news/search`, {
-        headers: {
-          'X-Subscription-Token': this.apiKey
-        },
-        params: {
-          q: `${symbol} stock market news`,
-          count: 10,
-          search_lang: 'en'
+        await delay(100 + Math.random() * 400);
+        
+        const response = await axios.get(`${this.baseUrl}/stats/search`, {
+            params: {
+                q: `${symbol} stock market sentiment`,
+                count: 5
+            },
+            headers: {
+                'Accept': 'application/json',
+                'Accept-Encoding': 'gzip',
+                'X-Subscription-Token': this.apiKey
+            }
+        });
+
+        if (response.status === 429) {
+            console.warn('Brave API rate limit hit, returning default sentiment');
+            return { sentiment: 0.5 };
         }
-      });
 
-      const articles = response.data.articles || [];
-      const sentimentScore = this.analyzeSentiment(articles);
-
-      return {
-        score: sentimentScore,
-        articles: articles.slice(0, 5).map(article => ({
-          title: article.title,
-          url: article.url,
-          description: article.description,
-          publishedAt: article.published_at
-        }))
-      };
+        const sentimentScore = this.analyzeSentiment(response.data.articles || []);
+        return { sentiment: Math.max(0, Math.min(1, (sentimentScore + 5) / 10)) };
     } catch (error) {
-      console.error('Brave API Error:', error.message);
-      throw new Error('Failed to fetch market sentiment');
+        if (error.response?.status === 429) {
+            console.warn('Brave API rate limit hit, returning default sentiment');
+            return { sentiment: 0.5 };
+        }
+        if (error.response?.status === 403) {
+            console.warn('Brave API authentication failed, returning default sentiment');
+            return { sentiment: 0.5 };
+        }
+        console.error('Error fetching market sentiment:', error);
+        return { sentiment: 0.5 };
     }
   }
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { marketService } from './apiServices.js';
 
 class MarketDataService {
   constructor() {

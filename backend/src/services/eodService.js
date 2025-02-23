@@ -91,6 +91,29 @@ class EODService {
     };
     return names[symbol] || symbol;
   }
+  async fetchEODData(symbol, period = '1y') {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/eod/${symbol}`, {
+          params: {
+            api_token: this.apiKey,
+            fmt: 'json',
+            period: period,
+            order: 'asc'
+          }
+        }
+      );
+      
+      return response.data.map(item => ({
+        date: new Date(item.date).toISOString().split('T')[0],
+        close: item.close,
+        volume: item.volume
+      }));
+    } catch (error) {
+      console.error(`Error fetching EOD data for ${symbol}:`, error.message);
+      throw error;
+    }
+  }
 }
 
 export default new EODService();

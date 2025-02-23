@@ -1,10 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = 'https://market-dashboard-api.onrender.com/api';
 
 export const fetchWithConfig = async (endpoint) => {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
       mode: 'cors',
+      credentials: 'include',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'

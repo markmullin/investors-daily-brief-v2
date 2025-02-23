@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { industryAnalysisApi, enhancedIndustryAnalysisApi } from '../../services/api';
+import { macroAnalysisApi, enhancedMacroAnalysisApi } from '../../services/api';
 import InfoTooltip from '../InfoTooltip';
 import { useViewMode } from '../../context/ViewModeContext';
 
-const RelationshipCard = ({ title, description, symbols, tooltips, data, analysis, tooltipContent }) => {
+const MacroCard = ({ title, description, symbols, tooltips, data, tooltipContent }) => {
   const { viewMode } = useViewMode();
+  const COLORS = ['#8884d8', '#82ca9d', '#ffc658'];
+
+  console.log('MacroCard data:', data);
+
+  const getInsight = () => {
+    if (!data?.analysis) return "Market analysis is temporarily unavailable.";
+
+    return data.analysis.interpretation || "Market analysis is temporarily unavailable.";
+  };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
@@ -26,9 +35,9 @@ const RelationshipCard = ({ title, description, symbols, tooltips, data, analysi
         ))}
       </div>
       <div className="h-64">
-        {Array.isArray(data) && data.length > 0 ? (
+        {data?.performance?.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
+            <LineChart data={data.performance}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis
                 dataKey="date"
@@ -37,7 +46,7 @@ const RelationshipCard = ({ title, description, symbols, tooltips, data, analysi
                   const d = new Date(date);
                   return `${d.getMonth() + 1}/${d.getDate()}`;
                 }}
-                interval={Math.floor(data.length / 10)}
+                interval={Math.floor(data.performance.length / 10)}
                 fontSize={12}
                 padding={{ left: 0, right: 0 }}
               />
@@ -49,28 +58,23 @@ const RelationshipCard = ({ title, description, symbols, tooltips, data, analysi
                 labelFormatter={(date) => new Date(date).toLocaleDateString()}
                 formatter={(value, name) => [
                   `${value.toFixed(2)}%`,
-                  name.replace('etf1Price', symbols[0].replace('.US', ''))
-                    .replace('etf2Price', symbols[1].replace('.US', ''))
+                  name.replace('pct_', '').replace('.US', '')
                 ]}
               />
               <Legend
-                formatter={(value) => value.replace('etf1Price', symbols[0].replace('.US', ''))
-                  .replace('etf2Price', symbols[1].replace('.US', ''))}
+                formatter={(value) => value.replace('pct_', '').replace('.US', '')}
               />
-              <Line
-                type="monotone"
-                dataKey="etf1Price"
-                stroke="#8884d8"
-                dot={false}
-                strokeWidth={1.5}
-              />
-              <Line
-                type="monotone"
-                dataKey="etf2Price"
-                stroke="#82ca9d"
-                dot={false}
-                strokeWidth={1.5}
-              />
+              {symbols.map((symbol, index) => (
+                <Line
+                  key={symbol}
+                  type="monotone"
+                  dataKey={`pct_${symbol}`}
+                  name={symbol}
+                  stroke={COLORS[index]}
+                  dot={false}
+                  strokeWidth={1.5}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         ) : (
@@ -80,13 +84,12 @@ const RelationshipCard = ({ title, description, symbols, tooltips, data, analysi
         )}
       </div>
       <div className="mt-4 p-4 bg-gray-50 rounded">
-        <h4 className="text-sm font-semibold mb-2">Relationship Insight:</h4>
+        <h4 className="text-sm font-semibold mb-2">Market Insight:</h4>
         <p className="text-sm text-gray-600">
-          {analysis?.interpretation ||
-            "Market analysis is temporarily unavailable. Please refer to the metrics and charts for current market conditions."}
-          {analysis && analysis.scoreImpact !== undefined && analysis.scoreImpact !== 0 && viewMode === 'advanced' && (
-            <span className={`ml-2 font-semibold ${analysis.scoreImpact > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ({analysis.scoreImpact > 0 ? '+' : ''}{analysis.scoreImpact} points)
+          {getInsight()}
+          {data?.analysis?.scoreImpact !== 0 && viewMode === 'advanced' && (
+            <span className={`ml-2 font-semibold ${data.analysis.scoreImpact > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              ({data.analysis.scoreImpact > 0 ? '+' : ''}{data.analysis.scoreImpact} points)
             </span>
           )}
         </p>
@@ -95,7 +98,7 @@ const RelationshipCard = ({ title, description, symbols, tooltips, data, analysi
   );
 };
 
-const IndustryAnalysis = () => {
+const MacroAnalysis = () => {
   const [analysisData, setAnalysisData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -103,42 +106,36 @@ const IndustryAnalysis = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await enhancedIndustryAnalysisApi.getAllPairs('1y');
+        console.log('Fetching macro analysis data...');
+        const response = await enhancedMacroAnalysisApi.getAllGroups('1y');
+        console.log('Received macro data:', response);
         setAnalysisData(response);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching enhanced data:', err);
-        try {
-          const basicResponse = await industryAnalysisApi.getAllPairs('1y');
-          setAnalysisData(basicResponse);
-          setLoading(false);
-        } catch (basicErr) {
-          console.error('Error fetching basic data:', basicErr);
-          setError('Failed to fetch industry analysis data');
-          setLoading(false);
-        }
+        console.error('Error fetching macro data:', err);
+        setError('Failed to fetch macro analysis data');
+        setLoading(false);
       }
     };
 
     fetchData();
   }, []);
 
-  if (loading) return <div className="text-center py-4">Loading industry analysis...</div>;
+  if (loading) return <div className="text-center py-4">Loading macro analysis...</div>;
   if (error) return <div className="text-center py-4 text-red-500">{error}</div>;
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-6">Industry Analysis</h2>
+      <h2 className="text-xl font-semibold mb-6">Macro Analysis</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.entries(analysisData).map(([key, data]) => (
-          <RelationshipCard
+          <MacroCard
             key={key}
             title={data.description}
             description={data.description}
             symbols={data.symbols}
             tooltips={data.tooltips}
-            data={data.performance}
-            analysis={data.analysis}
+            data={data}
             tooltipContent={data.tooltipContent}
           />
         ))}
@@ -147,4 +144,4 @@ const IndustryAnalysis = () => {
   );
 };
 
-export default IndustryAnalysis;
+export default MacroAnalysis;

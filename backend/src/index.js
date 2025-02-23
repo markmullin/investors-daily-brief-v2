@@ -1,28 +1,41 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import http from 'http';
 import marketRoutes from './routes/marketRoutes.js';
-import websocketService from './services/websocketService.js';
 import errorTracker from './utils/errorTracker.js';
 import marketEnvironmentRoutes from './routes/marketEnvironmentRoutes.js';
 import industryAnalysisRoutes from './routes/industryAnalysis.js';
+import macroAnalysisRoutes from './routes/macroAnalysisRoutes.js';
+import insightRoutes from './routes/insightRoutes.js';
+import alertRoutes from './routes/alertRoutes.js';
+import enhancedMarketRoutes from './routes/enhancedMarketRoutes.js';
+import monitoringRoutes from './routes/monitoringRoutes.js';
+import relationshipRoutes from './routes/relationshipRoutes.js';
+import { setupWebSocket } from './services/websocketService.js';
 
 const app = express();
-const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Add both localhost and 127.0.0.1
+  origin: [
+    'https://market-dashboard-frontend.onrender.com',
+    'https://market-dashboard-api.onrender.com',
+    'http://localhost:5173',
+    'http://localhost:5000'
+  ],
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 200
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+  maxAge: 86400 // 24 hours
 };
 
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -34,6 +47,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const requiredApis = {
     'EOD API': process.env.EOD_API_KEY,
+    'BRAVE API': process.env.BRAVE_API_KEY
   };
 
   const missingApis = Object.entries(requiredApis)
@@ -49,29 +63,26 @@ app.use((req, res, next) => {
   }
 });
 
-// Debug middleware to log all routes
-app.use((req, res, next) => {
-  console.log('Available routes:', 
-    app._router.stack
-      .filter(r => r.route)
-      .map(r => `${Object.keys(r.route.methods)} ${r.route.path}`)
-  );
-  next();
-});
-
 // Routes
-console.log('Mounting market routes at /api/market');
 app.use('/api/market', marketRoutes);
 app.use('/api/market-environment', marketEnvironmentRoutes);
 app.use('/api/industry-analysis', industryAnalysisRoutes);
+app.use('/api/macro-analysis', macroAnalysisRoutes);
+app.use('/api/insights', insightRoutes);
+app.use('/api/alerts', alertRoutes);
+app.use('/api/enhanced-market', enhancedMarketRoutes);
+app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/relationships', relationshipRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
     apis: {
-      eod: Boolean(process.env.EOD_API_KEY)
+      eod: Boolean(process.env.EOD_API_KEY),
+      brave: Boolean(process.env.BRAVE_API_KEY)
     },
+    version: '2.0.0',
     timestamp: Date.now()
   });
 });
@@ -86,11 +97,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize WebSocket
-websocketService.initialize(server);
-
 // Start server
-server.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Environment:', {
     NODE_ENV: process.env.NODE_ENV,
@@ -98,3 +106,6 @@ server.listen(PORT, () => {
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173'
   });
 });
+
+// Setup WebSocket
+setupWebSocket(server);

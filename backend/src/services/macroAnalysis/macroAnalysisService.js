@@ -18,18 +18,19 @@ class MacroAnalysisService {
                 }
             },
             stocksBonds: {
-                symbols: ['SPY.US', 'BND.US'],
-                description: 'Stocks vs Bonds Performance',
+                symbols: ['SPY.US', 'BND.US', 'JNK.US'],
+                description: 'Stocks vs Bonds Relationship',
                 tooltips: {
-                    'SPY.US': 'S&P 500 ETF - Tracks the broad U.S. stock market',
-                    'BND.US': 'Total Bond Market ETF - Tracks the broad U.S. bond market'
+                    'SPY.US': 'SPY S&P 500 ETF - Tracks the broad U.S. stock market',
+                    'BND.US': 'Total Bond Market ETF - Tracks the broad U.S. bond market',
+                    'JNK.US': 'High Yield Corporate Bond ETF - Tracks risky corporate bonds'
                 }
             },
             alternativeAssets: {
                 symbols: ['IBIT.US', 'GLD.US'],
                 description: 'Bitcoin vs Gold Performance',
                 tooltips: {
-                    'IBIT.US': 'BlackRock Bitcoin ETF - Tracks Bitcoin price',
+                    'IBIT.US': 'BlackRock Bitcoin ETF - Tracks bitcoin price',
                     'GLD.US': 'SPDR Gold Shares - Tracks gold bullion price'
                 }
             },
@@ -37,8 +38,8 @@ class MacroAnalysisService {
                 symbols: ['TIPS.US', 'TLT.US'],
                 description: 'Inflation Protection Analysis',
                 tooltips: {
-                    'TIPS.US': 'Treasury Inflation-Protected Securities ETF',
-                    'TLT.US': '20+ Year Treasury Bond ETF'
+                    'TIPS.US': 'Treasury Inflation Protected Securities ETF',
+                    'TLT.US': '20+ Year Treasury Bond ETF - Tracks long-term treasury bonds'
                 }
             },
             commodityCurrency: {
@@ -95,7 +96,15 @@ class MacroAnalysisService {
             const dataPromises = groupSymbols.map(symbol => this.fetchETFData(symbol));
             const results = await Promise.all(dataPromises);
 
-            // Combine the data
+            // Get the starting prices for each symbol
+            const startPrices = {};
+            groupSymbols.forEach((symbol, index) => {
+                if (results[index] && results[index].length > 0) {
+                    startPrices[symbol] = results[index][0].close;
+                }
+            });
+
+            // Create combined data with percentage changes
             const combinedData = {};
             results[0].forEach(dataPoint => {
                 combinedData[dataPoint.date] = {
@@ -103,15 +112,17 @@ class MacroAnalysisService {
                 };
             });
 
+            // Calculate percentage changes
             groupSymbols.forEach((symbol, index) => {
                 results[index].forEach(dataPoint => {
-                    if (combinedData[dataPoint.date]) {
-                        combinedData[dataPoint.date][`price_${symbol}`] = dataPoint.close;
+                    if (combinedData[dataPoint.date] && startPrices[symbol]) {
+                        const pctChange = ((dataPoint.close - startPrices[symbol]) / startPrices[symbol]) * 100;
+                        combinedData[dataPoint.date][`pct_${symbol}`] = pctChange;
                     }
                 });
             });
 
-            return Object.values(combinedData);
+            return Object.values(combinedData).sort((a, b) => new Date(a.date) - new Date(b.date));
         } catch (error) {
             console.error('Error in getGroupPerformance:', error.message);
             throw error;
