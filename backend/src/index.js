@@ -16,18 +16,34 @@ import websocketService from './services/websocketService.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Simple CORS configuration
-app.use(cors({
-  origin: '*',  // Allow all origins temporarily
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://market-dashboard-frontend.onrender.com');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
+// Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use('/api/market', marketRoutes);
+// Routes with error handling
+app.use('/api/market', async (req, res, next) => {
+  try {
+    await marketRoutes(req, res, next);
+  } catch (error) {
+    console.error('Market route error:', error);
+    next(error);
+  }
+});
+
 app.use('/api/market-environment', marketEnvironmentRoutes);
 app.use('/api/industry-analysis', industryAnalysisRoutes);
 app.use('/api/macro-analysis', macroAnalysisRoutes);
@@ -37,8 +53,9 @@ app.use('/api/enhanced-market', enhancedMarketRoutes);
 app.use('/api/monitoring', monitoringRoutes);
 app.use('/api/relationships', relationshipRoutes);
 
-// Health check endpoint
+// Health check with CORS headers
 app.get('/health', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
   res.json({ 
     status: 'healthy',
     apis: {
@@ -63,6 +80,7 @@ app.use((err, req, res, next) => {
 // Start server
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log('CORS Origin:', 'https://market-dashboard-frontend.onrender.com');
 });
 
 // Initialize WebSocket
