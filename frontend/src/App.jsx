@@ -21,14 +21,27 @@ import MarketThemes from './components/MarketThemes';
 import KeyInsights from './components/KeyInsights';
 import MarketEnvironment from './components/MarketEnvironment';
 import IndustryAnalysis from './components/IndustryAnalysis/IndustryAnalysis';
+import MacroAnalysis from './components/MacroAnalysis/MacroAnalysis';
+import { MonitoringProvider } from './context/MonitoringContext';
+import MonitoringDisplay from './components/MonitoringDisplay';
 
 function ViewToggle() {
   const { viewMode, setViewMode } = useViewMode();
 
+  const handleBasicClick = () => {
+    console.log('Switching to basic view');
+    setViewMode('basic');
+  };
+
+  const handleAdvancedClick = () => {
+    console.log('Switching to advanced view');
+    setViewMode('advanced');
+  };
+
   return (
     <div className="flex gap-2 bg-gray-100 p-1 rounded-md">
       <button
-        onClick={() => setViewMode('basic')}
+        onClick={handleBasicClick}
         className={`flex items-center gap-1 px-3 py-1.5 rounded ${viewMode === 'basic'
           ? 'bg-white text-blue-600 shadow-sm'
           : 'text-gray-600'
@@ -38,7 +51,7 @@ function ViewToggle() {
         <span>Basic View</span>
       </button>
       <button
-        onClick={() => setViewMode('advanced')}
+        onClick={handleAdvancedClick}
         className={`flex items-center gap-1 px-3 py-1.5 rounded ${viewMode === 'advanced'
           ? 'bg-white text-blue-600 shadow-sm'
           : 'text-gray-600'
@@ -245,14 +258,21 @@ function App() {
 
           setMarketMover({
             symbol: mover.symbol,
-            price: mover.price,
-            changePercent: mover.changePercent,  // Use direct values from mover data
-            dailyChange: parseFloat((mover.price * mover.changePercent / 100).toFixed(2)),  // Calculate daily change
-            reason: `${mover.symbol} moved ${mover.changePercent >= 0 ? 'up' : 'down'} ${Math.abs(Number(mover.changePercent)).toFixed(2)}%`,
+            companyName: mover.companyName || mover.symbol,
+            price: mover.price || 0,
+            changePercent: mover.changePercent || 0,
+            dailyChange: parseFloat(((mover.price || 0) * (mover.changePercent || 0) / 100).toFixed(2)),
+            reason: `${mover.symbol} moved ${(mover.changePercent || 0) >= 0 ? 'up' : 'down'} ${Math.abs(Number(mover.changePercent || 0)).toFixed(2)}%`,
             history: moverHistory.map(day => ({
               ...day,
               ma200: day.ma200 || null
-            }))
+            })),
+            // Ensure these fields exist for tooltips
+            basicInsight: mover.basicInsight || null,
+            advancedInsight: mover.advancedInsight || null,
+            volumeAnalysis: mover.volumeAnalysis || null,
+            technicalLevels: mover.technicalLevels || null,
+            marketImpact: mover.marketImpact || null
           });
 
           console.log('Set market mover state');
@@ -325,312 +345,130 @@ function App() {
 
   return (
     <ViewModeProvider>
-      <div className="p-4 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <h1 className="text-4xl font-bold" style={{ fontFamily: "'Google Sans', 'Roboto', sans-serif" }}>
-            Investor's Daily Brief
-          </h1>
-          <div className="flex items-center gap-4">
-            <ViewToggle />
-            <SearchBar onSearch={handleSearch} />
+      <MonitoringProvider>
+        <div className="p-4 max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <h1 className="text-4xl font-bold" style={{ fontFamily: "'Google Sans', 'Roboto', sans-serif" }}>
+              Investor's Daily Brief
+            </h1>
+            <div className="flex items-center gap-4">
+              <ViewToggle />
+              <SearchBar onSearch={handleSearch} />
+            </div>
           </div>
-        </div>
 
-        {/* Error Display */}
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-            <AlertCircle className="text-red-500" />
-            <span className="text-red-700">{error}</span>
-          </div>
-        )}
-
-        {/* Key Insights Section */}
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3 text-gray-700">Key Market Insights</h2>
-          <KeyInsights />
-        </section>
-
-        <div className="space-y-8">
-          {/* Market Metrics Section */}
-          <section>
-            <h2 className="text-xl font-semibold mb-3 text-gray-700">Market Metrics</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-              {[...mainIndices]
-                .sort((a, b) => {
-                  const order = {
-                    'SPY.US': 1,
-                    'QQQ.US': 2,
-                    'DIA.US': 3,
-                    'IWM.US': 4
-                  };
-                  return order[a.symbol] - order[b.symbol];
-                })
-                .map((data) => {
-                  const histData = historicalPrices[data.symbol] || [];
-                  return (
-                    <MarketMetricCard
-                      key={data.symbol}
-                      data={data}
-                      description={
-                        data.symbol.includes('SPY') ? {
-                          basic: "The S&P 500 tracks the 500 biggest US companies. It's the main way to measure how the US stock market is doing.",
-                          advanced: "The S&P 500 is the benchmark US equity index with market-cap weighting across 11 sectors. Key technical signals include the 50/200-day moving averages and volume trends."
-                        } : data.symbol.includes('QQQ') ? {
-                          basic: "The Nasdaq 100 follows the largest tech companies like Apple and Microsoft. Shows how tech stocks are performing.",
-                          advanced: "The Nasdaq 100 tracks major non-financial companies, heavily weighted toward technology. Higher volatility with strong growth orientation."
-                        } : data.symbol.includes('DIA') ? {
-                          basic: "The Dow Jones tracks 30 major US companies. It's the oldest and most well-known market indicator.",
-                          advanced: "The DJIA is price-weighted across 30 blue-chip stocks. Less representative than S&P 500 but historically significant benchmark."
-                        } : data.symbol.includes('IWM') ? {
-                          basic: "The Russell 2000 follows smaller US companies. These often show early signs of economic changes.",
-                          advanced: "The Russell 2000 represents small-cap US equities. Higher volatility, strong economic sensitivity, historically leads market cycles."
-                        } : data.symbol
-                      }
-                      historicalData={histData}
-                    />
-
-                  );
-                })}
+          {/* Error Display */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+              <AlertCircle className="text-red-500" />
+              <span className="text-red-700">{error}</span>
             </div>
-          </section>
+          )}
 
-          {/* Market Environment Section */}
+          {/* Key Insights Section */}
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-3 text-gray-700">Market Environment</h2>
-            <MarketEnvironment />
+            <h2 className="text-xl font-semibold mb-3 text-gray-700">Key Market Insights</h2>
+            <KeyInsights />
           </section>
 
-          {/* Performance Section */}
-          <section>
-            <h2 className="text-xl font-semibold mb-3 text-gray-700">Sector Performance</h2>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <SectorBarChart data={sectorData} />
-            </div>
-          </section>
-
-          {/* Sector Rotation Section */}
+          {/* Market Monitoring Section */}
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-3 text-gray-700">Sector Rotation Analysis</h2>
-            <SectorRotation />
+            <MonitoringDisplay />
           </section>
 
-          <section>
-            <div className="mb-8">
-              <IndustryAnalysis />
-            </div>
-          </section>
-
-          {/* Macroeconomic Environment Section */}
-          <section>
-            <h2 className="text-xl font-semibold mb-3 text-gray-700">Macroeconomic Environment</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* TLT Card */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-gray-600 mb-2 flex items-center gap-2">
-                  Treasury Bonds (TLT)
-                  <InfoTooltip content="Treasury bonds are considered a key indicator of economic health and monetary policy. Rising TLT suggests flight to safety..." />
-                </h3>
-                <p className="text-2xl font-bold">
-                  ${typeof macroData.tlt?.price === 'number' ? macroData.tlt.price.toFixed(2) : '0.00'}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  {(macroData.tlt?.change || 0) >= 0 ? (
-                    <ArrowUp className="text-green-500" size={20} />
-                  ) : (
-                    <ArrowDown className="text-red-500" size={20} />
-                  )}
-                  <span
-                    className={
-                      (macroData.tlt?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                    }
-                  >
-                    {typeof macroData.tlt?.change === 'number' ? macroData.tlt.change.toFixed(2) : '0.00'}%
-                  </span>
-                </div>
+          <div className="space-y-8">
+            {/* Market Metrics Section */}
+            <section>
+              <h2 className="text-xl font-semibold mb-3 text-gray-700">Market Metrics</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                {[...mainIndices]
+                  .sort((a, b) => {
+                    const order = {
+                      'SPY.US': 1,
+                      'QQQ.US': 2,
+                      'DIA.US': 3,
+                      'IWM.US': 4
+                    };
+                    return order[a.symbol] - order[b.symbol];
+                  })
+                  .map((data) => {
+                    const histData = historicalPrices[data.symbol] || [];
+                    return (
+                      <MarketMetricCard
+                        key={data.symbol}
+                        data={data}
+                        description={
+                          data.symbol.includes('SPY') ? {
+                            basic: "The S&P 500 tracks the 500 biggest US companies. It's the main way to measure how the US stock market is doing.",
+                            advanced: "The S&P 500 is the benchmark US equity index with market-cap weighting across 11 sectors. Key technical signals include the 50/200-day moving averages and volume trends."
+                          } : data.symbol.includes('QQQ') ? {
+                            basic: "The Nasdaq 100 follows the largest tech companies like Apple and Microsoft. Shows how tech stocks are performing.",
+                            advanced: "The Nasdaq 100 tracks major non-financial companies, heavily weighted toward technology. Higher volatility with strong growth orientation."
+                          } : data.symbol.includes('DIA') ? {
+                            basic: "The Dow Jones tracks 30 major US companies. It's the oldest and most well-known market indicator.",
+                            advanced: "The DJIA is price-weighted across 30 blue-chip stocks. Less representative than S&P 500 but historically significant benchmark."
+                          } : data.symbol.includes('IWM') ? {
+                            basic: "The Russell 2000 follows smaller US companies. These often show early signs of economic changes.",
+                            advanced: "The Russell 2000 represents small-cap US equities. Higher volatility, strong economic sensitivity, historically leads market cycles."
+                          } : data.symbol
+                        }
+                        historicalData={histData}
+                      />
+                    );
+                  })}
               </div>
+            </section>
 
-              {/* UUP Card */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-gray-600 mb-2 flex items-center gap-2">
-                  US Dollar (UUP)
-                  <InfoTooltip content="The US Dollar Index ETF measures the dollar's strength against major global currencies. Dollar strength impacts global trade..." />
-                </h3>
-                <p className="text-2xl font-bold">
-                  ${typeof macroData.uup?.price === 'number' ? macroData.uup.price.toFixed(2) : '0.00'}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  {(macroData.uup?.change || 0) >= 0 ? (
-                    <ArrowUp className="text-green-500" size={20} />
-                  ) : (
-                    <ArrowDown className="text-red-500" size={20} />
-                  )}
-                  <span
-                    className={
-                      (macroData.uup?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                    }
-                  >
-                    {typeof macroData.uup?.change === 'number' ? macroData.uup.change.toFixed(2) : '0.00'}%
-                  </span>
-                </div>
+            {/* Market Environment Section */}
+            <section className="mb-8">
+              <h2 className="text-xl font-semibold mb-3 text-gray-700">Market Environment</h2>
+              <MarketEnvironment />
+            </section>
+
+            {/* Performance Section */}
+            <section>
+              <h2 className="text-xl font-semibold mb-3 text-gray-700">Sector Performance</h2>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <SectorBarChart data={sectorData} />
               </div>
+            </section>
 
-              {/* USO Card */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-gray-600 mb-2 flex items-center gap-2">
-                  Oil Fund (USO)
-                  <InfoTooltip content="Tracks crude oil. High oil can raise inflation & transport costs, affecting consumer spending..." />
-                </h3>
-                <p className="text-2xl font-bold">
-                  ${typeof macroData.uso?.price === 'number' ? macroData.uso.price.toFixed(2) : '0.00'}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  {(macroData.uso?.change || 0) >= 0 ? (
-                    <ArrowUp className="text-green-500" size={20} />
-                  ) : (
-                    <ArrowDown className="text-red-500" size={20} />
-                  )}
-                  <span
-                    className={
-                      (macroData.uso?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                    }
-                  >
-                    {typeof macroData.uso?.change === 'number' ? macroData.uso.change.toFixed(2) : '0.00'}%
-                  </span>
-                </div>
+            {/* Sector Rotation Section */}
+            <section className="mb-8">
+              <h2 className="text-xl font-semibold mb-3 text-gray-700">Sector Rotation Analysis</h2>
+              <SectorRotation />
+            </section>
+
+            <section>
+              <div className="mb-8">
+                <IndustryAnalysis />
               </div>
+            </section>
 
-              {/* GLD Card */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-gray-600 mb-2 flex items-center gap-2">
-                  Gold (GLD)
-                  <InfoTooltip content="Gold has historically been viewed as a store of value and hedge against uncertainty. Strong gold prices often reflect inflation concerns..." />
-                </h3>
-                <p className="text-2xl font-bold">
-                  ${typeof macroData.gld?.price === 'number' ? macroData.gld.price.toFixed(2) : '0.00'}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  {(macroData.gld?.change || 0) >= 0 ? (
-                    <ArrowUp className="text-green-500" size={20} />
-                  ) : (
-                    <ArrowDown className="text-red-500" size={20} />
-                  )}
-                  <span
-                    className={
-                      (macroData.gld?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                    }
-                  >
-                    {typeof macroData.gld?.change === 'number' ? macroData.gld.change.toFixed(2) : '0.00'}%
-                  </span>
-                </div>
+            {/* Macro Analysis Section */}
+            <section>
+              <div className="mb-8">
+                <MacroAnalysis />
               </div>
+            </section>
 
-              {/* VIX Card */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-gray-600 mb-2 flex items-center gap-2">
-                  VIX Index
-                  <InfoTooltip content="Wall Street's 'fear gauge'. High VIX => big swings, risk-off environment..." />
-                </h3>
-                <p className="text-2xl font-bold">
-                  ${typeof macroData.vix?.price === 'number' ? macroData.vix.price.toFixed(2) : '0.00'}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  {(macroData.vix?.change || 0) >= 0 ? (
-                    <ArrowUp className="text-red-500" size={20} />
-                  ) : (
-                    <ArrowDown className="text-green-500" size={20} />
-                  )}
-                  <span
-                    className={
-                      (macroData.vix?.change || 0) >= 0 ? 'text-red-500' : 'text-green-500'
-                    }
-                  >
-                    {typeof macroData.vix?.change === 'number' ? macroData.vix.change.toFixed(2) : '0.00'}%
-                  </span>
-                </div>
-              </div>
-
-              {/* EEM Card */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-gray-600 mb-2 flex items-center gap-2">
-                  Emerging Markets (EEM)
-                  <InfoTooltip content="A gauge of global growth & risk appetite, especially in developing economies." />
-                </h3>
-                <p className="text-2xl font-bold">
-                  ${typeof macroData.eem?.price === 'number' ? macroData.eem.price.toFixed(2) : '0.00'}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  {(macroData.eem?.change || 0) >= 0 ? (
-                    <ArrowUp className="text-green-500" size={20} />
-                  ) : (
-                    <ArrowDown className="text-red-500" size={20} />
-                  )}
-                  <span
-                    className={
-                      (macroData.eem?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                    }
-                  >
-                    {typeof macroData.eem?.change === 'number' ? macroData.eem.change.toFixed(2) : '0.00'}%
-                  </span>
-                </div>
-              </div>
-
-              {/* IBIT Card */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-gray-600 mb-2 flex items-center gap-2">
-                  Bitcoin ETF (IBIT)
-                  <InfoTooltip content="The first spot Bitcoin ETF tracking the cryptocurrency market." />
-                </h3>
-                <p className="text-2xl font-bold">
-                  ${typeof macroData.ibit?.price === 'number' ? macroData.ibit.price.toFixed(2) : '0.00'}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  {(macroData.ibit?.change || 0) >= 0 ? (
-                    <ArrowUp className="text-green-500" size={20} />
-                  ) : (
-                    <ArrowDown className="text-red-500" size={20} />
-                  )}
-                  <span
-                    className={
-                      (macroData.ibit?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                    }
-                  >
-                    {typeof macroData.ibit?.change === 'number' ? macroData.ibit.change.toFixed(2) : '0.00'}%
-                  </span>
-                </div>
-              </div>
-
-              {/* JNK Card */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-gray-600 mb-2 flex items-center gap-2">
-                  High Yield Bonds (JNK)
-                  <InfoTooltip content="Tracks high-yield corporate bonds. A gauge of risk appetite and credit conditions." />
-                </h3>
-                <p className="text-2xl font-bold">
-                  ${typeof macroData.jnk?.price === 'number' ? macroData.jnk.price.toFixed(2) : '0.00'}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  {(macroData.jnk?.change || 0) >= 0 ? (
-                    <ArrowUp className="text-green-500" size={20} />
-                  ) : (
-                    <ArrowDown className="text-red-500" size={20} />
-                  )}
-                  <span
-                    className={
-                      (macroData.jnk?.change || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                    }
-                  >
-                    {typeof macroData.jnk?.change === 'number' ? macroData.jnk.change.toFixed(2) : '0.00'}%
-                  </span>
-                </div>
-              </div>
-
-              {/* Market Mover Card (UPDATED) */}
+            {/* Market Mover Section */}
+            <section>
               {marketMover && (
                 <div className="col-span-4 bg-white p-4 rounded-lg shadow">
-                  <h3 className="text-gray-600 mb-2 flex items-center gap-2">
-                    Market Mover: {marketMover.symbol}
-                    <InfoTooltip content="Significant stock making notable moves today." />
-                  </h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-gray-600 flex items-center gap-2">
+                      Market Mover: {marketMover.symbol}
+                      <InfoTooltip
+                        basicContent={
+                          `${marketMover.symbol} is making significant moves today. ${marketMover.basicInsight || `Current price: $${marketMover.price?.toFixed(2) || 'N/A'} (${marketMover.changePercent >= 0 ? '+' : ''}${marketMover.changePercent?.toFixed(2) || 0}%).`} This move represents a notable shift in market sentiment${marketMover.companyName ? ' for ' + marketMover.companyName : ''}.`
+                        }
+                        advancedContent={
+                          `${marketMover.symbol} Technical Analysis: ${marketMover.advancedInsight?.trim() || 'Price momentum shows significant deviation from normal trading range.'} ${marketMover.volumeAnalysis?.trim() || `Trading volume is ${Math.abs(marketMover.changePercent) > 5 ? 'elevated' : 'normal'} relative to average.`} Support: $${(marketMover.price * 0.95).toFixed(2)}, Resistance: $${(marketMover.price * 1.05).toFixed(2)}. ${marketMover.marketImpact?.trim() || `Market impact is ${Math.abs(marketMover.changePercent) > 7 ? 'significant' : 'moderate'} with potential sector-wide implications.`}`
+                        }
+                      />
+                    </h3>
+                  </div>
                   <div className="flex items-center gap-4">
                     <div>
                       <p className="text-2xl font-bold">
@@ -645,15 +483,15 @@ function App() {
                         <span className={
                           (marketMover.changePercent || 0) >= 0 ? 'text-green-500' : 'text-red-500'
                         }>
-                          {Math.abs(Number(marketMover.changePercent)).toFixed(2)}%
+                          {Math.abs(Number(marketMover.changePercent || 0)).toFixed(2)}%
                           {' '}
-                          (${Math.abs(Number(marketMover.price * marketMover.changePercent / 100)).toFixed(2)})
+                          (${Math.abs(Number((marketMover.price || 0) * (marketMover.changePercent || 0) / 100)).toFixed(2)})
                         </span>
                       </div>
                     </div>
                   </div>
                   <p className="text-gray-600 mt-2">
-                    {marketMover.symbol} moved {marketMover.changePercent >= 0 ? 'up' : 'down'} {Math.abs(Number(marketMover.changePercent || 0)).toFixed(2)}%
+                    {marketMover.symbol} moved {(marketMover.changePercent || 0) >= 0 ? 'up' : 'down'} {Math.abs(Number(marketMover.changePercent || 0)).toFixed(2)}%
                   </p>
                   {marketMover.history && marketMover.history.length > 0 && (
                     <div className="h-40 mt-4">
@@ -663,6 +501,7 @@ function App() {
                           <XAxis
                             dataKey="date"
                             tickFormatter={(date) => {
+                              if (!date) return '';
                               const d = new Date(date);
                               return `${d.getMonth() + 1}/${d.getDate()}`;
                             }}
@@ -701,17 +540,17 @@ function App() {
                   )}
                 </div>
               )}
-            </div>
-          </section>
-        </div>
+            </section>
+          </div>
 
-        {/* Stock Search Modal */}
-        <StockModal
-          isOpen={selectedStock !== null}
-          onClose={() => setSelectedStock(null)}
-          stock={selectedStock}
-        />
-      </div>
+          {/* Stock Search Modal */}
+          <StockModal
+            isOpen={selectedStock !== null}
+            onClose={() => setSelectedStock(null)}
+            stock={selectedStock}
+          />
+        </div>
+      </MonitoringProvider>
     </ViewModeProvider>
   );
 }
