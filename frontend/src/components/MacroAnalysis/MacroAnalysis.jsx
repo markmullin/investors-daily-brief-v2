@@ -8,8 +8,6 @@ const MacroCard = ({ title, description, symbols, tooltips, data, tooltipContent
   const { viewMode } = useViewMode();
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658'];
 
-  console.log('MacroCard data:', data);
-
   const getInsight = () => {
     if (!data?.analysis) return "Market analysis is temporarily unavailable.";
 
@@ -27,15 +25,15 @@ const MacroCard = ({ title, description, symbols, tooltips, data, tooltipContent
       </div>
       <p className="text-sm text-gray-600 mb-4">{description}</p>
       <div className="text-xs text-gray-500 mb-4">
-        {symbols.map((symbol) => (
+        {Array.isArray(symbols) && symbols.map((symbol) => (
           <div key={symbol} className="mb-1">
             <span className="font-medium">{symbol.replace('.US', '')}: </span>
-            {tooltips[symbol]}
+            {tooltips && tooltips[symbol]}
           </div>
         ))}
       </div>
       <div className="h-64">
-        {data?.performance?.length > 0 ? (
+        {data?.performance && Array.isArray(data.performance) && data.performance.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data.performance}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
@@ -64,13 +62,13 @@ const MacroCard = ({ title, description, symbols, tooltips, data, tooltipContent
               <Legend
                 formatter={(value) => value.replace('pct_', '').replace('.US', '')}
               />
-              {symbols.map((symbol, index) => (
+              {Array.isArray(symbols) && symbols.map((symbol, index) => (
                 <Line
                   key={symbol}
                   type="monotone"
                   dataKey={`pct_${symbol}`}
                   name={symbol}
-                  stroke={COLORS[index]}
+                  stroke={COLORS[index % COLORS.length]}
                   dot={false}
                   strokeWidth={1.5}
                 />
@@ -79,7 +77,7 @@ const MacroCard = ({ title, description, symbols, tooltips, data, tooltipContent
           </ResponsiveContainer>
         ) : (
           <div className="h-full flex items-center justify-center text-gray-500">
-            Loading data...
+            No performance data available
           </div>
         )}
       </div>
@@ -87,7 +85,7 @@ const MacroCard = ({ title, description, symbols, tooltips, data, tooltipContent
         <h4 className="text-sm font-semibold mb-2">Market Insight:</h4>
         <p className="text-sm text-gray-600">
           {getInsight()}
-          {data?.analysis?.scoreImpact !== 0 && viewMode === 'advanced' && (
+          {data?.analysis?.scoreImpact !== undefined && data.analysis.scoreImpact !== 0 && viewMode === 'advanced' && (
             <span className={`ml-2 font-semibold ${data.analysis.scoreImpact > 0 ? 'text-green-600' : 'text-red-600'}`}>
               ({data.analysis.scoreImpact > 0 ? '+' : ''}{data.analysis.scoreImpact} points)
             </span>
@@ -109,7 +107,7 @@ const MacroAnalysis = () => {
         console.log('Fetching macro analysis data...');
         const response = await enhancedMacroAnalysisApi.getAllGroups('1y');
         console.log('Received macro data:', response);
-        setAnalysisData(response);
+        setAnalysisData(response || {});
         setLoading(false);
       } catch (err) {
         console.error('Error fetching macro data:', err);
@@ -124,22 +122,33 @@ const MacroAnalysis = () => {
   if (loading) return <div className="text-center py-4">Loading macro analysis...</div>;
   if (error) return <div className="text-center py-4 text-red-500">{error}</div>;
 
+  // Safely handle the case where analysisData is null or undefined
+  const entries = analysisData && typeof analysisData === 'object' 
+    ? Object.entries(analysisData) 
+    : [];
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-6">Macro Analysis</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Object.entries(analysisData).map(([key, data]) => (
-          <MacroCard
-            key={key}
-            title={data.description}
-            description={data.description}
-            symbols={data.symbols}
-            tooltips={data.tooltips}
-            data={data}
-            tooltipContent={data.tooltipContent}
-          />
-        ))}
-      </div>
+      {entries.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {entries.map(([key, data]) => (
+            <MacroCard
+              key={key}
+              title={data?.description || 'Macro Relationship'}
+              description={data?.description || 'Analysis unavailable'}
+              symbols={data?.symbols || []}
+              tooltips={data?.tooltips || {}}
+              data={data || {}}
+              tooltipContent={data?.tooltipContent || {}}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white p-6 rounded-lg shadow text-center">
+          <p className="text-gray-500">No macro analysis data available at this time.</p>
+        </div>
+      )}
     </div>
   );
 };

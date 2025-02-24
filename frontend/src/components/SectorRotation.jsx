@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
+import { marketApi } from '../services/api';
 
 const SectorRotation = () => {
     const [analysis, setAnalysis] = useState(null);
@@ -9,12 +10,13 @@ const SectorRotation = () => {
     useEffect(() => {
         const fetchAnalysis = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/market/sector-rotation');
-                const data = await response.json();
+                // Use the marketApi service instead of direct fetch
+                const data = await marketApi.getSectorRotation();
                 setAnalysis(data);
                 setError(null);
             } catch (err) {
-                setError(err.message);
+                console.error('Error fetching sector rotation:', err);
+                setError(err?.message || 'Failed to load sector rotation data');
             } finally {
                 setLoading(false);
             }
@@ -32,10 +34,16 @@ const SectorRotation = () => {
             <span className="text-red-700">{error}</span>
         </div>
     );
-    if (!analysis) return null;
+    if (!analysis) return (
+        <div className="bg-white p-6 rounded-lg shadow">
+            <p className="text-center text-gray-500">Sector rotation data unavailable</p>
+        </div>
+    );
 
-    const leaders = analysis.sectors.slice(0, 3);
-    const laggards = analysis.sectors.slice(-3);
+    // Safe access to analysis data
+    const sectors = analysis?.sectors || [];
+    const leaders = sectors.slice(0, Math.min(3, sectors.length));
+    const laggards = sectors.slice(-Math.min(3, sectors.length));
 
     return (
         <div className="space-y-6">
@@ -43,17 +51,20 @@ const SectorRotation = () => {
                 <h2 className="text-xl font-bold mb-4">Market Cycle Analysis</h2>
                 <div className="space-y-4">
                     <div className="text-lg font-semibold text-blue-600">
-                        {analysis.marketPhase}
+                        {analysis?.marketPhase || 'Phase data unavailable'}
                     </div>
                     <div className="text-gray-600">
-                        {analysis.interpretation.phase}
+                        {analysis?.interpretation?.phase || 'Interpretation unavailable'}
                     </div>
                     <div className="mt-4">
                         <h3 className="font-semibold mb-2">Actionable Insights:</h3>
                         <ul className="list-disc list-inside space-y-2">
-                            {analysis.interpretation.actionItems.map((item, index) => (
+                            {(analysis?.interpretation?.actionItems || []).map((item, index) => (
                                 <li key={index} className="text-gray-600">{item}</li>
                             ))}
+                            {(!analysis?.interpretation?.actionItems || analysis.interpretation.actionItems.length === 0) && (
+                                <li className="text-gray-600">No actionable insights available at this time.</li>
+                            )}
                         </ul>
                     </div>
                 </div>
@@ -63,42 +74,46 @@ const SectorRotation = () => {
                 <div className="bg-white p-6 rounded-lg shadow">
                     <h3 className="font-semibold mb-3">Sector Leadership</h3>
                     <div className="space-y-4">
-                        {leaders.map((sector, index) => (
-                            <div key={sector.symbol} className="flex justify-between items-center">
-                                <span className="text-gray-700">{sector.name}</span>
+                        {leaders.length > 0 ? leaders.map((sector) => (
+                            <div key={sector.symbol || index} className="flex justify-between items-center">
+                                <span className="text-gray-700">{sector.name || 'Unknown'}</span>
                                 <div className="flex items-center gap-2">
-                                    <span className={sector.change_p >= 0 ? "text-green-500" : "text-red-500"}>
-                                        {sector.change_p.toFixed(2)}%
+                                    <span className={(sector.change_p || 0) >= 0 ? "text-green-500" : "text-red-500"}>
+                                        {(sector.change_p || 0).toFixed(2)}%
                                     </span>
-                                    {sector.change_p >= 0 ? (
+                                    {(sector.change_p || 0) >= 0 ? (
                                         <ArrowUp className="text-green-500" size={16} />
                                     ) : (
                                         <ArrowDown className="text-red-500" size={16} />
                                     )}
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="text-gray-500 text-center">No sector leadership data available</div>
+                        )}
                     </div>
                 </div>
 
                 <div className="bg-white p-6 rounded-lg shadow">
                     <h3 className="font-semibold mb-3">Sector Laggards</h3>
                     <div className="space-y-4">
-                        {laggards.map((sector, index) => (
-                            <div key={sector.symbol} className="flex justify-between items-center">
-                                <span className="text-gray-700">{sector.name}</span>
+                        {laggards.length > 0 ? laggards.map((sector) => (
+                            <div key={sector.symbol || index} className="flex justify-between items-center">
+                                <span className="text-gray-700">{sector.name || 'Unknown'}</span>
                                 <div className="flex items-center gap-2">
-                                    <span className={sector.change_p >= 0 ? "text-green-500" : "text-red-500"}>
-                                        {sector.change_p.toFixed(2)}%
+                                    <span className={(sector.change_p || 0) >= 0 ? "text-green-500" : "text-red-500"}>
+                                        {(sector.change_p || 0).toFixed(2)}%
                                     </span>
-                                    {sector.change_p >= 0 ? (
+                                    {(sector.change_p || 0) >= 0 ? (
                                         <ArrowUp className="text-green-500" size={16} />
                                     ) : (
                                         <ArrowDown className="text-red-500" size={16} />
                                     )}
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="text-gray-500 text-center">No sector laggards data available</div>
+                        )}
                     </div>
                 </div>
             </div>

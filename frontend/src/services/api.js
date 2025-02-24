@@ -2,8 +2,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://market-dashbo
 
 export const fetchWithConfig = async (endpoint) => {
   try {
-    // Remove the /api prefix since we're already including it in the URL construction
-    const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
+    // Construct URL correctly
+    const url = `${API_BASE_URL}/api${endpoint}`;
+    console.log(`Fetching from URL: ${url}`);
+    
+    const response = await fetch(url, {
       method: 'GET',
       mode: 'cors',
       headers: {
@@ -42,9 +45,9 @@ export const marketApi = {
   getHistory: async (symbol) => {
     const data = await fetchWithConfig(`/market/history/${symbol}`);
     return safeMap(data, item => ({
-      date: item.date,
-      price: item.price || 0,
-      ma200: typeof item.ma200 === 'number' ? item.ma200 : null
+      date: item?.date,
+      price: item?.price || 0,
+      ma200: typeof item?.ma200 === 'number' ? item.ma200 : null
     }));
   }
 };

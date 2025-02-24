@@ -18,10 +18,10 @@ const RelationshipCard = ({ title, description, symbols, tooltips, data, analysi
       </div>
       <p className="text-sm text-gray-600 mb-4">{description}</p>
       <div className="text-xs text-gray-500 mb-4">
-        {symbols.map((symbol) => (
+        {symbols && symbols.map((symbol) => (
           <div key={symbol} className="mb-1">
             <span className="font-medium">{symbol.replace('.US', '')}: </span>
-            {tooltips[symbol]}
+            {tooltips && tooltips[symbol]}
           </div>
         ))}
       </div>
@@ -49,13 +49,13 @@ const RelationshipCard = ({ title, description, symbols, tooltips, data, analysi
                 labelFormatter={(date) => new Date(date).toLocaleDateString()}
                 formatter={(value, name) => [
                   `${value.toFixed(2)}%`,
-                  name.replace('etf1Price', symbols[0].replace('.US', ''))
-                    .replace('etf2Price', symbols[1].replace('.US', ''))
+                  name.replace('etf1Price', symbols && symbols[0] ? symbols[0].replace('.US', '') : '')
+                    .replace('etf2Price', symbols && symbols[1] ? symbols[1].replace('.US', '') : '')
                 ]}
               />
               <Legend
-                formatter={(value) => value.replace('etf1Price', symbols[0].replace('.US', ''))
-                  .replace('etf2Price', symbols[1].replace('.US', ''))}
+                formatter={(value) => value.replace('etf1Price', symbols && symbols[0] ? symbols[0].replace('.US', '') : '')
+                  .replace('etf2Price', symbols && symbols[1] ? symbols[1].replace('.US', '') : '')}
               />
               <Line
                 type="monotone"
@@ -103,14 +103,15 @@ const IndustryAnalysis = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('Fetching industry analysis data...');
         const response = await enhancedIndustryAnalysisApi.getAllPairs('1y');
-        setAnalysisData(response);
+        setAnalysisData(response || {});
         setLoading(false);
       } catch (err) {
         console.error('Error fetching enhanced data:', err);
         try {
           const basicResponse = await industryAnalysisApi.getAllPairs('1y');
-          setAnalysisData(basicResponse);
+          setAnalysisData(basicResponse || {});
           setLoading(false);
         } catch (basicErr) {
           console.error('Error fetching basic data:', basicErr);
@@ -126,23 +127,34 @@ const IndustryAnalysis = () => {
   if (loading) return <div className="text-center py-4">Loading industry analysis...</div>;
   if (error) return <div className="text-center py-4 text-red-500">{error}</div>;
 
+  // Safely handle the case where analysisData is null or undefined
+  const entries = analysisData && typeof analysisData === 'object' 
+    ? Object.entries(analysisData) 
+    : [];
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-6">Industry Analysis</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Object.entries(analysisData).map(([key, data]) => (
-          <RelationshipCard
-            key={key}
-            title={data.description}
-            description={data.description}
-            symbols={data.symbols}
-            tooltips={data.tooltips}
-            data={data.performance}
-            analysis={data.analysis}
-            tooltipContent={data.tooltipContent}
-          />
-        ))}
-      </div>
+      {entries.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {entries.map(([key, data]) => (
+            <RelationshipCard
+              key={key}
+              title={data?.description || 'Industry Relationship'}
+              description={data?.description || 'Analysis unavailable'}
+              symbols={data?.symbols || []}
+              tooltips={data?.tooltips || {}}
+              data={data?.performance || []}
+              analysis={data?.analysis || {}}
+              tooltipContent={data?.tooltipContent || {}}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white p-6 rounded-lg shadow text-center">
+          <p className="text-gray-500">No industry analysis data available at this time.</p>
+        </div>
+      )}
     </div>
   );
 };
