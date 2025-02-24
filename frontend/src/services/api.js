@@ -1,7 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://market-dashboard-backend.onrender.com';
 
 export const fetchWithConfig = async (endpoint) => {
   try {
+    // Remove the /api prefix since we're already including it in the URL construction
     const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
       method: 'GET',
       mode: 'cors',
@@ -23,6 +24,12 @@ export const fetchWithConfig = async (endpoint) => {
   }
 };
 
+// Handle null safely for the getHistory function
+const safeMap = (data, mapFn) => {
+  if (!data || !Array.isArray(data)) return [];
+  return data.map(mapFn);
+};
+
 export const marketApi = {
   getData: () => fetchWithConfig('/market/data'),
   getSectors: () => fetchWithConfig('/market/sectors'),
@@ -34,7 +41,7 @@ export const marketApi = {
   getInsights: () => fetchWithConfig('/market/insights'),
   getHistory: async (symbol) => {
     const data = await fetchWithConfig(`/market/history/${symbol}`);
-    return data.map(item => ({
+    return safeMap(data, item => ({
       date: item.date,
       price: item.price || 0,
       ma200: typeof item.ma200 === 'number' ? item.ma200 : null

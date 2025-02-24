@@ -27,29 +27,38 @@ const InsightCard = ({ insight }) => {
     }
   };
 
+  // Ensure insight is a valid object with required properties
+  if (!insight || typeof insight !== 'object') {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <p className="text-gray-500">Insight data unavailable</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
       <div className="p-6">
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-              <span>{insight.source}</span>
+              <span>{insight.source || 'Unknown source'}</span>
               <span>•</span>
               <span>{getRelativeTime(insight.publishedTime)}</span>
             </div>
             <a 
-              href={insight.url} 
+              href={insight.url || '#'} 
               target="_blank" 
               rel="noopener noreferrer"
               className="group flex items-start gap-2"
             >
               <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                {insight.title}
+                {insight.title || 'No title available'}
               </h3>
               <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors mt-1" />
             </a>
             <p className="mt-2 text-gray-600 line-clamp-2">
-              {insight.description}
+              {insight.description || 'No description available'}
             </p>
           </div>
           {insight.thumbnail && (
@@ -74,11 +83,13 @@ const KeyInsights = () => {
     const fetchInsights = async () => {
       try {
         const data = await marketApi.getInsights();
-        setInsights(data);
+        // Ensure data is an array, if not, set to empty array
+        setInsights(Array.isArray(data) ? data : []);
         setError(null);
       } catch (err) {
         console.error('Error fetching insights:', err);
         setError('Failed to load market insights');
+        setInsights([]);
       } finally {
         setLoading(false);
       }
@@ -104,11 +115,19 @@ const KeyInsights = () => {
     );
   }
 
-  if (error) {
+  if (error && (!insights || insights.length === 0)) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2">
         <AlertCircle className="text-red-500" />
         <span className="text-red-700">{error}</span>
+      </div>
+    );
+  }
+
+  if (!insights || insights.length === 0) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+        <p className="text-gray-600">No market insights available at this time.</p>
       </div>
     );
   }

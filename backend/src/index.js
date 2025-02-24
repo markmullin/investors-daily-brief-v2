@@ -16,9 +16,24 @@ import websocketService from './services/websocketService.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS middleware
+// CORS middleware - accepting connections from any origin for development
+// In production this should be limited to specific domains
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://market-dashboard-frontend.onrender.com');
+  // Allow both the new static site URL and the old frontend URL
+  const allowedOrigins = [
+    'https://market-dashboard-frontend.onrender.com',
+    'http://localhost:5173',
+    'http://localhost:5000'
+  ];
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    // For requests without origin, allow all during development
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -35,15 +50,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes with error handling
-app.use('/api/market', async (req, res, next) => {
-  try {
-    await marketRoutes(req, res, next);
-  } catch (error) {
-    console.error('Market route error:', error);
-    next(error);
-  }
-});
-
+app.use('/api/market', marketRoutes);
 app.use('/api/market-environment', marketEnvironmentRoutes);
 app.use('/api/industry-analysis', industryAnalysisRoutes);
 app.use('/api/macro-analysis', macroAnalysisRoutes);
@@ -67,6 +74,23 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Root endpoint for basic API info
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Market Dashboard API',
+    version: '2.0.0',
+    status: 'running',
+    endpoints: [
+      '/api/market',
+      '/api/market-environment',
+      '/api/industry-analysis',
+      '/api/macro-analysis',
+      '/api/insights',
+      '/health'
+    ]
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err.message);
@@ -80,7 +104,7 @@ app.use((err, req, res, next) => {
 // Start server
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log('CORS Origin:', 'https://market-dashboard-frontend.onrender.com');
+  console.log(`API available at: http://localhost:${PORT}`);
 });
 
 // Initialize WebSocket
