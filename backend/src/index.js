@@ -11,7 +11,7 @@ import alertRoutes from './routes/alertRoutes.js';
 import enhancedMarketRoutes from './routes/enhancedMarketRoutes.js';
 import monitoringRoutes from './routes/monitoringRoutes.js';
 import relationshipRoutes from './routes/relationshipRoutes.js';
-import { setupWebSocket } from './services/websocketService.js';
+import websocketService from './services/websocketService.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -65,5 +65,5 @@ const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// Setup WebSocket
-setupWebSocket(server);
+// Initialize WebSocket
+websocketService.initialize(server);
