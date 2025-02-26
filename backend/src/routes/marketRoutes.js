@@ -10,8 +10,9 @@ import braveNewsService from '../services/braveNewsService.js';
 
 const router = express.Router();
 
+// Updated CORS settings to allow all origins
 router.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
