@@ -16,27 +16,11 @@ import websocketService from './services/websocketService.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS middleware - accepting connections from any origin for development
-// In production this should be limited to specific domains
+// CORS middleware - allowing all origins for simplicity
 app.use((req, res, next) => {
-  // Allow both the new static site URL and the old frontend URL
-  const allowedOrigins = [
-    'https://market-dashboard-frontend.onrender.com',
-    'http://localhost:5173',
-    'http://localhost:5000'
-  ];
-  
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    // For requests without origin, allow all during development
-    res.header('Access-Control-Allow-Origin', '*');
-  }
-  
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
   
   // Handle OPTIONS request
   if (req.method === 'OPTIONS') {
@@ -69,7 +53,7 @@ app.get('/health', (req, res) => {
       eod: Boolean(process.env.EOD_API_KEY),
       brave: Boolean(process.env.BRAVE_API_KEY)
     },
-    version: '2.0.0',
+    version: '3.0.0',
     timestamp: Date.now()
   });
 });
@@ -78,7 +62,7 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Market Dashboard API',
-    version: '2.0.0',
+    version: '3.0.0',
     status: 'running',
     endpoints: [
       '/api/market',
@@ -105,6 +89,7 @@ app.use((err, req, res, next) => {
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`API available at: http://localhost:${PORT}`);
+  console.log('CORS: Allowing all origins (*)');
 });
 
 // Initialize WebSocket
