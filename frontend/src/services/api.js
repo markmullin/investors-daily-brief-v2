@@ -1,5 +1,17 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://market-dashboard-backend.onrender.com';
+// Updated API Service with caching implementation
+const isProduction = window.location.hostname !== 'localhost';
+const API_BASE_URL = isProduction 
+  ? 'https://market-dashboard-backend.onrender.com'
+  : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
 
+// Log configuration for debugging
+console.log('API Service configuration:', {
+  isProduction,
+  API_BASE_URL,
+  hostname: window.location.hostname
+});
+
+// Enhanced fetch with caching
 export const fetchWithConfig = async (endpoint) => {
   try {
     // Construct URL correctly
@@ -27,23 +39,60 @@ export const fetchWithConfig = async (endpoint) => {
   }
 };
 
+// Enhanced fetch with caching
+export const fetchWithCaching = async (endpoint, cacheDuration = 5 * 60 * 1000) => {
+  const cacheKey = `market_dashboard_cache_${endpoint}`;
+  const cachedData = localStorage.getItem(cacheKey);
+  
+  if (cachedData) {
+    try {
+      const { data, timestamp } = JSON.parse(cachedData);
+      // Check if cache is still valid
+      if (Date.now() - timestamp < cacheDuration) {
+        console.log(`Using cached data for ${endpoint}`);
+        return data;
+      }
+    } catch (e) {
+      console.error('Error parsing cached data', e);
+    }
+  }
+  
+  // If no valid cache, fetch fresh data
+  const freshData = await fetchWithConfig(endpoint);
+  
+  // Cache the fresh data
+  if (freshData) {
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({
+        data: freshData,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.error('Error caching data', e);
+    }
+  }
+  
+  return freshData;
+};
+
 // Handle null safely for the getHistory function
 const safeMap = (data, mapFn) => {
   if (!data || !Array.isArray(data)) return [];
   return data.map(mapFn);
 };
 
+// Updated API with caching
 export const marketApi = {
-  getData: () => fetchWithConfig('/market/data'),
-  getSectors: () => fetchWithConfig('/market/sectors'),
-  getMover: () => fetchWithConfig('/market/mover'),
-  getMacro: () => fetchWithConfig('/market/macro'),
-  getSectorRotation: () => fetchWithConfig('/market/sector-rotation'),
-  getQuote: (symbol) => fetchWithConfig(`/market/quote/${symbol}`),
-  getThemes: () => fetchWithConfig('/market/themes'),
-  getInsights: () => fetchWithConfig('/market/insights'),
+  getData: () => fetchWithCaching('/market/data'),
+  getSectors: () => fetchWithCaching('/market/sectors'),
+  getMover: () => fetchWithCaching('/market/mover'),
+  getMacro: () => fetchWithCaching('/market/macro'),
+  getSectorRotation: () => fetchWithCaching('/market/sector-rotation'),
+  getQuote: (symbol) => fetchWithCaching(`/market/quote/${symbol}`),
+  getThemes: () => fetchWithCaching('/market/themes'),
+  getInsights: () => fetchWithCaching('/market/insights'),
   getHistory: async (symbol) => {
-    const data = await fetchWithConfig(`/market/history/${symbol}`);
+    const data = await fetchWithCaching(`/market/history/${symbol}`);
     return safeMap(data, item => ({
       date: item?.date,
       price: item?.price || 0,
@@ -53,18 +102,18 @@ export const marketApi = {
 };
 
 export const marketEnvironmentApi = {
-  getScore: () => fetchWithConfig('/market-environment/score'),
+  getScore: () => fetchWithCaching('/market-environment/score'),
 };
 
 export const industryAnalysisApi = {
-  getAllPairs: (period = '1y') => fetchWithConfig(`/industry-analysis/all?period=${period}`),
-  getPair: (pairKey, period = '1y') => fetchWithConfig(`/industry-analysis/${pairKey}?period=${period}`),
+  getAllPairs: (period = '1y') => fetchWithCaching(`/industry-analysis/all?period=${period}`),
+  getPair: (pairKey, period = '1y') => fetchWithCaching(`/industry-analysis/${pairKey}?period=${period}`),
 };
 
 export const enhancedIndustryAnalysisApi = {
   getAllPairs: async (period = '1y') => {
     try {
-      return await fetchWithConfig(`/industry-analysis/all?period=${period}`);
+      return await fetchWithCaching(`/industry-analysis/all?period=${period}`);
     } catch (error) {
       console.warn('Enhanced analysis failed, falling back to basic:', error);
       return industryAnalysisApi.getAllPairs(period);
@@ -72,7 +121,7 @@ export const enhancedIndustryAnalysisApi = {
   },
   getPair: async (pairKey, period = '1y') => {
     try {
-      return await fetchWithConfig(`/industry-analysis/${pairKey}?period=${period}`);
+      return await fetchWithCaching(`/industry-analysis/${pairKey}?period=${period}`);
     } catch (error) {
       console.warn('Enhanced analysis failed, falling back to basic:', error);
       return industryAnalysisApi.getPair(pairKey, period);
@@ -81,14 +130,14 @@ export const enhancedIndustryAnalysisApi = {
 };
 
 export const macroAnalysisApi = {
-  getAllGroups: (period = '1y') => fetchWithConfig(`/macro-analysis/all?period=${period}`),
-  getGroup: (groupKey, period = '1y') => fetchWithConfig(`/macro-analysis/${groupKey}?period=${period}`),
+  getAllGroups: (period = '1y') => fetchWithCaching(`/macro-analysis/all?period=${period}`),
+  getGroup: (groupKey, period = '1y') => fetchWithCaching(`/macro-analysis/${groupKey}?period=${period}`),
 };
 
 export const enhancedMacroAnalysisApi = {
   getAllGroups: async (period = '1y') => {
     try {
-      return await fetchWithConfig(`/macro-analysis/all?period=${period}`);
+      return await fetchWithCaching(`/macro-analysis/all?period=${period}`);
     } catch (error) {
       console.warn('Enhanced macro analysis failed, falling back to basic:', error);
       return macroAnalysisApi.getAllGroups(period);
@@ -96,7 +145,7 @@ export const enhancedMacroAnalysisApi = {
   },
   getGroup: async (groupKey, period = '1y') => {
     try {
-      return await fetchWithConfig(`/macro-analysis/${groupKey}?period=${period}`);
+      return await fetchWithCaching(`/macro-analysis/${groupKey}?period=${period}`);
     } catch (error) {
       console.warn('Enhanced macro analysis failed, falling back to basic:', error);
       return macroAnalysisApi.getGroup(groupKey, period);
