@@ -1,0 +1,1832 @@
+{
+  "totalStocks": 20,
+  "validatedStocks": 20,
+  "highQuality": 10,
+  "mediumQuality": 5,
+  "lowQuality": 4,
+  "failed": 1,
+  "stockResults": [
+    {
+      "ticker": "AAPL",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 23,
+            "NetIncomeLoss": 51,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 8,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-29",
+        "latestAnnual": "2024-09-28",
+        "quarterlyAge": 2,
+        "annualAge": 8,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 23,
+            "annual": 8,
+            "latest": "2025-03-29"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-29"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-29"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-29"
+          },
+          "StockholdersEquity": {
+            "quarterly": 65,
+            "annual": 19,
+            "latest": "2025-03-29"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 64,
+            "annual": 17,
+            "latest": "2025-03-29"
+          }
+        }
+      },
+      "recommendations": []
+    },
+    {
+      "ticker": "NVDA",
+      "overallQuality": "LOW",
+      "score": 11.666666666666657,
+      "issues": [
+        "Revenues: Only 0 recent quarters available",
+        "Revenues: Only 2 recent annual periods available",
+        "Quarter-over-quarter revenue growth not calculated"
+      ],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [
+            "Revenues: Only 0 recent quarters available"
+          ],
+          "coverage": {
+            "Revenues": 0,
+            "NetIncomeLoss": 51,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [
+            "Revenues: Only 2 recent annual periods available"
+          ],
+          "coverage": {
+            "Revenues": 6,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 2,
+          "issues": [
+            "Quarter-over-quarter revenue growth not calculated"
+          ]
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 55,
+        "latestQuarterly": null,
+        "latestAnnual": "2022-01-30",
+        "quarterlyAge": null,
+        "annualAge": 41,
+        "issues": [
+          "No quarterly revenue data available",
+          "Annual data is 41 months old"
+        ]
+      },
+      "completeness": {
+        "score": 66.66666666666666,
+        "present": [
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity"
+        ],
+        "missing": [
+          "Revenues",
+          "CommonStockSharesOutstanding"
+        ],
+        "details": {
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-04-27"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-04-27"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-04-27"
+          },
+          "StockholdersEquity": {
+            "quarterly": 65,
+            "annual": 19,
+            "latest": "2025-04-27"
+          }
+        }
+      },
+      "recommendations": [
+        "Significant data quality issues - manual review required",
+        "Missing essential metrics: Revenues, CommonStockSharesOutstanding",
+        "Growth calculation issues detected - review historical data"
+      ]
+    },
+    {
+      "ticker": "MSFT",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 24,
+            "NetIncomeLoss": 51,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 9,
+            "NetIncomeLoss": 18,
+            "Assets": 16
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-31",
+        "latestAnnual": "2024-06-30",
+        "quarterlyAge": 2,
+        "annualAge": 11,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 24,
+            "annual": 9,
+            "latest": "2025-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 63,
+            "annual": 16,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 67,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 63,
+            "annual": 18,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": []
+    },
+    {
+      "ticker": "GOOGL",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 32,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 25,
+            "NetIncomeLoss": 32,
+            "EarningsPerShareBasic": 30
+          }
+        },
+        "annual": {
+          "totalYears": 12,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 9,
+            "NetIncomeLoss": 12,
+            "Assets": 11
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-31",
+        "latestAnnual": "2024-12-31",
+        "quarterlyAge": 2,
+        "annualAge": 5,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 25,
+            "annual": 9,
+            "latest": "2025-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 32,
+            "annual": 12,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 30,
+            "annual": 11,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 40,
+            "annual": 11,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 40,
+            "annual": 13,
+            "latest": "2025-03-31"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 38,
+            "annual": 11,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": []
+    },
+    {
+      "ticker": "AMZN",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 23,
+            "NetIncomeLoss": 51,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 9,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-31",
+        "latestAnnual": "2024-12-31",
+        "quarterlyAge": 2,
+        "annualAge": 5,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 23,
+            "annual": 9,
+            "latest": "2025-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 65,
+            "annual": 19,
+            "latest": "2025-03-31"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": []
+    },
+    {
+      "ticker": "TSLA",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 45,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 11,
+            "NetIncomeLoss": 45,
+            "EarningsPerShareBasic": 30
+          }
+        },
+        "annual": {
+          "totalYears": 16,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 5,
+            "NetIncomeLoss": 16,
+            "Assets": 15
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-31",
+        "latestAnnual": "2024-12-31",
+        "quarterlyAge": 2,
+        "annualAge": 5,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 11,
+            "annual": 5,
+            "latest": "2025-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 45,
+            "annual": 16,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 30,
+            "annual": 10,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 57,
+            "annual": 15,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 57,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 57,
+            "annual": 15,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": []
+    },
+    {
+      "ticker": "META",
+      "overallQuality": "MEDIUM",
+      "score": 83.33333333333333,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 42,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 25,
+            "NetIncomeLoss": 42,
+            "EarningsPerShareBasic": 42
+          }
+        },
+        "annual": {
+          "totalYears": 15,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 9,
+            "NetIncomeLoss": 15,
+            "Assets": 14
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-31",
+        "latestAnnual": "2024-12-31",
+        "quarterlyAge": 2,
+        "annualAge": 5,
+        "issues": []
+      },
+      "completeness": {
+        "score": 83.33333333333333,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity"
+        ],
+        "missing": [
+          "CommonStockSharesOutstanding"
+        ],
+        "details": {
+          "Revenues": {
+            "quarterly": 25,
+            "annual": 9,
+            "latest": "2025-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 42,
+            "annual": 15,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 42,
+            "annual": 15,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 53,
+            "annual": 14,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 53,
+            "annual": 14,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": [
+        "Some data quality issues detected - review recommendations",
+        "Missing essential metrics: CommonStockSharesOutstanding"
+      ]
+    },
+    {
+      "ticker": "BRK.B",
+      "overallQuality": "FAILED",
+      "score": 0,
+      "issues": [
+        "Data validation failed: Ticker BRK.B not found in SEC database"
+      ],
+      "metrics": {
+        "quarterly": {
+          "issues": []
+        },
+        "annual": {
+          "issues": []
+        },
+        "growth": {
+          "issues": []
+        },
+        "consistency": {
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "issues": [],
+        "quarterlyAge": null
+      },
+      "completeness": {
+        "missing": [],
+        "present": []
+      },
+      "recommendations": [
+        "Unable to validate - check EDGAR data availability"
+      ]
+    },
+    {
+      "ticker": "JNJ",
+      "overallQuality": "MEDIUM",
+      "score": 83.33333333333333,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 23,
+            "NetIncomeLoss": 41,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 15,
+          "recentYears": 4,
+          "issues": [],
+          "coverage": {
+            "Revenues": 8,
+            "NetIncomeLoss": 15,
+            "Assets": 14
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-30",
+        "latestAnnual": "2024-12-29",
+        "quarterlyAge": 2,
+        "annualAge": 5,
+        "issues": []
+      },
+      "completeness": {
+        "score": 83.33333333333333,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity"
+        ],
+        "missing": [
+          "CommonStockSharesOutstanding"
+        ],
+        "details": {
+          "Revenues": {
+            "quarterly": 23,
+            "annual": 8,
+            "latest": "2025-03-30"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 41,
+            "annual": 15,
+            "latest": "2025-03-30"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 17,
+            "latest": "2025-03-30"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 14,
+            "latest": "2025-03-30"
+          },
+          "StockholdersEquity": {
+            "quarterly": 9,
+            "annual": 0,
+            "latest": "2025-03-30"
+          }
+        }
+      },
+      "recommendations": [
+        "Some data quality issues detected - review recommendations",
+        "Missing essential metrics: CommonStockSharesOutstanding"
+      ]
+    },
+    {
+      "ticker": "V",
+      "overallQuality": "MEDIUM",
+      "score": 61.66666666666666,
+      "issues": [
+        "EarningsPerShareBasic: No quarterly data available"
+      ],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [
+            "EarningsPerShareBasic: No quarterly data available"
+          ],
+          "coverage": {
+            "Revenues": 20,
+            "NetIncomeLoss": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 6,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-31",
+        "latestAnnual": "2024-09-30",
+        "quarterlyAge": 2,
+        "annualAge": 8,
+        "issues": []
+      },
+      "completeness": {
+        "score": 66.66666666666666,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "Assets",
+          "StockholdersEquity"
+        ],
+        "missing": [
+          "EarningsPerShareBasic",
+          "CommonStockSharesOutstanding"
+        ],
+        "details": {
+          "Revenues": {
+            "quarterly": 20,
+            "annual": 6,
+            "latest": "2025-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 10,
+            "annual": 6,
+            "latest": "2011-06-30"
+          }
+        }
+      },
+      "recommendations": [
+        "Some data quality issues detected - review recommendations",
+        "Missing essential metrics: EarningsPerShareBasic, CommonStockSharesOutstanding"
+      ]
+    },
+    {
+      "ticker": "JPM",
+      "overallQuality": "LOW",
+      "score": 58.33333333333333,
+      "issues": [
+        "Revenues: Only 0 recent quarters available"
+      ],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [
+            "Revenues: Only 0 recent quarters available"
+          ],
+          "coverage": {
+            "Revenues": 20,
+            "NetIncomeLoss": 51,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 18,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 80,
+        "latestQuarterly": "2014-09-30",
+        "latestAnnual": "2024-12-31",
+        "quarterlyAge": 130,
+        "annualAge": 5,
+        "issues": [
+          "Quarterly data is 130 months old"
+        ]
+      },
+      "completeness": {
+        "score": 83.33333333333333,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity"
+        ],
+        "missing": [
+          "CommonStockSharesOutstanding"
+        ],
+        "details": {
+          "Revenues": {
+            "quarterly": 20,
+            "annual": 18,
+            "latest": "2014-09-30"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 66,
+            "annual": 17,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": [
+        "Significant data quality issues - manual review required",
+        "Missing essential metrics: CommonStockSharesOutstanding",
+        "Quarterly data is stale - check for recent 10-Q filings"
+      ]
+    },
+    {
+      "ticker": "WMT",
+      "overallQuality": "MEDIUM",
+      "score": 78.33333333333333,
+      "issues": [
+        "EarningsPerShareBasic: Only 0 recent quarters available"
+      ],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [
+            "EarningsPerShareBasic: Only 0 recent quarters available"
+          ],
+          "coverage": {
+            "Revenues": 23,
+            "NetIncomeLoss": 51,
+            "EarningsPerShareBasic": 2
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 9,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-04-30",
+        "latestAnnual": "2025-01-31",
+        "quarterlyAge": 1,
+        "annualAge": 4,
+        "issues": []
+      },
+      "completeness": {
+        "score": 83.33333333333333,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity"
+        ],
+        "missing": [
+          "CommonStockSharesOutstanding"
+        ],
+        "details": {
+          "Revenues": {
+            "quarterly": 23,
+            "annual": 9,
+            "latest": "2025-04-30"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-04-30"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 2,
+            "annual": 0,
+            "latest": "2010-07-31"
+          },
+          "Assets": {
+            "quarterly": 68,
+            "annual": 17,
+            "latest": "2025-04-30"
+          },
+          "StockholdersEquity": {
+            "quarterly": 68,
+            "annual": 17,
+            "latest": "2025-04-30"
+          }
+        }
+      },
+      "recommendations": [
+        "Some data quality issues detected - review recommendations",
+        "Missing essential metrics: CommonStockSharesOutstanding"
+      ]
+    },
+    {
+      "ticker": "UNH",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 51,
+            "NetIncomeLoss": 51,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 18,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-31",
+        "latestAnnual": "2024-12-31",
+        "quarterlyAge": 2,
+        "annualAge": 5,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 27,
+            "annual": 9,
+            "latest": "2015-06-30"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": []
+    },
+    {
+      "ticker": "PG",
+      "overallQuality": "MEDIUM",
+      "score": 66.66666666666666,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 24,
+            "NetIncomeLoss": 49,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 17,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 11,
+            "NetIncomeLoss": 17,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-31",
+        "latestAnnual": "2024-06-30",
+        "quarterlyAge": 2,
+        "annualAge": 11,
+        "issues": []
+      },
+      "completeness": {
+        "score": 66.66666666666666,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets"
+        ],
+        "missing": [
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "details": {
+          "Revenues": {
+            "quarterly": 24,
+            "annual": 11,
+            "latest": "2025-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 49,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 64,
+            "annual": 17,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": [
+        "Some data quality issues detected - review recommendations",
+        "Missing essential metrics: StockholdersEquity, CommonStockSharesOutstanding"
+      ]
+    },
+    {
+      "ticker": "HD",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 23,
+            "NetIncomeLoss": 51,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 9,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-05-04",
+        "latestAnnual": "2025-02-02",
+        "quarterlyAge": 1,
+        "annualAge": 4,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 23,
+            "annual": 9,
+            "latest": "2025-05-04"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-05-04"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-05-04"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-05-04"
+          },
+          "StockholdersEquity": {
+            "quarterly": 65,
+            "annual": 19,
+            "latest": "2025-05-04"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-05-04"
+          }
+        }
+      },
+      "recommendations": []
+    },
+    {
+      "ticker": "MA",
+      "overallQuality": "LOW",
+      "score": 30.33333333333333,
+      "issues": [
+        "Revenues: Only 0 recent quarters available",
+        "NetIncomeLoss: Only 0 recent quarters available",
+        "Revenues: Only 2 recent annual periods available",
+        "NetIncomeLoss: Only 0 recent annual periods available",
+        "Five-year revenue CAGR not calculated"
+      ],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 6,
+          "issues": [
+            "Revenues: Only 0 recent quarters available",
+            "NetIncomeLoss: Only 0 recent quarters available"
+          ],
+          "coverage": {
+            "Revenues": 15,
+            "NetIncomeLoss": 18,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 17,
+          "recentYears": 5,
+          "issues": [
+            "Revenues: Only 2 recent annual periods available",
+            "NetIncomeLoss: Only 0 recent annual periods available"
+          ],
+          "coverage": {
+            "Revenues": 4,
+            "NetIncomeLoss": 7,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 2,
+          "issues": [
+            "Five-year revenue CAGR not calculated"
+          ]
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 65,
+        "latestQuarterly": "2022-09-30",
+        "latestAnnual": "2021-12-31",
+        "quarterlyAge": 33,
+        "annualAge": 42,
+        "issues": [
+          "Quarterly data is 33 months old",
+          "Annual data is 42 months old"
+        ]
+      },
+      "completeness": {
+        "score": 83.33333333333333,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity"
+        ],
+        "missing": [
+          "CommonStockSharesOutstanding"
+        ],
+        "details": {
+          "Revenues": {
+            "quarterly": 15,
+            "annual": 4,
+            "latest": "2022-09-30"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 18,
+            "annual": 7,
+            "latest": "2014-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": [
+        "Significant data quality issues - manual review required",
+        "Missing essential metrics: CommonStockSharesOutstanding",
+        "Quarterly data is stale - check for recent 10-Q filings",
+        "Growth calculation issues detected - review historical data"
+      ]
+    },
+    {
+      "ticker": "DIS",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 22,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 22,
+            "NetIncomeLoss": 22,
+            "EarningsPerShareBasic": 22
+          }
+        },
+        "annual": {
+          "totalYears": 8,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 8,
+            "NetIncomeLoss": 8,
+            "Assets": 7
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-29",
+        "latestAnnual": "2024-09-28",
+        "quarterlyAge": 2,
+        "annualAge": 8,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 22,
+            "annual": 8,
+            "latest": "2025-03-29"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 22,
+            "annual": 8,
+            "latest": "2025-03-29"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 22,
+            "annual": 8,
+            "latest": "2025-03-29"
+          },
+          "Assets": {
+            "quarterly": 26,
+            "annual": 7,
+            "latest": "2025-03-29"
+          },
+          "StockholdersEquity": {
+            "quarterly": 26,
+            "annual": 7,
+            "latest": "2025-03-29"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 6,
+            "annual": 3,
+            "latest": "2024-12-28"
+          }
+        }
+      },
+      "recommendations": []
+    },
+    {
+      "ticker": "PYPL",
+      "overallQuality": "LOW",
+      "score": 55,
+      "issues": [
+        "Revenues: Only 0 recent quarters available",
+        "Revenues: Only 0 recent annual periods available",
+        "Five-year revenue CAGR not calculated"
+      ],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 33,
+          "recentQuarters": 6,
+          "issues": [
+            "Revenues: Only 0 recent quarters available"
+          ],
+          "coverage": {
+            "Revenues": 10,
+            "NetIncomeLoss": 33,
+            "EarningsPerShareBasic": 33
+          }
+        },
+        "annual": {
+          "totalYears": 12,
+          "recentYears": 5,
+          "issues": [
+            "Revenues: Only 0 recent annual periods available"
+          ],
+          "coverage": {
+            "Revenues": 4,
+            "NetIncomeLoss": 12,
+            "Assets": 11
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 2,
+          "issues": [
+            "Five-year revenue CAGR not calculated"
+          ]
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 65,
+        "latestQuarterly": "2020-03-31",
+        "latestAnnual": "2019-12-31",
+        "quarterlyAge": 63,
+        "annualAge": 66,
+        "issues": [
+          "Quarterly data is 63 months old",
+          "Annual data is 66 months old"
+        ]
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 10,
+            "annual": 4,
+            "latest": "2020-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 33,
+            "annual": 12,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 33,
+            "annual": 12,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 41,
+            "annual": 11,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 41,
+            "annual": 13,
+            "latest": "2025-03-31"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 39,
+            "annual": 11,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": [
+        "Significant data quality issues - manual review required",
+        "Quarterly data is stale - check for recent 10-Q filings",
+        "Growth calculation issues detected - review historical data"
+      ]
+    },
+    {
+      "ticker": "BAC",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 52,
+          "recentQuarters": 6,
+          "issues": [],
+          "coverage": {
+            "Revenues": 52,
+            "NetIncomeLoss": 52,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 18,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-03-31",
+        "latestAnnual": "2024-12-31",
+        "quarterlyAge": 2,
+        "annualAge": 5,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 52,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 52,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-03-31"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          },
+          "StockholdersEquity": {
+            "quarterly": 69,
+            "annual": 19,
+            "latest": "2025-03-31"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-03-31"
+          }
+        }
+      },
+      "recommendations": []
+    },
+    {
+      "ticker": "ADBE",
+      "overallQuality": "HIGH",
+      "score": 100,
+      "issues": [],
+      "metrics": {
+        "quarterly": {
+          "totalQuarters": 51,
+          "recentQuarters": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 51,
+            "NetIncomeLoss": 51,
+            "EarningsPerShareBasic": 51
+          }
+        },
+        "annual": {
+          "totalYears": 18,
+          "recentYears": 5,
+          "issues": [],
+          "coverage": {
+            "Revenues": 18,
+            "NetIncomeLoss": 18,
+            "Assets": 17
+          }
+        },
+        "growth": {
+          "calculations": 3,
+          "successful": 3,
+          "issues": []
+        },
+        "consistency": {
+          "checks": 1,
+          "passed": 0,
+          "issues": []
+        }
+      },
+      "dataFreshness": {
+        "score": 100,
+        "latestQuarterly": "2025-02-28",
+        "latestAnnual": "2024-11-29",
+        "quarterlyAge": 3,
+        "annualAge": 6,
+        "issues": []
+      },
+      "completeness": {
+        "score": 100,
+        "present": [
+          "Revenues",
+          "NetIncomeLoss",
+          "EarningsPerShareBasic",
+          "Assets",
+          "StockholdersEquity",
+          "CommonStockSharesOutstanding"
+        ],
+        "missing": [],
+        "details": {
+          "Revenues": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-02-28"
+          },
+          "NetIncomeLoss": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-02-28"
+          },
+          "EarningsPerShareBasic": {
+            "quarterly": 51,
+            "annual": 18,
+            "latest": "2025-02-28"
+          },
+          "Assets": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-02-28"
+          },
+          "StockholdersEquity": {
+            "quarterly": 65,
+            "annual": 19,
+            "latest": "2025-02-28"
+          },
+          "CommonStockSharesOutstanding": {
+            "quarterly": 65,
+            "annual": 17,
+            "latest": "2025-02-28"
+          }
+        }
+      },
+      "recommendations": []
+    }
+  ],
+  "summary": {
+    "overallHealthScore": "76.4",
+    "qualityDistribution": {
+      "HIGH": "50.0",
+      "MEDIUM": "25.0",
+      "LOW": "20.0",
+      "FAILED": "5.0"
+    },
+    "stocksNeedingAttention": 5,
+    "dataCompletenessIssues": 8,
+    "freshnessIssues": 4
+  },
+  "recommendations": [
+    "1 stocks failed validation - investigate EDGAR data availability",
+    "4 stocks have low data quality - prioritize for manual review",
+    "3 stocks have stale quarterly data - check for recent 10-Q filings",
+    "8 stocks missing essential metrics - review EDGAR concepts"
+  ],
+  "timestamp": "2025-06-09T20:35:05.549Z"
+}

@@ -1,0 +1,18 @@
+{
+  "symbol": "QQQ.US",
+  "totalPoints": 422,
+  "withMA200": 422,
+  "withRSI": 422,
+  "ma200Percentage": 100,
+  "rsiPercentage": 100,
+  "sample": {
+    "point200": {
+      "date": "2024-06-28",
+      "price": 476.9569
+    },
+    "lastPoint": {
+      "date": "2025-05-19",
+      "price": 522.01
+    }
+  }
+}

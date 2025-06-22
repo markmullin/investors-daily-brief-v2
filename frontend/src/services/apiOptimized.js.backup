@@ -1,0 +1,349 @@
+// Optimized API Service with batch requests and better caching
+import { openDB } from 'idb';
+
+const isProduction = window.location.hostname !== 'localhost';
+const API_BASE_URL = isProduction 
+  ? 'https://market-dashboard-backend.onrender.com'
+  : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
+
+// IndexedDB setup for better caching
+let db;
+const DB_NAME = 'MarketDashboardCache';
+const DB_VERSION = 1;
+const CACHE_STORE = 'apiCache';
+
+async function initDB() {
+  if (!db) {
+    db = await openDB(DB_NAME, DB_VERSION, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains(CACHE_STORE)) {
+          const store = db.createObjectStore(CACHE_STORE, { keyPath: 'key' });
+          store.createIndex('timestamp', 'timestamp');
+        }
+      }
+    });
+  }
+  return db;
+}
+
+// Initialize DB
+initDB().catch(console.error);
+
+// Request queue for batching
+const requestQueue = {
+  history: new Map(),
+  quotes: new Map(),
+  timers: {
+    history: null,
+    quotes: null
+  }
+};
+
+// Enhanced fetch with retry and timeout
+async function fetchWithRetry(url, options = {}, retries = 2) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    
+    clearTimeout(timeout);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeout);
+    
+    if (retries > 0 && error.name !== 'AbortError') {
+      console.log(`Retrying request to ${url}, ${retries} attempts remaining`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    
+    throw error;
+  }
+}
+
+// IndexedDB cache operations
+async function getCached(key) {
+  try {
+    const db = await initDB();
+    const entry = await db.get(CACHE_STORE, key);
+    
+    if (entry && entry.data) {
+      const age = Date.now() - entry.timestamp;
+      if (age < entry.maxAge) {
+        console.log(`Cache hit for ${key}`);
+        return entry.data;
+      }
+    }
+  } catch (error) {
+    console.error('Error reading from cache:', error);
+  }
+  return null;
+}
+
+async function setCached(key, data, maxAge = 300000) {
+  try {
+    const db = await initDB();
+    await db.put(CACHE_STORE, {
+      key,
+      data,
+      timestamp: Date.now(),
+      maxAge
+    });
+    
+    // Cleanup old entries
+    const transaction = db.transaction(CACHE_STORE, 'readwrite');
+    const store = transaction.objectStore(CACHE_STORE);
+    const index = store.index('timestamp');
+    const oldTimestamp = Date.now() - 3600000; // 1 hour ago
+    
+    const range = IDBKeyRange.upperBound(oldTimestamp);
+    const oldEntries = await index.getAllKeys(range);
+    
+    for (const key of oldEntries) {
+      await store.delete(key);
+    }
+  } catch (error) {
+    console.error('Error writing to cache:', error);
+  }
+}
+
+// Batch request handlers
+async function processBatchHistory() {
+  const symbols = Array.from(requestQueue.history.keys());
+  if (symbols.length === 0) return;
+  
+  const callbacks = new Map(requestQueue.history);
+  requestQueue.history.clear();
+  
+  try {
+    console.log(`Processing batch history request for ${symbols.length} symbols`);
+    
+    const response = await fetchWithRetry(`${API_BASE_URL}/api/batch/history`, {
+      method: 'POST',
+      body: JSON.stringify({ symbols, period: '1y' })
+    });
+    
+    // Process results
+    for (const [symbol, result] of Object.entries(response)) {
+      const callback = callbacks.get(symbol);
+      if (callback) {
+        if (result.error) {
+          callback.reject(new Error(result.error));
+        } else {
+          // Cache individual results
+          const cacheKey = `history_${symbol}_1y`;
+          await setCached(cacheKey, result.data, 300000); // 5 minutes
+          callback.resolve(result.data);
+        }
+      }
+    }
+  } catch (error) {
+    // Reject all pending callbacks
+    for (const callback of callbacks.values()) {
+      callback.reject(error);
+    }
+  }
+}
+
+async function processBatchQuotes() {
+  const symbols = Array.from(requestQueue.quotes.keys());
+  if (symbols.length === 0) return;
+  
+  const callbacks = new Map(requestQueue.quotes);
+  requestQueue.quotes.clear();
+  
+  try {
+    console.log(`Processing batch quotes request for ${symbols.length} symbols`);
+    
+    const response = await fetchWithRetry(`${API_BASE_URL}/api/batch/quotes`, {
+      method: 'POST',
+      body: JSON.stringify({ symbols })
+    });
+    
+    // Process results
+    for (const [symbol, result] of Object.entries(response)) {
+      const callback = callbacks.get(symbol);
+      if (callback) {
+        if (result.error) {
+          callback.reject(new Error(result.error));
+        } else {
+          // Cache individual results
+          const cacheKey = `quote_${symbol}`;
+          await setCached(cacheKey, result.quote, 60000); // 1 minute
+          callback.resolve(result.quote);
+        }
+      }
+    }
+  } catch (error) {
+    // Reject all pending callbacks
+    for (const callback of callbacks.values()) {
+      callback.reject(error);
+    }
+  }
+}
+
+// Queue a request for batching
+function queueRequest(type, symbol, period = '1y') {
+  return new Promise((resolve, reject) => {
+    const queue = requestQueue[type];
+    queue.set(symbol, { resolve, reject, period });
+    
+    // Clear existing timer
+    if (requestQueue.timers[type]) {
+      clearTimeout(requestQueue.timers[type]);
+    }
+    
+    // Set new timer - wait 50ms to collect more requests
+    requestQueue.timers[type] = setTimeout(() => {
+      if (type === 'history') {
+        processBatchHistory();
+      } else if (type === 'quotes') {
+        processBatchQuotes();
+      }
+    }, 50);
+  });
+}
+
+// Optimized API endpoints
+export const marketApi = {
+  async getData() {
+    const cacheKey = 'market_data';
+    const cached = await getCached(cacheKey);
+    if (cached) return cached;
+    
+    const data = await fetchWithRetry(`${API_BASE_URL}/api/market/data`);
+    await setCached(cacheKey, data, 60000); // 1 minute cache
+    return data;
+  },
+  
+  async getSP500Top() {
+    const cacheKey = 'sp500_top';
+    const cached = await getCached(cacheKey);
+    if (cached) return cached;
+    
+    const data = await fetchWithRetry(`${API_BASE_URL}/api/market/sp500-top`);
+    await setCached(cacheKey, data, 300000); // 5 minutes cache
+    return data;
+  },
+  
+  async getSectors(period = '1d') {
+    const cacheKey = `sectors_${period}`;
+    const cached = await getCached(cacheKey);
+    if (cached) return cached;
+    
+    const data = await fetchWithRetry(`${API_BASE_URL}/api/market/sectors/${period}`);
+    await setCached(cacheKey, data, 180000); // 3 minutes cache
+    return data;
+  },
+  
+  async getMacro() {
+    const cacheKey = 'macro_data';
+    const cached = await getCached(cacheKey);
+    if (cached) return cached;
+    
+    const data = await fetchWithRetry(`${API_BASE_URL}/api/market/macro`);
+    await setCached(cacheKey, data, 180000); // 3 minutes cache
+    return data;
+  },
+  
+  async getQuote(symbol) {
+    // Use batch queue for quotes
+    return queueRequest('quotes', symbol);
+  },
+  
+  async getHistory(symbol, period = '1y') {
+    const cacheKey = `history_${symbol}_${period}`;
+    const cached = await getCached(cacheKey);
+    if (cached) return cached;
+    
+    // Use batch queue for history
+    if (period === '1y') {
+      return queueRequest('history', symbol, period);
+    } else {
+      // For non-1y periods, use direct request
+      const data = await fetchWithRetry(`${API_BASE_URL}/api/market/history/${symbol}?period=${period}`);
+      await setCached(cacheKey, data, 300000); // 5 minutes cache
+      return data;
+    }
+  },
+  
+  async getThemes() {
+    const cacheKey = 'themes';
+    const cached = await getCached(cacheKey);
+    if (cached) return cached;
+    
+    const data = await fetchWithRetry(`${API_BASE_URL}/api/market/themes`);
+    await setCached(cacheKey, data, 600000); // 10 minutes cache
+    return data;
+  },
+  
+  async getInsights() {
+    const cacheKey = 'insights';
+    const cached = await getCached(cacheKey);
+    if (cached) return cached;
+    
+    const data = await fetchWithRetry(`${API_BASE_URL}/api/market/insights`);
+    await setCached(cacheKey, data, 600000); // 10 minutes cache
+    return data;
+  },
+  
+  // Batch fetch multiple histories at once
+  async getBatchHistory(symbols, period = '1y') {
+    const response = await fetchWithRetry(`${API_BASE_URL}/api/batch/history`, {
+      method: 'POST',
+      body: JSON.stringify({ symbols, period })
+    });
+    
+    // Cache individual results
+    for (const [symbol, result] of Object.entries(response)) {
+      if (!result.error && result.data) {
+        const cacheKey = `history_${symbol}_${period}`;
+        await setCached(cacheKey, result.data, 300000); // 5 minutes
+      }
+    }
+    
+    return response;
+  }
+};
+
+// Export other API services
+export { marketEnvironmentApi } from './api.js';
+export { macroeconomicApi } from './api.js';
+
+// Clear old cache entries on startup
+async function clearOldCache() {
+  try {
+    const db = await initDB();
+    const transaction = db.transaction(CACHE_STORE, 'readwrite');
+    const store = transaction.objectStore(CACHE_STORE);
+    const index = store.index('timestamp');
+    
+    const oldTimestamp = Date.now() - 3600000; // 1 hour ago
+    const range = IDBKeyRange.upperBound(oldTimestamp);
+    const oldKeys = await index.getAllKeys(range);
+    
+    for (const key of oldKeys) {
+      await store.delete(key);
+    }
+    
+    console.log(`Cleared ${oldKeys.length} old cache entries`);
+  } catch (error) {
+    console.error('Error clearing old cache:', error);
+  }
+}
+
+clearOldCache();

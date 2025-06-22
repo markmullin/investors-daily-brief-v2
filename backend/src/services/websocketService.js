@@ -22,15 +22,15 @@ class WebSocketService {
       clientTracking: true
     });
     
-    // Add this line right here, before the this.wss.on line:
     this.wss = wss;
 
-    // Then continue with the existing code:
     this.wss.on('connection', (ws) => {
       this.handleConnection(ws);
     });
 
-    this.startDataUpdates();
+    // 🔧 FIX: Don't start data updates immediately - wait for first client
+    console.log('✅ WebSocket server initialized without automatic data fetching');
+    // Removed: this.startDataUpdates();
 }
 
   handleConnection(ws) {
@@ -49,6 +49,13 @@ class WebSocketService {
 
     ws.on('close', () => {
       this.clients.delete(ws);
+      
+      // Stop data updates if no clients
+      if (this.clients.size === 0 && this.dataUpdateInterval) {
+        clearInterval(this.dataUpdateInterval);
+        this.dataUpdateInterval = null;
+        console.log('📡 Stopped data updates - no active clients');
+      }
     });
 
     ws.on('error', (error) => {
@@ -56,8 +63,14 @@ class WebSocketService {
       this.handleReconnect(ws);
     });
 
-    // Send initial data
-    this.sendInitialData(ws);
+    // 🔧 FIX: Start data updates only when first client connects
+    if (this.clients.size === 1 && !this.dataUpdateInterval) {
+      console.log('📡 Starting data updates - first client connected');
+      this.startDataUpdates();
+    }
+
+    // 🔧 FIX: Send initial data with error handling that doesn't block
+    setImmediate(() => this.sendInitialDataSafely(ws));
   }
 
   async handleMessage(ws, data) {
@@ -79,12 +92,17 @@ class WebSocketService {
     }
     symbols.forEach(symbol => ws.subscriptions.add(symbol));
     
-    // Send immediate data for subscribed symbols
-    const quotes = await marketService.getDataForSymbols(symbols);
-    this.sendToClient(ws, {
-      type: 'quotes',
-      data: quotes
-    });
+    // Send immediate data for subscribed symbols with error handling
+    try {
+      const quotes = await marketService.getDataForSymbols(symbols);
+      this.sendToClient(ws, {
+        type: 'quotes',
+        data: quotes
+      });
+    } catch (error) {
+      console.warn('Failed to fetch subscription data:', error.message);
+      this.sendError(ws, 'Failed to fetch data for subscribed symbols');
+    }
   }
 
   handleUnsubscribe(ws, symbols) {
@@ -93,11 +111,20 @@ class WebSocketService {
     }
   }
 
-  async sendInitialData(ws) {
+  // 🔧 FIX: Safe initial data sending that doesn't block startup
+  async sendInitialDataSafely(ws) {
     try {
+      console.log('📡 Attempting to send initial data to WebSocket client...');
+      
       const [marketData, sectorData] = await Promise.all([
-        marketService.getData(),
-        marketService.getSectorData()
+        marketService.getData().catch(err => {
+          console.warn('Failed to fetch market data:', err.message);
+          return { error: 'Market data unavailable' };
+        }),
+        marketService.getSectorData().catch(err => {
+          console.warn('Failed to fetch sector data:', err.message);
+          return { error: 'Sector data unavailable' };
+        })
       ]);
 
       this.sendToClient(ws, {
@@ -107,10 +134,23 @@ class WebSocketService {
           sectors: sectorData
         }
       });
+      
+      console.log('✅ Initial data sent to WebSocket client');
     } catch (error) {
-      console.error('Error sending initial data:', error);
-      this.sendError(ws, 'Failed to load initial data');
+      console.warn('Error sending initial data (non-blocking):', error.message);
+      this.sendToClient(ws, {
+        type: 'initial',
+        data: {
+          market: { error: 'Market data unavailable' },
+          sectors: { error: 'Sector data unavailable' }
+        }
+      });
     }
+  }
+
+  async sendInitialData(ws) {
+    // Keep old method for compatibility, but make it safe
+    return this.sendInitialDataSafely(ws);
   }
 
   startDataUpdates() {
@@ -119,8 +159,18 @@ class WebSocketService {
       clearInterval(this.dataUpdateInterval);
     }
 
-    // Start new update interval
+    console.log('📡 Starting WebSocket data updates (every 30 seconds)');
+
+    // 🔧 FIX: Longer interval and better error handling
     this.dataUpdateInterval = setInterval(async () => {
+      if (this.clients.size === 0) {
+        // No clients, stop updates
+        clearInterval(this.dataUpdateInterval);
+        this.dataUpdateInterval = null;
+        console.log('📡 Stopped data updates - no clients');
+        return;
+      }
+
       try {
         const marketData = await marketService.getData();
         this.broadcast({
@@ -128,9 +178,10 @@ class WebSocketService {
           data: marketData
         });
       } catch (error) {
-        console.error('Data update error:', error);
+        console.warn('Data update error (non-blocking):', error.message);
+        // Don't stop the interval, just skip this update
       }
-    }, 5000); // Update every 5 seconds
+    }, 30000); // 🔧 FIX: Increased to 30 seconds to reduce API load
   }
 
   handleReconnect(ws) {
@@ -148,7 +199,11 @@ class WebSocketService {
 
   sendToClient(ws, data) {
     if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(data));
+      try {
+        ws.send(JSON.stringify(data));
+      } catch (error) {
+        console.warn('Failed to send WebSocket message:', error.message);
+      }
     }
   }
 
@@ -163,6 +218,26 @@ class WebSocketService {
       type: 'error',
       message
     });
+  }
+
+  // 🔧 NEW: Graceful shutdown
+  shutdown() {
+    if (this.dataUpdateInterval) {
+      clearInterval(this.dataUpdateInterval);
+      this.dataUpdateInterval = null;
+    }
+    
+    this.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.close();
+      }
+    });
+    
+    if (this.wss) {
+      this.wss.close();
+    }
+    
+    console.log('📡 WebSocket service shut down gracefully');
   }
 }
 

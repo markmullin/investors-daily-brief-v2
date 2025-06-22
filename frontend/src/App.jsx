@@ -1,29 +1,32 @@
-import { useState, useEffect, useMemo } from 'react';
-import { ArrowUp, ArrowDown, AlertCircle, TrendingUp } from 'lucide-react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
 import { ViewModeProvider, useViewMode } from './context/ViewModeContext';
-import { GraduationCap } from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from 'recharts';
-import SectorRotation from './components/SectorRotation';
-import SectorBarChart from './components/SectorBarChart';
-import SearchBar from './components/SearchBar';
-import StockModal from './components/StockModal';
-import InfoTooltip from './components/InfoTooltip';
 import { marketApi } from './services/api';
-import MarketThemes from './components/MarketThemes';
-import KeyInsights from './components/KeyInsights';
-import MarketEnvironment from './components/MarketEnvironment';
-import IndustryAnalysis from './components/IndustryAnalysis/IndustryAnalysis';
-import MacroAnalysis from './components/MacroAnalysis/MacroAnalysis';
-import { MonitoringProvider } from './context/MonitoringContext';
-import MonitoringDisplay from './components/MonitoringDisplay';
+
+// Lazy load heavy components
+const SectorPerformanceNew = lazy(() => import('./components/SectorPerformanceNew'));
+const SearchBar = lazy(() => import('./components/SearchBar'));
+const StockModal = lazy(() => import('./components/StockModal'));
+const MarketThemes = lazy(() => import('./components/MarketThemes'));
+const AIInsights = lazy(() => import('./components/AIInsights')); // 🚀 UPDATED: New AI-powered insights
+const KeyRelationships = lazy(() => import('./components/KeyRelationships'));
+const MacroeconomicCarousel = lazy(() => import('./components/MacroeconomicCarousel'));
+const NewsTicker = lazy(() => import('./components/NewsTicker'));
+const TourButton = lazy(() => import('./components/TourButton'));
+const MarketMetricsCarousel = lazy(() => import('./components/MarketMetricsCarousel'));
+const PortfolioTracker = lazy(() => import('./components/PortfolioTracker'));
+
+// Risk Positioning System
+const RiskPositioningDashboard = lazy(() => import('./components/RiskPositioning/RiskPositioningDashboard'));
+
+// Loading component
+function LoadingSpinner() {
+  return (
+    <div className="flex justify-center items-center p-4">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    </div>
+  );
+}
 
 function ViewToggle() {
   const { viewMode, setViewMode } = useViewMode();
@@ -39,180 +42,25 @@ function ViewToggle() {
   };
 
   return (
-    <div className="flex gap-2 bg-gray-100 p-1 rounded-md">
+    <div className="flex gap-0.5">
       <button
         onClick={handleBasicClick}
-        className={`flex items-center gap-1 px-3 py-1.5 rounded ${viewMode === 'basic'
-          ? 'bg-white text-blue-600 shadow-sm'
+        className={`px-3 py-1.5 text-sm ${viewMode === 'basic'
+          ? 'text-gray-800 font-medium'
           : 'text-gray-600'
           } transition-all duration-200`}
       >
-        <GraduationCap size={16} />
-        <span>Basic View</span>
+        Basic
       </button>
       <button
         onClick={handleAdvancedClick}
-        className={`flex items-center gap-1 px-3 py-1.5 rounded ${viewMode === 'advanced'
-          ? 'bg-white text-blue-600 shadow-sm'
+        className={`px-3 py-1.5 text-sm ${viewMode === 'advanced'
+          ? 'text-gray-800 font-medium'
           : 'text-gray-600'
           } transition-all duration-200`}
       >
-        <TrendingUp size={16} />
-        <span>Advanced View</span>
+        Advanced
       </button>
-    </div>
-  );
-}
-
-function MarketMetricCard({ data, historicalData, description }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const { viewMode } = useViewMode();
-
-  const getDisplayName = (rawSymbol) => {
-    const shortSymbol = rawSymbol.replace('.US', '');
-    switch (shortSymbol) {
-      case 'SPY':
-        return 'S&P 500';
-      case 'QQQ':
-        return 'Nasdaq 100';
-      case 'DIA':
-        return 'Dow Jones';
-      case 'IWM':
-        return 'Russell 2000';
-      default:
-        return rawSymbol;
-    }
-  };
-
-  const chartData = useMemo(() => {
-    if (!Array.isArray(historicalData)) {
-      console.log('historicalData is not an array:', historicalData);
-      return [];
-    }
-
-    return historicalData
-      .filter(item => item.price !== 0)
-      .map(item => ({
-        date: new Date(item.date).toISOString().split('T')[0],
-        price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
-        ma200: typeof item.ma200 === 'number' ? item.ma200 : null
-      }));
-  }, [historicalData]);
-
-  return (
-    <div
-      className={`bg-white rounded-xl shadow-lg transition-all duration-300 ease-in-out
-        ${isExpanded ? 'md:col-span-2 md:row-span-2' : ''}`}
-      onClick={() => setIsExpanded(!isExpanded)}
-    >
-      <div className="p-6">
-        {/* Header / Title / Price */}
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-xl font-semibold text-gray-800">
-                {getDisplayName(data.symbol)}
-              </h3>
-              <span className="text-sm text-gray-500">({data.symbol})</span>
-              <InfoTooltip
-                basicContent={description.basic}
-                advancedContent={description.advanced}
-              />
-            </div>
-            <div className="mt-2 flex items-baseline gap-3">
-              <span className="text-3xl font-bold">
-                ${Number(data.close || 0).toFixed(2)}
-              </span>
-              <div className="flex items-center gap-1">
-                {Number(data.change_p) >= 0 ? (
-                  <ArrowUp className="text-green-500" size={20} />
-                ) : (
-                  <ArrowDown className="text-red-500" size={20} />
-                )}
-                <span
-                  className={`text-lg font-semibold ${Number(data.change_p) >= 0 ? 'text-green-500' : 'text-red-500'
-                    }`}
-                >
-                  {Math.abs(Number(data.change_p || 0)).toFixed(2)}%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Mini Chart */}
-          <div className="h-16 w-24">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData.slice(-30)}>
-                <Line
-                  type="monotone"
-                  dataKey="price"
-                  stroke={Number(data.change_p) >= 0 ? '#22c55e' : '#ef4444'}
-                  dot={false}
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Expanded View */}
-        {isExpanded && (
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={(date) => {
-                      const d = new Date(date);
-                      return `${d.getMonth() + 1}/${d.getDate()}`;
-                    }}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis
-                    domain={['auto', 'auto']}
-                    tickFormatter={(val) => `$${Number(val).toFixed(0)}`}
-                  />
-                  <Tooltip
-                    labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                    formatter={(value, name) => {
-                      if (name === 'price') return [`$${Number(value).toFixed(2)}`, 'Price'];
-                      if (name === 'ma200') return [`$${Number(value).toFixed(2)}`, '200-day MA'];
-                      return [value, name];
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke={Number(data.change_p) >= 0 ? '#22c55e' : '#ef4444'}
-                    dot={false}
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="ma200"
-                    stroke="#dc2626"
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    dot={false}
-                    name="200-day MA"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="text-sm text-gray-600">
-              <p>{viewMode === 'basic' ? description.basic : description.advanced}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-4 text-sm text-gray-400 flex items-center gap-1">
-          <TrendingUp size={14} />
-          <span>Click to {isExpanded ? 'collapse' : 'expand'} details</span>
-        </div>
-      </div>
     </div>
   );
 }
@@ -220,82 +68,135 @@ function MarketMetricCard({ data, historicalData, description }) {
 function App() {
   // State Management
   const [marketData, setMarketData] = useState([]);
+  const [sp500Data, setSp500Data] = useState([]);
   const [macroData, setMacroData] = useState({});
-  const [marketMover, setMarketMover] = useState(null);
   const [sectorData, setSectorData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedStock, setSelectedStock] = useState(null);
-  const [stockHistory, setStockHistory] = useState([]);
   const [historicalPrices, setHistoricalPrices] = useState({});
+  const [relationshipData, setRelationshipData] = useState({});
+  
+  // User context for personalized risk insights
+  const [userProfile, setUserProfile] = useState(null);
+  const [userId, setUserId] = useState(null);
 
-  // Data Fetching
+  // Check for user authentication
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          const response = await fetch('/api/auth/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setUserProfile(data.user);
+            setUserId(data.user.id);
+          }
+        } catch (error) {
+          console.log('User not authenticated');
+        }
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  // Optimized Data Fetching with batch requests
   useEffect(() => {
     const fetchData = async () => {
+      const startTime = performance.now();
+      
       try {
-        // Fetch main sets of data
-        const [market, macro, mover, sectors] = await Promise.all([
+        // Fetch basic data in parallel
+        const [market, sp500, macro, sectors] = await Promise.all([
           marketApi.getData(),
+          marketApi.getSP500Top(),
           marketApi.getMacro(),
-          marketApi.getMover(),
           marketApi.getSectors()
         ]);
 
-        console.log('Received mover data:', mover);
-
-        // Convert object to array
-        const marketArray = Object.entries(market).map(([symbol, info]) => ({
-          symbol,
-          ...info
-        }));
+        // Process market data
+        const marketArray = Array.isArray(market) ? 
+          market.map(stock => ({
+            symbol: stock.symbol,
+            close: stock.price,
+            change_p: stock.changePercent,
+            name: stock.name,
+            volume: stock.volume
+          })) : [];
+          
         setMarketData(marketArray);
+
+        // Process S&P 500 data
+        const sp500Array = Array.isArray(sp500) ? 
+          sp500.map(stock => ({
+            symbol: stock.symbol,
+            close: stock.price,
+            change_p: stock.changePercent,
+            name: stock.name,
+            volume: stock.volume || 0
+          })) : [];
+          
+        setSp500Data(sp500Array);
         setMacroData(macro);
-        setSectorData(sectors);
+        
+        // Process sectors
+        const mappedSectors = Array.isArray(sectors) ?
+          sectors.map(sector => ({
+            symbol: sector.symbol,
+            name: sector.name,
+            color: sector.color || '#1e40af',
+            close: sector.price,
+            change_p: sector.changePercent,
+            changePercent: sector.changePercent,
+            price: sector.price
+          })) : [];
+          
+        setSectorData(mappedSectors);
 
-        // Update market mover data properly
-        if (mover && mover.symbol) {
-          const moverHistory = await marketApi.getHistory(mover.symbol, 12);
+        // Batch fetch all historical data at once
+        const allSymbols = [
+          // Main indices
+          'SPY.US', 'QQQ.US', 'DIA.US', 'IWM.US',
+          // Relationship symbols
+          'TLT.US', 'EEM.US', 'EFA.US', 'IVE.US', 'IVW.US',
+          'IBIT.US', 'GLD.US', 'BND.US', 'JNK.US', 'USO.US', 'UUP.US',
+          'XLP.US', 'XLY.US', 'SMH.US', 'XSW.US'
+        ];
 
-          setMarketMover({
-            symbol: mover.symbol,
-            companyName: mover.companyName || mover.symbol,
-            price: mover.price || 0,
-            changePercent: mover.changePercent || 0,
-            dailyChange: parseFloat(((mover.price || 0) * (mover.changePercent || 0) / 100).toFixed(2)),
-            reason: `${mover.symbol} moved ${(mover.changePercent || 0) >= 0 ? 'up' : 'down'} ${Math.abs(Number(mover.changePercent || 0)).toFixed(2)}%`,
-            history: moverHistory.map(day => ({
-              ...day,
-              ma200: day.ma200 || null
-            })),
-            // Ensure these fields exist for tooltips
-            basicInsight: mover.basicInsight || null,
-            advancedInsight: mover.advancedInsight || null,
-            volumeAnalysis: mover.volumeAnalysis || null,
-            technicalLevels: mover.technicalLevels || null,
-            marketImpact: mover.marketImpact || null
-          });
-
-          console.log('Set market mover state');
-        } else {
-          console.log('No valid mover data received');
-          setMarketMover(null);
-        }
-
-        // Fetch historical data for indices
-        const indices = ['SPY.US', 'QQQ.US', 'DIA.US', 'IWM.US'];
+        console.log('Fetching batch historical data for', allSymbols.length, 'symbols');
+        
+        // Use batch API for all historical data
+        const batchHistorical = await marketApi.getBatchHistory(allSymbols, '1y');
+        
+        // Process batch results
         const histories = {};
-        for (const sym of indices) {
-          try {
-            const hist = await marketApi.getHistory(sym, 6);  // 6 months of data
-            histories[sym] = hist;
-          } catch (err) {
-            console.error(`Error fetching history for ${sym}:`, err);
-            histories[sym] = [];
+        const relationshipHistories = {};
+        
+        for (const [symbol, result] of Object.entries(batchHistorical)) {
+          const historyData = { 
+            data: result.error ? [] : result.data, 
+            period: '1y' 
+          };
+          
+          // Add to main indices
+          if (['SPY.US', 'QQQ.US', 'DIA.US', 'IWM.US'].includes(symbol)) {
+            histories[symbol] = historyData;
           }
+          
+          // Add to relationship data
+          relationshipHistories[symbol] = historyData;
         }
-
-        console.log('Fetched historical data:', histories);
+        
         setHistoricalPrices(histories);
+        setRelationshipData(relationshipHistories);
+
+        const endTime = performance.now();
+        console.log(`Data fetching completed in ${(endTime - startTime).toFixed(2)}ms`);
+        
         setError(null);
       } catch (error) {
         console.error('Data fetching error:', error);
@@ -306,23 +207,21 @@ function App() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 300000); // 5 minutes
+    
+    // Refresh data every 5 minutes
+    const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
 
   // Search Handler
   const handleSearch = async (symbol) => {
     try {
-      const [stockData, historyData] = await Promise.all([
-        marketApi.getQuote(symbol),
-        marketApi.getHistory(symbol)
-      ]);
-
+      const stockData = await marketApi.getQuote(symbol);
       setSelectedStock(stockData);
-      setStockHistory(historyData);
     } catch (error) {
       console.error('Search error:', error);
       setError('Failed to fetch stock data');
+      setSelectedStock(null);
     }
   };
 
@@ -330,33 +229,50 @@ function App() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        Loading...
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
   // Filter main indices
   const mainIndices = marketData.filter((item) =>
-    ['SPY.US', 'QQQ.US', 'DIA.US', 'IWM.US'].includes(item.symbol)
+    ['SPY', 'QQQ', 'DIA', 'IWM'].includes(item.symbol)
   );
-
-  console.log('mainIndices =>', mainIndices);
-  console.log('historicalPrices =>', historicalPrices);
 
   return (
     <ViewModeProvider>
-      <MonitoringProvider>
-        <div className="p-4 max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <h1 className="text-4xl font-bold" style={{ fontFamily: "'Google Sans', 'Roboto', sans-serif" }}>
+      <div className="min-h-screen flex flex-col">
+        {/* News Ticker */}
+        <Suspense fallback={<div className="h-8 bg-gray-100"></div>}>
+          <NewsTicker />
+        </Suspense>
+        
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-4 py-2">
+          <div className="w-full flex items-center gap-4">
+            <h1 className="text-2xl font-bold whitespace-nowrap" style={{ fontFamily: "'Google Sans', 'Roboto', sans-serif" }}>
               Investor's Daily Brief
             </h1>
-            <div className="flex items-center gap-4">
+            
+            {/* Search Bar */}
+            <div className="flex-1 max-w-5xl">
+              <Suspense fallback={<div className="h-10 bg-gray-100 rounded-lg"></div>}>
+                <SearchBar onSearch={handleSearch} />
+              </Suspense>
+            </div>
+            
+            {/* Right side controls */}
+            <div className="flex items-center gap-3 whitespace-nowrap">
               <ViewToggle />
-              <SearchBar onSearch={handleSearch} />
+              <Suspense fallback={<div className="w-20 h-8"></div>}>
+                <TourButton />
+              </Suspense>
             </div>
           </div>
+        </header>
 
+        {/* Main Content */}
+        <div className="flex-1 p-4 max-w-7xl mx-auto w-full">
           {/* Error Display */}
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
@@ -365,192 +281,100 @@ function App() {
             </div>
           )}
 
-          {/* Key Insights Section */}
+          {/* 🚀 AI-Powered Financial Insights Section - PREMIER POSITION */}
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-3 text-gray-700">Key Market Insights</h2>
-            <KeyInsights />
-          </section>
-
-          {/* Market Monitoring Section */}
-          <section className="mb-8">
-            <MonitoringDisplay />
+            <Suspense fallback={
+              <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-2xl shadow-xl border border-gray-200 p-8">
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <span className="ml-3 text-gray-600">Loading AI market insights...</span>
+                </div>
+              </div>
+            }>
+              <AIInsights />
+            </Suspense>
           </section>
 
           <div className="space-y-8">
             {/* Market Metrics Section */}
             <section>
               <h2 className="text-xl font-semibold mb-3 text-gray-700">Market Metrics</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                {[...mainIndices]
-                  .sort((a, b) => {
-                    const order = {
-                      'SPY.US': 1,
-                      'QQQ.US': 2,
-                      'DIA.US': 3,
-                      'IWM.US': 4
-                    };
-                    return order[a.symbol] - order[b.symbol];
-                  })
-                  .map((data) => {
-                    const histData = historicalPrices[data.symbol] || [];
-                    return (
-                      <MarketMetricCard
-                        key={data.symbol}
-                        data={data}
-                        description={
-                          data.symbol.includes('SPY') ? {
-                            basic: "The S&P 500 tracks the 500 biggest US companies. It's the main way to measure how the US stock market is doing.",
-                            advanced: "The S&P 500 is the benchmark US equity index with market-cap weighting across 11 sectors. Key technical signals include the 50/200-day moving averages and volume trends."
-                          } : data.symbol.includes('QQQ') ? {
-                            basic: "The Nasdaq 100 follows the largest tech companies like Apple and Microsoft. Shows how tech stocks are performing.",
-                            advanced: "The Nasdaq 100 tracks major non-financial companies, heavily weighted toward technology. Higher volatility with strong growth orientation."
-                          } : data.symbol.includes('DIA') ? {
-                            basic: "The Dow Jones tracks 30 major US companies. It's the oldest and most well-known market indicator.",
-                            advanced: "The DJIA is price-weighted across 30 blue-chip stocks. Less representative than S&P 500 but historically significant benchmark."
-                          } : data.symbol.includes('IWM') ? {
-                            basic: "The Russell 2000 follows smaller US companies. These often show early signs of economic changes.",
-                            advanced: "The Russell 2000 represents small-cap US equities. Higher volatility, strong economic sensitivity, historically leads market cycles."
-                          } : data.symbol
-                        }
-                        historicalData={histData}
-                      />
-                    );
-                  })}
-              </div>
+              <Suspense fallback={<LoadingSpinner />}>
+                <MarketMetricsCarousel 
+                  indices={mainIndices} 
+                  historicalData={historicalPrices} 
+                />
+              </Suspense>
             </section>
 
-            {/* Market Environment Section */}
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-3 text-gray-700">Market Environment</h2>
-              <MarketEnvironment />
-            </section>
-
-            {/* Performance Section */}
+            {/* Sector Performance Section */}
             <section>
               <h2 className="text-xl font-semibold mb-3 text-gray-700">Sector Performance</h2>
-              <div className="bg-white p-6 rounded-lg shadow">
-                <SectorBarChart data={sectorData} />
-              </div>
+              <Suspense fallback={<LoadingSpinner />}>
+                <SectorPerformanceNew initialSectorData={sectorData} />
+              </Suspense>
             </section>
 
-            {/* Sector Rotation Section */}
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-3 text-gray-700">Sector Rotation Analysis</h2>
-              <SectorRotation />
-            </section>
-
+            {/* Key Relationships Section */}
             <section>
-              <div className="mb-8">
-                <IndustryAnalysis />
-              </div>
+              <h2 className="text-xl font-semibold mb-3 text-gray-700">Key Relationships</h2>
+              <Suspense fallback={<LoadingSpinner />}>
+                <KeyRelationships 
+                  historicalData={relationshipData} 
+                  sectorData={sectorData}
+                />
+              </Suspense>
             </section>
 
-            {/* Macro Analysis Section */}
+            {/* Macroeconomic Analysis Section */}
             <section>
-              <div className="mb-8">
-                <MacroAnalysis />
-              </div>
+              <h2 className="text-xl font-semibold mb-3 text-gray-700">Macroeconomic Environment</h2>
+              <Suspense fallback={<LoadingSpinner />}>
+                <MacroeconomicCarousel />
+              </Suspense>
             </section>
 
-            {/* Market Mover Section */}
+            {/* 🎯 MOVED: Market Risk Positioning - Now positioned above Portfolio Analytics */}
             <section>
-              {marketMover && (
-                <div className="col-span-4 bg-white p-4 rounded-lg shadow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-gray-600 flex items-center gap-2">
-                      Market Mover: {marketMover.symbol}
-                      <InfoTooltip
-                        basicContent={
-                          `${marketMover.symbol} is making significant moves today. ${marketMover.basicInsight || `Current price: $${marketMover.price?.toFixed(2) || 'N/A'} (${marketMover.changePercent >= 0 ? '+' : ''}${marketMover.changePercent?.toFixed(2) || 0}%).`} This move represents a notable shift in market sentiment${marketMover.companyName ? ' for ' + marketMover.companyName : ''}.`
-                        }
-                        advancedContent={
-                          `${marketMover.symbol} Technical Analysis: ${marketMover.advancedInsight?.trim() || 'Price momentum shows significant deviation from normal trading range.'} ${marketMover.volumeAnalysis?.trim() || `Trading volume is ${Math.abs(marketMover.changePercent) > 5 ? 'elevated' : 'normal'} relative to average.`} Support: $${(marketMover.price * 0.95).toFixed(2)}, Resistance: $${(marketMover.price * 1.05).toFixed(2)}. ${marketMover.marketImpact?.trim() || `Market impact is ${Math.abs(marketMover.changePercent) > 7 ? 'significant' : 'moderate'} with potential sector-wide implications.`}`
-                        }
-                      />
-                    </h3>
+              <h2 className="text-xl font-semibold mb-3 text-gray-700 flex items-center">
+                🎯 Market Risk Positioning
+                <span className="ml-3 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                  FIXED
+                </span>
+              </h2>
+              <Suspense fallback={
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <span className="ml-3 text-gray-600">Loading risk positioning system...</span>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <p className="text-2xl font-bold">
-                        ${typeof marketMover.price === 'number' ? marketMover.price.toFixed(2) : '0.00'}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {(marketMover.changePercent || 0) >= 0 ? (
-                          <ArrowUp className="text-green-500" size={20} />
-                        ) : (
-                          <ArrowDown className="text-red-500" size={20} />
-                        )}
-                        <span className={
-                          (marketMover.changePercent || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                        }>
-                          {Math.abs(Number(marketMover.changePercent || 0)).toFixed(2)}%
-                          {' '}
-                          (${Math.abs(Number((marketMover.price || 0) * (marketMover.changePercent || 0) / 100)).toFixed(2)})
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 mt-2">
-                    {marketMover.symbol} moved {(marketMover.changePercent || 0) >= 0 ? 'up' : 'down'} {Math.abs(Number(marketMover.changePercent || 0)).toFixed(2)}%
-                  </p>
-                  {marketMover.history && marketMover.history.length > 0 && (
-                    <div className="h-40 mt-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={marketMover.history}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
-                            dataKey="date"
-                            tickFormatter={(date) => {
-                              if (!date) return '';
-                              const d = new Date(date);
-                              return `${d.getMonth() + 1}/${d.getDate()}`;
-                            }}
-                          />
-                          <YAxis
-                            domain={['auto', 'auto']}
-                            tickFormatter={(val) => `$${Number(val).toFixed(2)}`}
-                          />
-                          <Tooltip
-                            labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                            formatter={(value, name) => {
-                              if (name === 'price') return [`$${Number(value).toFixed(2)}`, 'Price'];
-                              if (name === 'ma200') return [`$${Number(value).toFixed(2)}`, '200-day MA'];
-                              return [value, name];
-                            }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="price"
-                            stroke="#2563eb"
-                            dot={false}
-                            strokeWidth={2}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="ma200"
-                            stroke="#dc2626"
-                            strokeDasharray="5 5"
-                            strokeWidth={2}
-                            dot={false}
-                            name="200-day MA"
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
                 </div>
-              )}
+              }>
+                <RiskPositioningDashboard 
+                  userId={userId}
+                  userProfile={userProfile}
+                />
+              </Suspense>
+            </section>
+
+            {/* Portfolio Tracker Section - Now below Risk Positioning */}
+            <section>
+              <Suspense fallback={<LoadingSpinner />}>
+                <PortfolioTracker />
+              </Suspense>
             </section>
           </div>
 
           {/* Stock Search Modal */}
-          <StockModal
-            isOpen={selectedStock !== null}
-            onClose={() => setSelectedStock(null)}
-            stock={selectedStock}
-          />
+          <Suspense fallback={null}>
+            <StockModal
+              isOpen={selectedStock !== null}
+              onClose={() => setSelectedStock(null)}
+              stock={selectedStock}
+            />
+          </Suspense>
         </div>
-      </MonitoringProvider>
+      </div>
     </ViewModeProvider>
   );
 }

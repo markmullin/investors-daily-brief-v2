@@ -1,0 +1,42 @@
+{
+  "conceptMappings": {
+    "revenue": [
+      "total revenue",
+      "net revenue",
+      "sales",
+      "total sales"
+    ],
+    "costOfRevenue": [
+      "cost of revenue",
+      "cost of sales",
+      "cost of goods sold"
+    ],
+    "netIncome": [
+      "net income",
+      "net earnings",
+      "net profit"
+    ],
+    "operatingCashFlow": [
+      "net cash from operating activities",
+      "operating cash flow"
+    ],
+    "capitalExpenditures": [
+      "capital expenditures",
+      "capex",
+      "property and equipment"
+    ]
+  },
+  "companyPatterns": {
+    "MSFT": {
+      "extractionCount": 1,
+      "averageQuality": 0.98,
+      "bestSources": [
+        "XBRL API"
+      ],
+      "commonIssues": []
+    }
+  },
+  "successfulExtractions": 1,
+  "failedExtractions": 0,
+  "lastUpdated": "2025-06-11T12:02:08.202Z"
+}

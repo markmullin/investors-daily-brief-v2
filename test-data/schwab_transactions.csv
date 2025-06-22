@@ -1,0 +1,6 @@
+Symbol,Quantity,Price,Date,Action,Description
+AAPL,100,150.00,01/15/2024,Buy,Apple Inc
+MSFT,50,300.00,01/16/2024,Buy,Microsoft Corp
+NVDA,25,400.00,01/17/2024,Buy,NVIDIA Corporation
+GOOGL,30,2500.00,01/18/2024,Buy,Alphabet Inc
+TSLA,20,200.00,01/19/2024,Buy,Tesla Inc

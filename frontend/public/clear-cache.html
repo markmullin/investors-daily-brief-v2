@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clear Dashboard Cache</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    .success {
+      color: #10b981;
+      font-weight: bold;
+    }
+    .error {
+      color: #ef4444;
+      font-weight: bold;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🗑️ Clear Market Dashboard Cache</h1>
+  <p>This page will help clear all cached data for the market dashboard.</p>
+  
+  <button onclick="clearAllCaches()">Clear All Caches</button>
+  <button onclick="testVxxData()">Test VXX Data</button>
+  
+  <div id="status"></div>
+  <pre id="results"></pre>
+  
+  <script>
+    async function clearAllCaches() {
+      const status = document.getElementById('status');
+      status.innerHTML = '<p>Clearing caches...</p>';
+      
+      try {
+        // Clear browser caches
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          status.innerHTML += '<p class="success">✅ Cleared browser caches</p>';
+        }
+        
+        // Clear localStorage
+        localStorage.clear();
+        status.innerHTML += '<p class="success">✅ Cleared localStorage</p>';
+        
+        // Clear sessionStorage
+        sessionStorage.clear();
+        status.innerHTML += '<p class="success">✅ Cleared sessionStorage</p>';
+        
+        // Force reload without cache
+        status.innerHTML += '<p class="success">✅ All caches cleared! Reloading page...</p>';
+        
+        setTimeout(() => {
+          window.location.reload(true);
+        }, 2000);
+        
+      } catch (error) {
+        status.innerHTML += '<p class="error">❌ Error: ' + error.message + '</p>';
+      }
+    }
+    
+    async function testVxxData() {
+      const results = document.getElementById('results');
+      results.textContent = 'Testing VXX data...\n';
+      
+      try {
+        const response = await fetch('http://localhost:5000/api/market/history/VXX.US?period=1y&t=' + Date.now());
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          const prices = data.map(d => d.price || d.close).filter(p => p > 0);
+          const minPrice = Math.min(...prices);
+          const maxPrice = Math.max(...prices);
+          
+          results.textContent += '✅ Got ' + data.length + ' data points\n';
+          results.textContent += 'Price range: $' + minPrice.toFixed(2) + ' - $' + maxPrice.toFixed(2) + '\n';
+          results.textContent += 'First date: ' + data[0].date + '\n';
+          results.textContent += 'Last date: ' + data[data.length - 1].date + '\n';
+          results.textContent += '\nLast 5 prices:\n';
+          
+          data.slice(-5).forEach(d => {
+            const price = d.price || d.close;
+            results.textContent += d.date + ': $' + price.toFixed(2) + '\n';
+          });
+          
+          if (minPrice >= 35 && maxPrice <= 100) {
+            results.textContent += '\n✅ PRICES ARE CORRECT!';
+          } else {
+            results.textContent += '\n❌ PRICES ARE STILL WRONG! Expected $40-$87 range';
+          }
+        } else {
+          results.textContent += '❌ No data received';
+        }
+      } catch (error) {
+        results.textContent += '❌ Error: ' + error.message;
+      }
+    }
+  </script>
+</body>
+</html>

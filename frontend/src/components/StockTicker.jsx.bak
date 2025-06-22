@@ -1,0 +1,132 @@
+import React, { useEffect, useState } from 'react';
+import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { marketApi } from '../services/api';
+
+const StockTicker = () => {
+  const [stocks, setStocks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Popular stocks to display
+  const tickerSymbols = ['SPY', 'QQQ', 'DIA', 'IWM', 'TLT', 'XLK', 'XLF', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA'];
+
+  const fetchTickerData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch market data which includes main indices
+      const marketData = await marketApi.getData();
+      
+      // For now, use the market data we have (SPY, QQQ, DIA, IWM, TLT)
+      // In a production app, you'd want to fetch specific stocks
+      const formattedStocks = marketData.map(stock => ({
+        symbol: stock.symbol,
+        price: stock.close || stock.price || 0,
+        change: stock.change || 0,
+        changePercent: stock.change_p || stock.changePercent || 0
+      }));
+      
+      setStocks(formattedStocks);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching ticker data:', error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickerData();
+    
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchTickerData, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const getChangeIcon = (changePercent) => {
+    const change = Number(changePercent);
+    if (change > 0) {
+      return <ArrowUp size={12} className="inline" />;
+    } else if (change < 0) {
+      return <ArrowDown size={12} className="inline" />;
+    }
+    return <Minus size={12} className="inline" />;
+  };
+
+  const getChangeColor = (changePercent) => {
+    const change = Number(changePercent);
+    if (change > 0) {
+      return 'text-green-600';
+    } else if (change < 0) {
+      return 'text-red-600';
+    }
+    return 'text-gray-600';
+  };
+
+  if (loading && stocks.length === 0) {
+    return (
+      <div className="w-full bg-gray-900 text-white py-2 overflow-hidden">
+        <div className="animate-pulse flex items-center justify-center">
+          <span className="text-gray-400">Loading market data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full bg-gray-900 text-white py-2 overflow-hidden border-b border-gray-700">
+      <div className="ticker-wrapper">
+        <div className="ticker-content">
+          {stocks.concat(stocks).map((stock, index) => (
+            <span key={`${stock.symbol}-${index}`} className="ticker-item inline-flex items-center">
+              <span className="font-semibold mr-2">{stock.symbol}</span>
+              <span className="mr-2">${Number(stock.price).toFixed(2)}</span>
+              <span className={`inline-flex items-center ${getChangeColor(stock.changePercent)}`}>
+                {getChangeIcon(stock.changePercent)}
+                <span className="ml-1">
+                  {Math.abs(Number(stock.changePercent)).toFixed(2)}%
+                </span>
+              </span>
+              {index < stocks.length * 2 - 1 && (
+                <span className="text-gray-500 mx-4">•</span>
+              )}
+            </span>
+          ))}
+        </div>
+      </div>
+      
+      <style jsx>{`
+        .ticker-wrapper {
+          display: flex;
+          overflow: hidden;
+        }
+        
+        .ticker-content {
+          display: flex;
+          white-space: nowrap;
+          animation: scroll 30s linear infinite;
+        }
+        
+        .ticker-item {
+          padding: 0 0.5rem;
+        }
+        
+        @keyframes scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        
+        @media (hover: hover) {
+          .ticker-content:hover {
+            animation-play-state: paused;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default StockTicker;

@@ -1,0 +1,427 @@
+// Updated API Service for indicator handling
+const isProduction = window.location.hostname !== 'localhost';
+const API_BASE_URL = isProduction 
+  ? 'https://market-dashboard-backend.onrender.com'
+  : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
+
+// Log configuration for debugging
+console.log('API Service configuration:', {
+  isProduction,
+  API_BASE_URL,
+  hostname: window.location.hostname
+});
+
+// Enhanced fetch with caching
+export const fetchWithConfig = async (endpoint) => {
+  try {
+    // Construct URL correctly
+    const url = `${API_BASE_URL}/api${endpoint}`;
+    console.log(`Fetching from URL: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('API request failed:', error);
+    return null;
+  }
+};
+
+// Enhanced fetch with caching
+
+// CACHE_BUSTING_ENABLED
+console.log('===== CACHE BUSTING ENABLED =====');
+// Clear localStorage on startup
+if (typeof window !== 'undefined') {
+  console.log('Clearing localStorage cache...');
+  Object.keys(localStorage)
+    .filter(key => key.startsWith('market_dashboard_cache_'))
+    .forEach(key => localStorage.removeItem(key));
+}
+export const fetchWithCaching = async (endpoint, cacheDuration = 0) => {
+  const cacheKey = `market_dashboard_cache_${endpoint}`;
+  const cachedData = localStorage.getItem(cacheKey);
+  
+  if (cachedData) {
+    try {
+      const { data, timestamp } = JSON.parse(cachedData);
+      // Check if cache is still valid
+      if (Date.now() - timestamp < cacheDuration) {
+        console.log(`Using cached data for ${endpoint}`);
+        return data;
+      }
+    } catch (e) {
+      console.error('Error parsing cached data', e);
+    }
+  }
+  
+  // If no valid cache, fetch fresh data
+  const freshData = await fetchWithConfig(endpoint);
+  
+  // Cache the fresh data
+  if (freshData) {
+    try {
+      // Clear old cache if needed to prevent quota exceeded
+      const cacheKeys = Object.keys(localStorage).filter(key => key.startsWith('market_dashboard_cache_'));
+      if (cacheKeys.length > 50) {
+        // Remove oldest entries
+        const oldestKeys = cacheKeys.slice(0, 10);
+        oldestKeys.forEach(key => localStorage.removeItem(key));
+      }
+      
+      localStorage.setItem(cacheKey, JSON.stringify({
+        data: freshData,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError') {
+        // Clear some cache and try again
+        console.warn('Cache quota exceeded, clearing old entries');
+        const cacheKeys = Object.keys(localStorage).filter(key => key.startsWith('market_dashboard_cache_'));
+        cacheKeys.slice(0, Math.floor(cacheKeys.length / 2)).forEach(key => localStorage.removeItem(key));
+        
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify({
+            data: freshData,
+            timestamp: Date.now()
+          }));
+        } catch (e2) {
+          console.error('Error caching data after cleanup', e2);
+        }
+      } else {
+        console.error('Error caching data', e);
+      }
+    }
+  }
+  
+  return freshData;
+};
+
+// Handle null safely for the getHistory function
+const safeMap = (data, mapFn) => {
+  if (!data || !Array.isArray(data)) return [];
+  return data.map(mapFn);
+};
+
+// Convert period string to parameters
+const getPeriodParams = (period) => {
+  const now = new Date();
+  let from = new Date();
+  let interval = 'd'; // default daily
+  
+  switch(period) {
+    case '1d':
+      from.setDate(now.getDate() - 1);
+      interval = '5m'; // 5-minute intervals for intraday
+      break;
+    case '5d':
+      from.setDate(now.getDate() - 5);
+      interval = '1h'; // hourly intervals for 5 days
+      break;
+    case '1m':
+      from.setMonth(now.getMonth() - 1);
+      interval = 'd';
+      break;
+    case '3m':
+      from.setMonth(now.getMonth() - 3);
+      interval = 'd';
+      break;
+    case '6m':
+      from.setMonth(now.getMonth() - 6);
+      interval = 'd';
+      break;
+    case '1y':
+      from.setFullYear(now.getFullYear() - 1);
+      interval = 'd';
+      break;
+    case '5y':
+      from.setFullYear(now.getFullYear() - 5);
+      interval = 'w'; // weekly intervals for 5 years
+      break;
+    default:
+      from.setFullYear(now.getFullYear() - 1);
+      interval = 'd';
+  }
+  
+  return {
+    from: from.toISOString().split('T')[0],
+    to: now.toISOString().split('T')[0],
+    interval,
+    period
+  };
+};
+
+// Function to manually calculate MA200 on the frontend if needed
+const calculateMA200 = (data) => {
+  if (!data || data.length < 200) return data;
+  
+  const result = [...data];
+  
+  // Initialize the first 199 points with null MA values
+  for (let i = 0; i < 199; i++) {
+    result[i] = { ...result[i], ma200: null };
+  }
+  
+  // Calculate MA for the rest of the points
+  for (let i = 199; i < data.length; i++) {
+    let sum = 0;
+    for (let j = 0; j < 200; j++) {
+      const price = data[i - j].price || data[i - j].close || 0;
+      sum += price;
+    }
+    result[i] = { ...result[i], ma200: sum / 200 };
+  }
+  
+  return result;
+};
+
+// Function to manually calculate RSI on the frontend if needed
+const calculateRSI = (data) => {
+  if (!data || data.length < 15) return data;
+  
+  const period = 14;
+  const result = [...data];
+  
+  // Set initial RSI values to null
+  for (let i = 0; i < period; i++) {
+    result[i] = { ...result[i], rsi: null };
+  }
+  
+  // Calculate initial averages
+  let avgGain = 0;
+  let avgLoss = 0;
+  
+  for (let i = 1; i <= period; i++) {
+    const price = data[i].price || data[i].close || 0;
+    const prevPrice = data[i-1].price || data[i-1].close || 0;
+    const change = price - prevPrice;
+    
+    if (change > 0) {
+      avgGain += change;
+    } else {
+      avgLoss += Math.abs(change);
+    }
+  }
+  
+  avgGain /= period;
+  avgLoss /= period;
+  
+  // Calculate RSI using Wilder's smoothing method
+  for (let i = period; i < data.length; i++) {
+    const price = data[i].price || data[i].close || 0;
+    const prevPrice = data[i-1].price || data[i-1].close || 0;
+    const change = price - prevPrice;
+    
+    avgGain = ((avgGain * (period - 1)) + (change > 0 ? change : 0)) / period;
+    avgLoss = ((avgLoss * (period - 1)) + (change < 0 ? Math.abs(change) : 0)) / period;
+    
+    if (avgLoss === 0) {
+      result[i] = { ...result[i], rsi: 100 };
+    } else {
+      const rs = avgGain / avgLoss;
+      result[i] = { ...result[i], rsi: 100 - (100 / (1 + rs)) };
+    }
+  }
+  
+  return result;
+};
+
+// Updated API with fallback calculation for indicators
+export const marketApi = {
+  getData: () => fetchWithCaching('/market/data'),
+  getSP500Top: () => fetchWithCaching('/market/sp500-top', 300000), // Cache for 5 minutes
+  getSectors: (period = '1d') => fetchWithCaching(`/market/sectors/${period}`),
+  getSectorsByPeriod: (period = '1d') => fetchWithCaching(`/market/sectors/${period}`),
+  getMover: () => fetchWithCaching('/market/mover'),
+  getMacro: () => fetchWithCaching('/market/macro'),
+  getSectorRotation: () => fetchWithCaching('/market/sector-rotation'),
+  getQuote: (symbol) => fetchWithCaching(`/market/quote/${symbol}`),
+  getThemes: () => fetchWithCaching('/market/themes'),
+  getInsights: () => fetchWithCaching('/market/insights'),
+  getHistory: async (symbol, period = '1y') => {
+    // Build endpoint URL with period parameter
+    const endpoint = `/market/history/${symbol}?period=${period}`;
+    console.log(`\n=== FRONTEND API: getHistory ===`);
+    console.log(`Symbol: ${symbol}, Period: ${period}`);
+    console.log(`Endpoint: ${endpoint}`);
+    
+    // Clear cache for debugging - temporarily set to 0
+    const data = await fetchWithCaching(endpoint, 0);
+    
+    console.log(`Raw data received: ${data ? data.length : 0} points`);
+    
+    if (!data || data.length === 0) {
+      console.error('No data received from API');
+      return [];
+    }
+    
+    // Debug the first data point
+    console.log('First data point:', data[0]);
+    console.log('Last data point:', data[data.length - 1]);
+    
+    // Check property existence for first data point
+    const samplePoint = data[0];
+    console.log('MA200 property exists:', 'ma200' in samplePoint);
+    console.log('RSI property exists:', 'rsi' in samplePoint);
+    console.log('isDisplayed property exists:', 'isDisplayed' in samplePoint);
+    console.log('OHLC properties exist:', {
+      open: 'open' in samplePoint,
+      high: 'high' in samplePoint,
+      low: 'low' in samplePoint,
+      close: 'close' in samplePoint
+    });
+    
+    // Find any point with a valid ma200 or rsi value
+    let hasMA200 = data.some(d => d.ma200 !== null && d.ma200 !== undefined && typeof d.ma200 === 'number');
+    let hasRSI = data.some(d => d.rsi !== null && d.rsi !== undefined && typeof d.rsi === 'number');
+    
+    console.log(`Initial indicator check - Has MA200: ${hasMA200}, Has RSI: ${hasRSI}`);
+    
+    // If the backend didn't provide indicators, calculate them on the frontend
+    let processedData = [...data];
+    
+    // Calculate MA200 on the frontend if not provided by backend
+    if (!hasMA200 && period !== '1d' && period !== '5d' && data.length >= 200) {
+      console.log('Backend did not provide MA200, calculating on frontend...');
+      processedData = calculateMA200(processedData);
+      hasMA200 = true;
+    }
+    
+    // Calculate RSI on the frontend if not provided by backend
+    if (!hasRSI && period !== '1d' && period !== '5d' && data.length >= 15) {
+      console.log('Backend did not provide RSI, calculating on frontend...');
+      processedData = calculateRSI(processedData);
+      hasRSI = true;
+    }
+    
+    // FIXED: Preserve OHLC data structure for candlestick charts
+    const mappedData = safeMap(processedData, item => ({
+      // Preserve original date/timestamp
+      date: item?.date || item?.timestamp,
+      timestamp: item?.timestamp,
+      
+      // OHLC data - essential for candlestick charts
+      open: typeof item?.open === 'number' ? item.open : (item?.close || 0),
+      high: typeof item?.high === 'number' ? item.high : (item?.close || 0),
+      low: typeof item?.low === 'number' ? item.low : (item?.close || 0),
+      close: typeof item?.close === 'number' ? item.close : 0,
+      
+      // Legacy price field for line charts
+      price: item?.price || item?.close || 0,
+      
+      // Technical indicators
+      ma200: item?.ma200 || null,
+      rsi: item?.rsi || null,
+      
+      // Volume
+      volume: typeof item?.volume === 'number' ? item.volume : 0,
+      
+      // Display flag
+      isDisplayed: item?.isDisplayed !== undefined ? item.isDisplayed : true,
+      
+      // Keep any additional flags
+      isIntradayFallback: item?.isIntradayFallback || false
+    }));
+    
+    // Check indicator status after mapping
+    const finalMA200Count = mappedData.filter(d => d.ma200 !== null).length;
+    const finalRSICount = mappedData.filter(d => d.rsi !== null).length;
+    
+    console.log(`Final indicators - MA200 points: ${finalMA200Count}, RSI points: ${finalRSICount}`);
+    console.log(`Final indicators - Has MA200: ${finalMA200Count > 0}, Has RSI: ${finalRSICount > 0}`);
+    
+    if (mappedData.length > 0) {
+      console.log('Sample mapped point (first point):');
+      const firstPoint = mappedData[0];
+      console.log(JSON.stringify({
+        date: firstPoint.date,
+        open: firstPoint.open,
+        high: firstPoint.high,
+        low: firstPoint.low,
+        close: firstPoint.close,
+        price: firstPoint.price,
+        volume: firstPoint.volume,
+        ma200: firstPoint.ma200,
+        rsi: firstPoint.rsi,
+        isDisplayed: firstPoint.isDisplayed
+      }, null, 2));
+    }
+    
+    console.log(`=== END FRONTEND API: getHistory ===\n`);
+    
+    return mappedData;
+  }
+};
+
+export const marketEnvironmentApi = {
+  getScore: () => fetchWithCaching('/market-environment/score'),
+};
+
+export const industryAnalysisApi = {
+  getAllPairs: (period = '1y') => fetchWithCaching(`/industry-analysis/all?period=${period}`),
+  getPair: (pairKey, period = '1y') => fetchWithCaching(`/industry-analysis/${pairKey}?period=${period}`),
+};
+
+export const enhancedIndustryAnalysisApi = {
+  getAllPairs: async (period = '1y') => {
+    try {
+      return await fetchWithCaching(`/industry-analysis/all?period=${period}`);
+    } catch (error) {
+      console.warn('Enhanced analysis failed, falling back to basic:', error);
+      return industryAnalysisApi.getAllPairs(period);
+    }
+  },
+  getPair: async (pairKey, period = '1y') => {
+    try {
+      return await fetchWithCaching(`/industry-analysis/${pairKey}?period=${period}`);
+    } catch (error) {
+      console.warn('Enhanced analysis failed, falling back to basic:', error);
+      return industryAnalysisApi.getPair(pairKey, period);
+    }
+  },
+};
+
+export const macroAnalysisApi = {
+  getAllGroups: (period = '1y') => fetchWithCaching(`/macro-analysis/all?period=${period}`),
+  getGroup: (groupKey, period = '1y') => fetchWithCaching(`/macro-analysis/${groupKey}?period=${period}`),
+};
+
+export const enhancedMacroAnalysisApi = {
+  getAllGroups: async (period = '1y') => {
+    try {
+      return await fetchWithCaching(`/macro-analysis/all?period=${period}`);
+    } catch (error) {
+      console.warn('Enhanced macro analysis failed, falling back to basic:', error);
+      return macroAnalysisApi.getAllGroups(period);
+    }
+  },
+  getGroup: async (groupKey, period = '1y') => {
+    try {
+      return await fetchWithCaching(`/macro-analysis/${groupKey}?period=${period}`);
+    } catch (error) {
+      console.warn('Enhanced macro analysis failed, falling back to basic:', error);
+      return macroAnalysisApi.getGroup(groupKey, period);
+    }
+  },
+};
+
+// Macroeconomic data API
+export const macroeconomicApi = {
+  getAll: () => fetchWithCaching('/macroeconomic/all', 3600000), // Cache for 1 hour
+  getInterestRates: () => fetchWithCaching('/macroeconomic/interest-rates', 3600000),
+  getGrowthInflation: () => fetchWithCaching('/macroeconomic/growth-inflation', 3600000),
+  getLaborConsumer: () => fetchWithCaching('/macroeconomic/labor-consumer', 3600000),
+  getAnalysis: () => fetchWithCaching('/macroeconomic/analysis', 3600000),
+};

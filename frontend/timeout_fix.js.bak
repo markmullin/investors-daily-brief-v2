@@ -1,0 +1,47 @@
+// Enhanced fetch with retry and variable timeout based on endpoint type
+async function fetchWithRetry(url, options = {}, retries = 2) {
+  const controller = new AbortController();
+  
+  // 🤖 ENHANCED: Variable timeout based on endpoint type for AI analysis
+  let timeoutDuration = 10000; // Default 10 seconds
+  
+  if (url.includes('/ai-analysis/')) {
+    timeoutDuration = 30000; // 30 seconds for AI analysis (Python + Mistral)
+  } else if (url.includes('/analysis') || url.includes('/relationships')) {
+    timeoutDuration = 20000; // 20 seconds for other analysis endpoints
+  } else if (url.includes('/batch/')) {
+    timeoutDuration = 15000; // 15 seconds for batch requests
+  }
+  
+  const timeout = setTimeout(() => controller.abort(), timeoutDuration);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    
+    clearTimeout(timeout);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeout);
+    
+    if (retries > 0 && error.name !== 'AbortError') {
+      console.log(`Retrying request to ${url}, ${retries} attempts remaining`);
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry for AI endpoints
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    
+    throw error;
+  }
+}

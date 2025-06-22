@@ -1,0 +1,307 @@
+import { useState, useEffect, useMemo } from 'react';
+import { ArrowUp, ArrowDown, AlertCircle, TrendingUp } from 'lucide-react';
+import { ViewModeProvider, useViewMode } from './context/ViewModeContext';
+import { GraduationCap } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
+import SectorPerformanceNew from './components/SectorPerformanceNew';
+import SearchBar from './components/SearchBar';
+import StockModal from './components/StockModal';
+import InfoTooltip from './components/InfoTooltip';
+import { marketApi } from './services/api';
+import MarketThemes from './components/MarketThemes';
+import KeyInsights from './components/KeyInsights';
+import KeyRelationships from './components/KeyRelationships';
+import MacroeconomicCarousel from './components/MacroeconomicCarousel';
+import { MonitoringProvider } from './context/MonitoringContext';
+import MonitoringDisplay from './components/MonitoringDisplay';
+import NewsTicker from './components/NewsTicker';
+import TourButton from './components/TourButton';
+import MarketMetricsCarousel from './components/MarketMetricsCarousel';
+
+function ViewToggle() {
+  const { viewMode, setViewMode } = useViewMode();
+
+  const handleBasicClick = () => {
+    console.log('Switching to basic view');
+    setViewMode('basic');
+  };
+
+  const handleAdvancedClick = () => {
+    console.log('Switching to advanced view');
+    setViewMode('advanced');
+  };
+
+  return (
+    <div className="flex gap-0.5">
+      <button
+        onClick={handleBasicClick}
+        className={`px-3 py-1.5 text-sm ${viewMode === 'basic'
+          ? 'text-gray-800 font-medium'
+          : 'text-gray-600'
+          } transition-all duration-200`}
+      >
+        Basic
+      </button>
+      <button
+        onClick={handleAdvancedClick}
+        className={`px-3 py-1.5 text-sm ${viewMode === 'advanced'
+          ? 'text-gray-800 font-medium'
+          : 'text-gray-600'
+          } transition-all duration-200`}
+      >
+        Advanced
+      </button>
+    </div>
+  );
+}
+
+function App() {
+  // State Management
+  const [marketData, setMarketData] = useState([]);
+  const [sp500Data, setSp500Data] = useState([]);
+  const [macroData, setMacroData] = useState({});
+  const [sectorData, setSectorData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedStock, setSelectedStock] = useState(null);
+  const [stockHistory, setStockHistory] = useState([]);
+  const [historicalPrices, setHistoricalPrices] = useState({});
+  const [relationshipData, setRelationshipData] = useState({});
+
+  // Data Fetching
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch main sets of data including S&P 500 top companies for news ticker
+        const [market, sp500, macro, sectors] = await Promise.all([
+          marketApi.getData(),
+          marketApi.getSP500Top(),
+          marketApi.getMacro(),
+          marketApi.getSectors()
+        ]);
+
+        // Market data now comes as an array with normalized property names
+        // Map to the expected format for the UI
+        const marketArray = Array.isArray(market) ? 
+          market.map(stock => ({
+            symbol: stock.symbol,
+            close: stock.price,  // Map 'price' to 'close'
+            change_p: stock.changePercent,  // Map 'changePercent' to 'change_p'
+            name: stock.name,
+            volume: stock.volume
+          })) : [];
+          
+        setMarketData(marketArray);
+
+        // Process S&P 500 data for NEWS TICKER only
+        const sp500Array = Array.isArray(sp500) ? 
+          sp500.map(stock => ({
+            symbol: stock.symbol,
+            close: stock.price,
+            change_p: stock.changePercent,
+            name: stock.name,
+            volume: stock.volume || 0
+          })) : [];
+          
+        setSp500Data(sp500Array);
+        setMacroData(macro);
+        
+        // Sectors also need property mapping
+        const mappedSectors = Array.isArray(sectors) ?
+          sectors.map(sector => ({
+            symbol: sector.symbol,
+            name: sector.name,
+            color: sector.color || '#1e40af',
+            close: sector.price,  // Map 'price' to 'close'
+            change_p: sector.changePercent,  // Map 'changePercent' to 'change_p'
+            changePercent: sector.changePercent, // Keep this for the new component
+            price: sector.price // Keep this for the new component
+          })) : [];
+          
+        setSectorData(mappedSectors);
+
+        // Fetch historical data for MAIN INDICES (back to original 4)
+        const indices = ['SPY.US', 'QQQ.US', 'DIA.US', 'IWM.US'];
+        const histories = {};
+        for (const sym of indices) {
+          try {
+            const hist = await marketApi.getHistory(sym, '1y');
+            histories[sym] = { data: hist, period: '1y' };
+          } catch (err) {
+            console.error(`Error fetching history for ${sym}:`, err);
+            histories[sym] = { data: [], period: '1y' };
+          }
+        }
+        setHistoricalPrices(histories);
+
+        // Fetch historical data for key relationships with default period (1y)
+        const relationshipSymbols = [
+          'SPY.US', 'TLT.US', 'EEM.US', 'EFA.US', 'IVE.US', 'IVW.US',
+          'IBIT.US', 'GLD.US', 'BND.US', 'JNK.US', 'USO.US', 'UUP.US',
+          'XLP.US', 'XLY.US', 'SMH.US', 'XSW.US'
+        ];
+        
+        const relationshipHistories = {};
+        for (const sym of relationshipSymbols) {
+          try {
+            // Only fetch if we don't already have the data
+            if (!histories[sym]) {
+              const hist = await marketApi.getHistory(sym, '1y');
+              relationshipHistories[sym] = { data: hist, period: '1y' };
+            } else {
+              relationshipHistories[sym] = histories[sym];
+            }
+          } catch (err) {
+            console.error(`Error fetching history for ${sym}:`, err);
+            relationshipHistories[sym] = { data: [], period: '1y' };
+          }
+        }
+        setRelationshipData(relationshipHistories);
+
+        setError(null);
+      } catch (error) {
+        console.error('Data fetching error:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 300000); // 5 minutes
+    return () => clearInterval(interval);
+  }, []);
+
+  // Search Handler
+  const handleSearch = async (symbol) => {
+    try {
+      const stockData = await marketApi.getQuote(symbol);
+      
+      // The modal will fetch its own history data, so we just need to set the stock
+      setSelectedStock(stockData);
+    } catch (error) {
+      console.error('Search error:', error);
+      setError('Failed to fetch stock data');
+      setSelectedStock(null);
+    }
+  };
+
+  // Loading State
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading...
+      </div>
+    );
+  }
+
+  // Filter MAIN INDICES for market metrics (back to original 4)
+  const mainIndices = marketData.filter((item) =>
+    ['SPY', 'QQQ', 'DIA', 'IWM'].includes(item.symbol)
+  );
+
+  console.log('mainIndices =>', mainIndices);
+  console.log('historicalPrices =>', historicalPrices);
+
+  return (
+    <ViewModeProvider>
+      <MonitoringProvider>
+        <div className="min-h-screen flex flex-col">
+          {/* News Ticker - At the very top - USES S&P 500 DATA */}
+          <NewsTicker />
+          
+          {/* Header - Remove top/bottom padding */}
+          <header className="bg-white border-b border-gray-200 px-4 py-2">
+            <div className="w-full flex items-center gap-4">
+              <h1 className="text-2xl font-bold whitespace-nowrap" style={{ fontFamily: "'Google Sans', 'Roboto', sans-serif" }}>
+                Investor's Daily Brief
+              </h1>
+              
+              {/* Search Bar - Takes up even more space */}
+              <div className="flex-1 max-w-5xl">
+                <SearchBar onSearch={handleSearch} />
+              </div>
+              
+              {/* Right side controls */}
+              <div className="flex items-center gap-3 whitespace-nowrap">
+                <ViewToggle />
+                <TourButton />
+              </div>
+            </div>
+          </header>
+
+          {/* Main Content */}
+          <div className="flex-1 p-4 max-w-7xl mx-auto w-full">
+            {/* Error Display */}
+            {error && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                <AlertCircle className="text-red-500" />
+                <span className="text-red-700">{error}</span>
+              </div>
+            )}
+
+            {/* Key Insights Section */}
+            <section className="mb-8">
+              <h2 className="text-xl font-semibold mb-3 text-gray-700">Key Market Insights</h2>
+              <KeyInsights />
+            </section>
+
+            {/* Market Monitoring Section */}
+            <section className="mb-8">
+              <MonitoringDisplay />
+            </section>
+
+            <div className="space-y-8">
+              {/* Market Metrics Section - MAIN INDICES: SPY, QQQ, DIA, IWM */}
+              <section>
+                <h2 className="text-xl font-semibold mb-3 text-gray-700">Market Metrics</h2>
+                <MarketMetricsCarousel 
+                  indices={mainIndices} 
+                  historicalData={historicalPrices} 
+                />
+              </section>
+
+              {/* Sector Performance Section - Using New Component */}
+              <section>
+                <h2 className="text-xl font-semibold mb-3 text-gray-700">Sector Performance</h2>
+                <SectorPerformanceNew initialSectorData={sectorData} />
+              </section>
+
+              {/* Key Relationships Section */}
+              <section>
+                <h2 className="text-xl font-semibold mb-3 text-gray-700">Key Relationships</h2>
+                <KeyRelationships 
+                  historicalData={relationshipData} 
+                  sectorData={sectorData}
+                />
+              </section>
+
+              {/* Macroeconomic Analysis Section - NOW USING CAROUSEL */}
+              <section>
+                <h2 className="text-xl font-semibold mb-3 text-gray-700">Macroeconomic Environment</h2>
+                <MacroeconomicCarousel />
+              </section>
+            </div>
+
+            {/* Stock Search Modal */}
+            <StockModal
+              isOpen={selectedStock !== null}
+              onClose={() => setSelectedStock(null)}
+              stock={selectedStock}
+            />
+          </div>
+        </div>
+      </MonitoringProvider>
+    </ViewModeProvider>
+  );
+}
+
+export default App;

@@ -1,0 +1,7 @@
+Account,Symbol,Description,Quantity,Last Price,Current Value,Today's Gain/Loss Dollar,Today's Gain/Loss Percent,Total Gain/Loss Dollar,Total Gain/Loss Percent,Percent Of Account,Cost Basis Per Share,Cost Basis Total
+Individual - TOD,AMZN,AMAZON.COM INC,40,$195.25,"$7,810.00","+$125.40","+1.63%","+$610.00","+8.47%",23.45%,$180.00,"$7,200.00"
+Individual - TOD,META,META PLATFORMS INC,15,$385.60,"$5,784.00","+$45.75","+0.80%","+$534.00","+10.17%",17.38%,$350.00,"$5,250.00"
+Individual - TOD,NVDA,NVIDIA CORPORATION,10,$498.75,"$4,987.50","-$12.50","-0.25%","+$487.50","+10.83%",14.98%,$450.00,"$4,500.00"
+Individual - TOD,COHR,COHERENT CORP,50,$82.30,"$4,115.00","+$3.25","+4.33%","+$365.00","+9.73%",12.36%,$75.00,"$3,750.00"
+Individual - TOD,BRK.B,BERKSHIRE HATHAWAY INC CL B,5,$435.85,"$2,179.25","+$2.10","+0.48%","+$79.25","+3.77%",6.55%,$420.00,"$2,100.00"
+Account Total,,,,,"$24,875.75","+$163.90","+0.66%","+$2,075.75","+9.12%",100.00%,,"$22,800.00"

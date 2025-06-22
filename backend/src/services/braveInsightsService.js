@@ -1,184 +1,219 @@
 import axios from 'axios';
 import NodeCache from 'node-cache';
 
-// Increase cache duration to reduce API calls
-const cache = new NodeCache({ stdTTL: 7200 }); // Cache for 2 hours
+const cache = new NodeCache({ stdTTL: 1800 }); // 30 minutes cache
 
 class BraveInsightsService {
   constructor() {
-    this.baseURL = 'https://api.search.brave.com/res/v1';
-    this.headers = {
-      'Accept': 'application/json',
-      'Accept-Encoding': 'gzip',
-      'X-Subscription-Token': process.env.BRAVE_API_KEY
-    };
-    this.lastRequestTime = 0;
-    this.minRequestInterval = 1000; // Minimum 1 second between requests
+    this.apiKey = process.env.BRAVE_API_KEY || 'BSAFHHikdsv2YXSYODQSPES2tTMILHI';
+    this.baseUrl = 'https://api.search.brave.com/res/v1';
+    
+    // Premium financial news sources
+    this.premiumSources = [
+      'bloomberg.com',
+      'reuters.com',
+      'wsj.com',
+      'cnbc.com',
+      'ft.com', // Financial Times
+      'marketwatch.com',
+      'finance.yahoo.com',
+      'barrons.com',
+      'thestreet.com',
+      'fool.com' // Motley Fool
+    ];
   }
 
-  async getKeyInsights() {
-    const cacheKey = 'key_insights';
-    const cached = cache.get(cacheKey);
-    if (cached) {
-      console.log('Returning cached insights');
-      return cached;
-    }
-
+  async getMarketInsights() {
     try {
-      // Define fallback insights in case of API issues
-      const fallbackInsights = [
-        {
-          title: "Markets Analysis Dashboard",
-          description: "Track real-time market movements, sector performance, and key economic indicators.",
-          url: "#",
-          source: "Market Dashboard",
-          score: 100,
-          publishedTime: new Date().toISOString()
-        },
-        {
-          title: "Economic Data Overview",
-          description: "Monitor macroeconomic trends through our comprehensive financial metrics.",
-          url: "#",
-          source: "Market Dashboard",
-          score: 90,
-          publishedTime: new Date().toISOString()
-        },
-        {
-          title: "Market Themes & Trends",
-          description: "Explore current market themes and track major sector movements.",
-          url: "#",
-          source: "Market Dashboard",
-          score: 80,
-          publishedTime: new Date().toISOString()
-        }
-      ];
-
-      // Use Brave's news search with specific financial terms
-      const searchTerms = [
-        'stock market impact',
-        'market moving news',
-        'financial markets significant'
-      ];
-
-      // Function to make a single request with delay
-      const makeRequest = async (term, retryCount = 0) => {
-        const now = Date.now();
-        const timeSinceLastRequest = now - this.lastRequestTime;
-        
-        if (timeSinceLastRequest < this.minRequestInterval) {
-          await new Promise(resolve => 
-            setTimeout(resolve, this.minRequestInterval - timeSinceLastRequest)
-          );
-        }
-
-        try {
-          const response = await axios.get(`${this.baseURL}/news/search`, {
-            headers: this.headers,
-            params: {
-              q: term,
-              count: 5,
-              freshness: 'pd',
-              textDecorations: true,
-              safeSearch: 'strict'
-            }
-          });
-          this.lastRequestTime = Date.now();
-          return response;
-        } catch (error) {
-          if (error.response?.status === 429 && retryCount < 3) {
-            // If rate limited, wait longer and retry
-            await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
-            return makeRequest(term, retryCount + 1);
-          }
-          throw error;
-        }
-      };
-
-      // Make requests sequentially instead of in parallel
-      const responses = [];
-      for (const term of searchTerms) {
-        try {
-          const response = await makeRequest(term);
-          responses.push(response);
-        } catch (error) {
-          console.error(`Error fetching term "${term}":`, error.message);
-          // Continue with other terms if one fails
-        }
+      // Check cache first
+      const cacheKey = 'market_insights';
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        console.log('Returning cached market insights');
+        return cached;
       }
 
-      if (responses.length === 0) {
-        console.log('Using fallback insights due to API issues');
-        cache.set(cacheKey, fallbackInsights, 300); // Cache fallback for 5 minutes
-        return fallbackInsights;
-      }
-
-      // Process and score the articles
-      const articles = responses.flatMap(response => response.data.results || []);
+      // Search for recent market news from premium sources
+      const query = 'stock market today news economy investing';
+      const sourcesQuery = this.premiumSources.map(s => `site:${s}`).join(' OR ');
       
-      if (articles.length === 0) {
-        console.log('No articles found, using fallback insights');
-        cache.set(cacheKey, fallbackInsights, 300);
-        return fallbackInsights;
+      console.log('Fetching market insights from Brave API...');
+      const response = await axios.get(`${this.baseUrl}/news/search`, {
+        params: {
+          q: `${query} (${sourcesQuery})`,
+          count: 20, // Get more results to filter
+          freshness: 'pd' // Changed from 'today' to 'pd' (past day)
+        },
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip',
+          'X-Subscription-Token': this.apiKey
+        }
+      });
+
+      console.log('Brave API response status:', response.status);
+      
+      if (!response.data || !response.data.results) {
+        console.log('Invalid response from Brave API, falling back to general news search');
+        // Fallback to general news search without source restrictions
+        const fallbackResponse = await axios.get(`${this.baseUrl}/news/search`, {
+          params: {
+            q: query,
+            count: 10,
+            freshness: 'pd'
+          },
+          headers: {
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip',
+            'X-Subscription-Token': this.apiKey
+          }
+        });
+        
+        if (fallbackResponse.data && fallbackResponse.data.results) {
+          const insights = this.formatInsights(fallbackResponse.data.results);
+          cache.set(cacheKey, insights);
+          return insights;
+        }
       }
 
-      // Score and rank articles based on relevance
-      const scoredArticles = articles.map(article => ({
-        ...article,
-        score: this.calculateArticleScore(article)
+      // Process news items
+      const insights = this.formatInsights(response.data.results);
+      
+      if (insights.length > 0) {
+        cache.set(cacheKey, insights);
+        return insights;
+      } else {
+        // Return fallback insights if no results
+        return this.getFallbackInsights();
+      }
+    } catch (error) {
+      console.error('Error fetching market insights:', error.message);
+      // Return fallback insights on error
+      return this.getFallbackInsights();
+    }
+  }
+
+  formatInsights(results) {
+    if (!results || !Array.isArray(results)) return [];
+    
+    const insights = results
+      .filter(article => article.title && article.url) // Basic validation
+      .slice(0, 5) // Take top 5
+      .map((article, index) => ({
+        title: article.title,
+        description: article.description || article.snippet || 'No description available',
+        url: article.url,
+        source: article.source || this.extractSource(article.url),
+        publishedTime: article.age || article.publishedDate || new Date().toISOString(),
+        thumbnail: article.thumbnail?.src || null,
+        type: 'news',
+        priority: this.calculatePriority(article)
       }));
 
-      // Sort by score and take top 3
-      const topInsights = scoredArticles
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3)
-        .map(article => ({
-          title: article.title,
-          description: article.description,
-          url: article.url,
-          source: article.source,
-          score: article.score,
-          publishedTime: article.publishedTime,
-          thumbnail: article.meta?.thumbnail || null
-        }));
+    // Ensure we have at least 3 insights
+    while (insights.length < 3) {
+      insights.push({
+        title: `Market Update ${insights.length + 1}`,
+        description: 'Stay tuned for the latest market developments.',
+        url: '#',
+        source: 'Market News',
+        publishedTime: new Date().toISOString(),
+        type: 'update',
+        priority: 'medium'
+      });
+    }
 
-      cache.set(cacheKey, topInsights);
-      return topInsights;
+    return insights;
+  }
+
+  getFallbackInsights() {
+    return [
+      {
+        title: 'Market Update',
+        description: 'Markets are responding to recent economic data.',
+        url: '#',
+        source: 'Market Analysis',
+        publishedTime: new Date().toISOString(),
+        type: 'update',
+        priority: 'medium'
+      },
+      {
+        title: 'Economic Outlook',
+        description: 'Investors watching Federal Reserve policy decisions.',
+        url: '#',
+        source: 'Economic News',
+        publishedTime: new Date().toISOString(),
+        type: 'update',
+        priority: 'medium'
+      },
+      {
+        title: 'Sector Performance',
+        description: 'Technology and financials leading market movements.',
+        url: '#',
+        source: 'Sector Analysis',
+        publishedTime: new Date().toISOString(),
+        type: 'update',
+        priority: 'medium'
+      }
+    ];
+  }
+
+  extractSource(url) {
+    try {
+      const hostname = new URL(url).hostname;
+      const sourceMap = {
+        'bloomberg.com': 'Bloomberg',
+        'reuters.com': 'Reuters',
+        'wsj.com': 'Wall Street Journal',
+        'cnbc.com': 'CNBC',
+        'ft.com': 'Financial Times',
+        'marketwatch.com': 'MarketWatch',
+        'finance.yahoo.com': 'Yahoo Finance',
+        'barrons.com': "Barron's",
+        'thestreet.com': 'TheStreet',
+        'fool.com': 'Motley Fool'
+      };
+      
+      for (const [domain, name] of Object.entries(sourceMap)) {
+        if (hostname.includes(domain)) {
+          return name;
+        }
+      }
+      
+      return hostname.replace('www.', '').split('.')[0];
     } catch (error) {
-      console.error('Error fetching insights:', error);
-      // Return fallback content on error
-      cache.set(cacheKey, fallbackInsights, 300);
-      return fallbackInsights;
+      return 'Unknown';
     }
   }
 
-  calculateArticleScore(article) {
-    let score = 0;
+  calculatePriority(article) {
+    const title = (article.title || '').toLowerCase();
+    const description = (article.description || '').toLowerCase();
+    const combined = title + ' ' + description;
     
-    // Score based on source reputation
-    const reputableSources = [
-      'bloomberg', 'reuters', 'wsj', 'ft.com', 
-      'cnbc', 'marketwatch', 'barrons', 'yahoo finance'
-    ];
-    if (reputableSources.some(source => 
-      article.source?.toLowerCase().includes(source))) {
-      score += 30;
+    // High priority keywords
+    if (combined.includes('breaking') || 
+        combined.includes('alert') || 
+        combined.includes('surge') || 
+        combined.includes('crash') ||
+        combined.includes('federal reserve') ||
+        combined.includes('fed')) {
+      return 'high';
     }
+    
+    // Low priority keywords
+    if (combined.includes('opinion') || 
+        combined.includes('analysis') || 
+        combined.includes('outlook')) {
+      return 'low';
+    }
+    
+    return 'medium';
+  }
 
-    // Score based on keyword presence in title
-    const impactKeywords = [
-      'market', 'stock', 'fed', 'economy', 'rates',
-      'inflation', 'gdp', 'earnings', 'forecast'
-    ];
-    const title = article.title.toLowerCase();
-    impactKeywords.forEach(keyword => {
-      if (title.includes(keyword)) score += 10;
-    });
-
-    // Freshness score (newer is better)
-    const ageInHours = (Date.now() - new Date(article.publishedTime).getTime()) / (1000 * 60 * 60);
-    score += Math.max(0, 24 - ageInHours);
-
-    return score;
+  // Add alias method for compatibility
+  async getKeyInsights() {
+    return this.getMarketInsights();
   }
 }
 

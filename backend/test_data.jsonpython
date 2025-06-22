@@ -1,0 +1,1 @@
+{"prices": [100, 101, 99, 102, 98, 105], "indicators": ["rsi", "ma200", "bollinger_bands"]}  python\technical_indicators.py test_data.json

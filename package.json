@@ -2,6 +2,8 @@
   "dependencies": {
     "@llama-node/core": "^0.1.6",
     "@llama-node/llama-cpp": "^0.1.6",
-    "node-llama-cpp": "^3.5.0"
+    "node-llama-cpp": "^3.5.0",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.1"
   }
 }

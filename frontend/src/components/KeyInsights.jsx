@@ -55,7 +55,9 @@ const InsightCard = ({ insight }) => {
               <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                 {insight.title || 'No title available'}
               </h3>
-              <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors mt-1" />
+              {insight.url !== '#' && (
+                <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors mt-1" />
+              )}
             </a>
             <p className="mt-2 text-gray-600 line-clamp-2">
               {insight.description || 'No description available'}
@@ -82,9 +84,15 @@ const KeyInsights = () => {
   useEffect(() => {
     const fetchInsights = async () => {
       try {
+        console.log('Fetching market insights...');
         const data = await marketApi.getInsights();
-        // Ensure data is an array, if not, set to empty array
-        setInsights(Array.isArray(data) ? data : []);
+        console.log('Received insights data:', data);
+        
+        // Ensure data is an array and limit to 3 items
+        let insightsArray = Array.isArray(data) ? data : [];
+        insightsArray = insightsArray.slice(0, 3); // Limit to 3 insights
+        
+        setInsights(insightsArray);
         setError(null);
       } catch (err) {
         console.error('Error fetching insights:', err);
@@ -96,8 +104,8 @@ const KeyInsights = () => {
     };
 
     fetchInsights();
-    // Refresh insights every hour
-    const interval = setInterval(fetchInsights, 3600000);
+    // Refresh insights every 30 minutes (matching backend cache)
+    const interval = setInterval(fetchInsights, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -132,9 +140,10 @@ const KeyInsights = () => {
     );
   }
 
+  // Show only 3 insights
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {insights.map((insight, index) => (
+      {insights.slice(0, 3).map((insight, index) => (
         <InsightCard key={index} insight={insight} />
       ))}
     </div>

@@ -1,0 +1,37 @@
+def calculate_asset_metrics(asset_data):
+    """Calculate key metrics for an asset"""
+    try:
+        # Extract price changes over different periods
+        change_1d = float(asset_data.get('change_percent', asset_data.get('dayChange', 0)))
+        change_1w = float(asset_data.get('week_change', change_1d * 5))
+        change_1m = float(asset_data.get('month_change', change_1d * 20))
+        change_3m = float(asset_data.get('quarter_change', change_1d * 60))
+        
+        current_price = float(asset_data.get('price', asset_data.get('close', 100)))
+        
+        # Calculate momentum and volatility proxies
+        momentum = (change_1d * 0.4 + change_1w * 0.3 + change_1m * 0.2 + change_3m * 0.1)
+        volatility_proxy = abs(change_1d) + abs(change_1w - change_1d) * 0.5
+        
+        return {
+            'current_price': current_price,
+            'change_1d': change_1d,
+            'change_1w': change_1w,
+            'change_1m': change_1m,
+            'change_3m': change_3m,
+            'momentum': momentum,
+            'volatility_proxy': volatility_proxy,
+            'trend_strength': calculate_trend_strength(change_1d, change_1w, change_1m)
+        }
+        
+    except Exception as e:
+        return {
+            'current_price': 100,
+            'change_1d': 0,
+            'change_1w': 0,
+            'change_1m': 0,
+            'change_3m': 0,
+            'momentum': 0,
+            'volatility_proxy': 0,
+            'trend_strength': 0
+        }
