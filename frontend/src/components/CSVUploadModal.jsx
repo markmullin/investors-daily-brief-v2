@@ -2,6 +2,18 @@ import { useState } from 'react';
 import { X, Upload, FileText, CheckCircle, AlertCircle, Info, Users, Database, AlertTriangle, DollarSign, TrendingUp } from 'lucide-react';
 import { parsePortfolioCSV } from '../utils/csvParser';
 
+// FIXED: Get correct API base URL for production vs development
+const isProduction = window.location.hostname !== 'localhost';
+const API_BASE_URL = isProduction 
+  ? 'https://investors-daily-brief.onrender.com'
+  : 'http://localhost:5000';
+
+console.log('🔧 CSVUploadModal API Configuration:', {
+  isProduction,
+  API_BASE_URL,
+  currentHost: window.location.hostname
+});
+
 function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
   const [file, setFile] = useState(null);
   const [parsing, setParsing] = useState(false);
@@ -155,8 +167,12 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
     try {
       console.log(`🚀 Uploading ${preview.transactions.length} transactions to account: "${accountName}" with merge mode: ${mergeMode}`);
       
+      // FIXED: Use environment-aware API URL instead of hardcoded localhost
+      const uploadUrl = `${API_BASE_URL}/api/portfolio/portfolio_1/transactions/batch`;
+      console.log(`🌐 Upload URL: ${uploadUrl}`);
+      
       // Use batch import for better performance
-      const response = await fetch('http://localhost:5000/api/portfolio/portfolio_1/transactions/batch', {
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -193,6 +209,7 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
       }, 2000);
       
     } catch (err) {
+      console.error('❌ Upload error:', err);
       setError('Failed to upload transactions: ' + err.message);
     } finally {
       setUploading(false);

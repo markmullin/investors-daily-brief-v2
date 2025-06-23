@@ -4,6 +4,18 @@ import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart,
 import CSVUploadModal from './CSVUploadModal';
 import './PortfolioTracker.css';
 
+// FIXED: Get correct API base URL for production vs development
+const isProduction = window.location.hostname !== 'localhost';
+const API_BASE_URL = isProduction 
+  ? 'https://investors-daily-brief.onrender.com'
+  : 'http://localhost:5000';
+
+console.log('🔧 PortfolioTracker API Configuration:', {
+  isProduction,
+  API_BASE_URL,
+  currentHost: window.location.hostname
+});
+
 // Modern chrome-like color palette
 const COLORS = {
   primary: ['#6b7280', '#4b5563', '#374151', '#1f2937', '#111827', '#9ca3af', '#d1d5db', '#e5e7eb'],
@@ -45,8 +57,8 @@ const SECTOR_MAPPING = {
   'HON': 'Industrial', 'UPS': 'Industrial', 'RTX': 'Industrial', 'LMT': 'Industrial',
   'DE': 'Industrial', 'FDX': 'Industrial',
   
-  // Communication & Media
-  'T': 'Communication', 'VZ': 'Communication', 'CMCSA': 'Communication', 'NFLX': 'Communication',
+  // Communication & Media (FIXED: Removed duplicate NFLX)
+  'T': 'Communication', 'VZ': 'Communication', 'CMCSA': 'Communication',
   
   // Real Estate & REITs
   'AMT': 'Real Estate', 'PLD': 'Real Estate', 'CCI': 'Real Estate', 'EQIX': 'Real Estate',
@@ -85,12 +97,13 @@ function PortfolioTracker() {
   const [spyData, setSpyData] = useState(null);
   const [spyDataLoading, setSpyDataLoading] = useState(false);
   
-  // Enhanced fetch with better error handling
+  // FIXED: Enhanced fetch with better error handling - uses correct API URL
   const fetchPortfolio = useCallback(async (isRefresh = false, showLoadingState = true) => {
     if (isRefresh && showLoadingState) setRefreshing(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/portfolio/portfolio_1');
+      console.log(`🌐 Fetching portfolio from: ${API_BASE_URL}/api/portfolio/portfolio_1`);
+      const response = await fetch(`${API_BASE_URL}/api/portfolio/portfolio_1`);
       if (!response.ok) {
         throw new Error('Failed to fetch portfolio');
       }
@@ -110,6 +123,7 @@ function PortfolioTracker() {
       setPortfolio(data);
       setError(null);
       setLastUpdated(new Date());
+      console.log('✅ Portfolio data loaded successfully');
     } catch (err) {
       console.error('Portfolio fetch error:', err);
       setError(err.message);
@@ -119,7 +133,7 @@ function PortfolioTracker() {
     }
   }, []);
 
-  // FIXED: Removed CORS-blocking headers, using cache busting parameter only
+  // FIXED: SPY data fetch using correct API URL
   const fetchSpyData = useCallback(async () => {
     setSpyDataLoading(true);
     console.log('\n🔍 ===== FIXED SPY CALCULATION START =====');
@@ -127,9 +141,9 @@ function PortfolioTracker() {
     try {
       // Use cache busting parameter only (no custom headers to avoid CORS issues)
       const timestamp = Date.now();
-      const url = `http://localhost:5000/api/market/history/SPY.US?period=5y&cachebust=${timestamp}`;
+      const url = `${API_BASE_URL}/api/market/history/SPY.US?period=5y&cachebust=${timestamp}`;
       
-      console.log(`📡 Fetching SPY data (CORS-safe): ${url}`);
+      console.log(`📡 Fetching SPY data from: ${url}`);
       
       // Simple fetch without custom headers to avoid CORS preflight issues
       const response = await fetch(url);
@@ -224,20 +238,6 @@ function PortfolioTracker() {
           
           console.log(`   ✅ ${label} return: ${returnPercent.toFixed(2)}%`);
           
-          // Validation check for 5Y return
-          if (label === '5Y') {
-            console.log(`\n🔍 5Y RETURN VALIDATION:`);
-            console.log(`   Our calculation: ${returnPercent.toFixed(2)}%`);
-            console.log(`   Expected (Google): ~84.57%`);
-            console.log(`   Difference: ${Math.abs(returnPercent - 84.57).toFixed(2)} percentage points`);
-            
-            if (Math.abs(returnPercent - 84.57) > 20) {
-              console.log(`   ⚠️ LARGE DIFFERENCE detected - data may be stale or incorrect`);
-            } else {
-              console.log(`   ✅ Return looks reasonable`);
-            }
-          }
-          
           return returnPercent;
           
         } catch (error) {
@@ -287,13 +287,6 @@ function PortfolioTracker() {
         '1W': null, '1M': null, '3M': null, '1Y': null, '3Y': null, '5Y': null, 'ALL': null,
         error: err.message
       });
-      
-      // Provide debugging instructions
-      console.log('\n💡 DEBUGGING SUGGESTIONS:');
-      console.log('1. Check if backend server is running: http://localhost:5000');
-      console.log('2. Test the API endpoint directly in browser: http://localhost:5000/api/market/history/SPY.US?period=5y');
-      console.log('3. Check backend logs for API key issues or EOD API errors');
-      console.log('4. Run the test script: node backend/test-spy-calculation.js');
       
     } finally {
       setSpyDataLoading(false);
@@ -429,9 +422,11 @@ function PortfolioTracker() {
     return cagrs;
   }, [timeBasedReturns]);
 
+  // FIXED: Debug data fetch using correct API URL
   const fetchDebugData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/portfolio/portfolio_1/debug');
+      console.log(`🌐 Fetching debug data from: ${API_BASE_URL}/api/portfolio/portfolio_1/debug`);
+      const response = await fetch(`${API_BASE_URL}/api/portfolio/portfolio_1/debug`);
       if (!response.ok) {
         throw new Error('Failed to fetch debug data');
       }
@@ -444,13 +439,15 @@ function PortfolioTracker() {
     }
   };
 
+  // FIXED: Clear portfolio using correct API URL
   const clearPortfolio = async () => {
     if (!confirm('Are you sure you want to clear all portfolio data? This cannot be undone.')) {
       return;
     }
     
     try {
-      const response = await fetch('http://localhost:5000/api/portfolio/portfolio_1/clear', {
+      console.log(`🌐 Clearing portfolio at: ${API_BASE_URL}/api/portfolio/portfolio_1/clear`);
+      const response = await fetch(`${API_BASE_URL}/api/portfolio/portfolio_1/clear`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -619,15 +616,15 @@ function PortfolioTracker() {
               <div className="flex-1">
                 <h4 className="font-medium text-gray-900 mb-1">Live Data Sources & Debug Info</h4>
                 <p className="text-sm text-gray-700 mb-2">
-                  <strong>Portfolio Returns:</strong> Calculated from live EOD API prices vs. your cost basis. 
-                  <strong> S&P 500 Benchmark:</strong> Real SPY historical data from EOD API (same source as market metrics).
+                  <strong>Portfolio Returns:</strong> Calculated from live API prices vs. your cost basis. 
+                  <strong> S&P 500 Benchmark:</strong> Real SPY historical data from production API.
                   <strong> Time-based Returns:</strong> Estimated distribution of gains over periods.
                 </p>
                 <div className="text-xs text-gray-600 space-y-1">
                   <div>• Backend server: {error ? '❌ Offline' : '✅ Online'}</div>
                   <div>• S&P 500 data: {spyDataLoading ? '🔄 Loading...' : spyData?.error ? '❌ Error' : spyData ? '✅ Loaded' : '⏳ Pending'}</div>
-                  <div>• Console: Check browser console for detailed SPY calculation logs</div>
-                  <div>• API Test: <code>http://localhost:5000/api/market/history/SPY.US?period=5y</code></div>
+                  <div>• API Base: <code>{API_BASE_URL}</code></div>
+                  <div>• Environment: {isProduction ? 'Production' : 'Development'}</div>
                 </div>
               </div>
             </div>
@@ -723,7 +720,7 @@ function PortfolioTracker() {
               </div>
             </div>
 
-            {/* S&P 500 Benchmark Card - FIXED WITH CORS-SAFE CALCULATION */}
+            {/* S&P 500 Benchmark Card - FIXED WITH PRODUCTION API */}
             <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-gray-200 rounded-lg">
