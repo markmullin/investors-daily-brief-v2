@@ -4,7 +4,7 @@ import { fetchWithConfig } from './api';
 // Constants for API URLs - these should match what's in api.js
 const isProduction = window.location.hostname !== 'localhost';
 const API_BASE_URL = isProduction 
-  ? 'https://market-dashboard-backend.onrender.com'
+  ? 'https://investors-daily-brief.onrender.com'  // ✅ FIXED: Correct backend URL
   : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
 
 /**

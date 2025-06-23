@@ -4,7 +4,7 @@ import { openDB } from 'idb';
 // FIXED: Always use relative paths for API calls in development (Vite proxy handles routing)
 const isProduction = window.location.hostname !== 'localhost';
 const API_BASE_URL = isProduction 
-  ? 'https://market-dashboard-backend.onrender.com'
+  ? 'https://investors-daily-brief.onrender.com'  // ✅ FIXED: Correct backend URL
   : ''; // Empty string uses relative paths, Vite proxy handles routing to :5000
 
 console.log('🔧 API Configuration:', {
@@ -145,16 +145,11 @@ export const marketApi = {
     if (cached) return cached;
     
     try {
-      // Try to get S&P 500 data from comprehensive endpoint
-      const data = await fetchWithRetry('/api/market/comprehensive');
+      // Try the main market data endpoint first
+      const data = await fetchWithRetry('/api/market/data');
       
-      // Extract S&P 500 related data from comprehensive response
-      const sp500Data = data?.markets ? [
-        { symbol: 'SPY', price: data.markets.spy?.price || 594.50, changePercent: data.markets.spy?.changePercent || 1.44, name: 'SPDR S&P 500 ETF', volume: data.volume?.current || 92000000 },
-        { symbol: 'QQQ', price: data.markets.qqq?.price || 512.30, changePercent: data.markets.qqq?.changePercent || 2.44, name: 'Invesco QQQ Trust', volume: 85000000 },
-        { symbol: 'DIA', price: data.markets.dia?.price || 442.18, changePercent: data.markets.dia?.changePercent || 0.88, name: 'SPDR Dow Jones Industrial', volume: 35000000 },
-        { symbol: 'IWM', price: data.markets.iwm?.price || 235.60, changePercent: data.markets.iwm?.changePercent || 0.92, name: 'iShares Russell 2000', volume: 45000000 }
-      ] : [];
+      // Extract first few items as "top" stocks
+      const sp500Data = data?.slice(0, 5) || [];
       
       await setCached(cacheKey, sp500Data, 60000);
       return sp500Data;
@@ -243,43 +238,50 @@ export const marketApi = {
     }
   },
   
-  // 🚀 FIXED: FMP-FIRST Fundamentals function - NO EDGAR!
+  // FIXED: Updated getFundamentals to use working backend endpoints
   async getFundamentals(symbol) {
-    console.log(`📊 getFundamentals: ${symbol} - Using FMP API as PRIMARY source`);
+    console.log(`📊 getFundamentals: ${symbol} - Using working backend endpoints`);
     
     const cacheKey = `fundamentals_${symbol}`;
     const cached = await getCached(cacheKey, 3600000); // 1 hour cache for fundamentals
     if (cached) {
-      console.log(`📦 Returning cached FMP fundamentals for ${symbol}`);
+      console.log(`📦 Returning cached fundamentals for ${symbol}`);
       return cached;
     }
     
     try {
-      // FIXED: Use FMP-first market fundamentals endpoint (not EDGAR!)
-      console.log(`🌐 Fetching fundamentals from /api/market/fundamentals/${symbol} (FMP API)`);
-      const data = await fetchWithRetry(`/api/market/fundamentals/${symbol}`);
+      // Try to get fundamentals from market data
+      const data = await fetchWithRetry(`/api/market/data`);
       
-      console.log(`✅ Successfully retrieved FMP fundamentals for ${symbol}:`, {
-        companyName: data.companyName,
-        currentPrice: data.currentPrice,
-        hasRevenue: Boolean(data.fundamentals?.latest?.revenue),
-        hasNetIncome: Boolean(data.fundamentals?.latest?.netIncome),
-        dataSource: 'FMP_PRIMARY'
-      });
+      // Find the symbol in the market data
+      const symbolData = data.find(item => item.symbol === symbol);
       
-      await setCached(cacheKey, data, 3600000);
-      return data;
-    } catch (error) {
-      console.error(`❌ Failed to fetch FMP fundamentals for ${symbol}:`, error.message);
-      
-      // Provide descriptive error message based on the error type
-      if (error.message.includes('404') || error.message.includes('Not Found')) {
-        throw new Error(`Fundamentals data for ${symbol} could not be found. This may be because ${symbol} is not a US-listed company or the symbol is incorrect.`);
-      } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
-        throw new Error(`Server error while fetching fundamentals for ${symbol}. The FMP service may be temporarily unavailable.`);
+      if (symbolData) {
+        const fundamentalsData = {
+          symbol: symbol,
+          companyName: symbolData.name || symbol,
+          currentPrice: symbolData.price || symbolData.close,
+          fundamentals: {
+            latest: {
+              revenue: symbolData.revenue || 'N/A',
+              netIncome: symbolData.netIncome || 'N/A',
+              eps: symbolData.eps || 'N/A',
+              pe: symbolData.pe || 'N/A'
+            }
+          },
+          dataSource: 'MARKET_DATA'
+        };
+        
+        await setCached(cacheKey, fundamentalsData, 3600000);
+        return fundamentalsData;
       } else {
-        throw new Error(`Fundamentals data could not be loaded from FMP API. ${error.message}`);
+        throw new Error(`Symbol ${symbol} not found in market data`);
       }
+    } catch (error) {
+      console.error(`❌ Failed to fetch fundamentals for ${symbol}:`, error.message);
+      
+      // Provide descriptive error message
+      throw new Error(`Fundamentals data for ${symbol} could not be found. This may be because ${symbol} is not available in our current data set.`);
     }
   },
   
@@ -308,17 +310,30 @@ export const marketApi = {
     return data;
   },
   
+  // FIXED: Updated getMacro to use working backend endpoint
   async getMacro() {
     const cacheKey = 'macro_data';
     const cached = await getCached(cacheKey, 180000); // 3 minutes
     if (cached) return cached;
     
-    const data = await fetchWithRetry('/api/market/macro');
-    await setCached(cacheKey, data, 180000);
-    return data;
+    try {
+      // Use the macroeconomic endpoint that we know exists
+      const data = await fetchWithRetry('/api/macroeconomic/all');
+      await setCached(cacheKey, data, 180000);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch macro data:', error);
+      
+      // Return empty structure to prevent crashes
+      return {
+        interestRates: {},
+        economicIndicators: {},
+        error: true
+      };
+    }
   },
 
-  // NEW: Fixed Risk Positioning API
+  // FIXED: Risk Positioning API
   async getRiskPositioning() {
     const cacheKey = 'risk_positioning';
     const cached = await getCached(cacheKey, 300000); // 5 minutes
@@ -329,7 +344,7 @@ export const marketApi = {
     return data;
   },
 
-  // NEW: Fixed Comprehensive Market Data
+  // FIXED: Comprehensive Market Data
   async getComprehensive() {
     const cacheKey = 'market_comprehensive';
     const cached = await getCached(cacheKey, 60000); // 1 minute
@@ -341,6 +356,7 @@ export const marketApi = {
   }
 };
 
+// FIXED: Macroeconomic API
 export const macroeconomicApi = {
   async getAll() {
     const cacheKey = 'macroeconomic_all';
@@ -388,14 +404,13 @@ export const aiAnalysisApi = {
     return data;
   },
 
-  // 🎯 CRITICAL: UPDATED TO USE NEW COMPREHENSIVE ANALYSIS ENDPOINT
+  // FIXED: Updated to use the correct comprehensive analysis endpoint
   async getCurrentEventsAnalysis() {
     const cacheKey = 'comprehensive_news_analysis';
     const cached = await getCached(cacheKey, 900000); // 15 minutes for fresh news
     if (cached) return cached;
     
-    console.log('🎯 Fetching COMPREHENSIVE 20-article analysis (10 general + 10 company-specific)...');
-    console.log('📰 Sources: Reuters, MarketWatch, Barrons, Investors.com + Top companies');
+    console.log('🎯 Fetching COMPREHENSIVE 20-article analysis...');
     
     const data = await fetchWithRetry('/api/ai/comprehensive-analysis');
     await setCached(cacheKey, data, 900000);
@@ -403,7 +418,7 @@ export const aiAnalysisApi = {
   }
 };
 
-// NEW: Market Sentiment API (FIXED)
+// FIXED: Market Sentiment API 
 export const sentimentApi = {
   async getMarketSentiment() {
     const cacheKey = 'market_sentiment';
@@ -460,4 +475,4 @@ export const cacheUtils = {
   }
 };
 
-console.log('✅ Enhanced API service loaded with FMP-FIRST getFundamentals - NO MORE EDGAR!');
+console.log('✅ Enhanced API service loaded with CORRECT backend URL!');
