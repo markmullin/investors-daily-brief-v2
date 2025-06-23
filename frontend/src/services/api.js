@@ -238,9 +238,9 @@ export const marketApi = {
     }
   },
   
-  // FIXED: Updated getFundamentals to use working backend endpoints
+  // FIXED: Updated getFundamentals to use correct FMP backend endpoint
   async getFundamentals(symbol) {
-    console.log(`📊 getFundamentals: ${symbol} - Using working backend endpoints`);
+    console.log(`📊 getFundamentals: ${symbol} - Using FMP backend endpoint`);
     
     const cacheKey = `fundamentals_${symbol}`;
     const cached = await getCached(cacheKey, 3600000); // 1 hour cache for fundamentals
@@ -250,38 +250,57 @@ export const marketApi = {
     }
     
     try {
-      // Try to get fundamentals from market data
-      const data = await fetchWithRetry(`/api/market/data`);
+      // FIXED: Use the correct backend endpoint that calls FMP with EDGAR fallback
+      const data = await fetchWithRetry(`/api/edgar/fundamentals/${symbol}`);
       
-      // Find the symbol in the market data
-      const symbolData = data.find(item => item.symbol === symbol);
+      console.log(`✅ FMP fundamentals retrieved for ${symbol}:`, {
+        hasRevenue: !!data.fiscalData?.Revenues?.quarterly?.length,
+        hasNetIncome: !!data.fiscalData?.NetIncomeLoss?.quarterly?.length,
+        hasGrossMargin: !!data.fiscalData?.GrossMargins?.quarterly?.length,
+        dataSource: data.dataSource || 'FMP'
+      });
       
-      if (symbolData) {
-        const fundamentalsData = {
-          symbol: symbol,
-          companyName: symbolData.name || symbol,
-          currentPrice: symbolData.price || symbolData.close,
-          fundamentals: {
-            latest: {
-              revenue: symbolData.revenue || 'N/A',
-              netIncome: symbolData.netIncome || 'N/A',
-              eps: symbolData.eps || 'N/A',
-              pe: symbolData.pe || 'N/A'
-            }
-          },
-          dataSource: 'MARKET_DATA'
-        };
-        
-        await setCached(cacheKey, fundamentalsData, 3600000);
-        return fundamentalsData;
-      } else {
-        throw new Error(`Symbol ${symbol} not found in market data`);
-      }
+      await setCached(cacheKey, data, 3600000);
+      return data;
+      
     } catch (error) {
       console.error(`❌ Failed to fetch fundamentals for ${symbol}:`, error.message);
       
-      // Provide descriptive error message
-      throw new Error(`Fundamentals data for ${symbol} could not be found. This may be because ${symbol} is not available in our current data set.`);
+      // Provide helpful error message
+      throw new Error(`Unable to load fundamentals for ${symbol}. ${error.message}`);
+    }
+  },
+
+  // FIXED: Add missing getInsights method for KeyInsights component
+  async getInsights() {
+    console.log('📰 getInsights: Fetching market insights');
+    
+    const cacheKey = 'market_insights';
+    const cached = await getCached(cacheKey, 1800000); // 30 minutes cache
+    if (cached) return cached;
+    
+    try {
+      // Use the comprehensive analysis endpoint for insights
+      const data = await fetchWithRetry('/api/ai/comprehensive-analysis');
+      
+      // Extract insights from the comprehensive analysis
+      const insights = data.sources?.slice(0, 3).map(source => ({
+        title: source.title,
+        description: source.description || source.summary,
+        url: source.url,
+        source: source.source,
+        publishedTime: source.publishedTime,
+        thumbnail: source.thumbnail
+      })) || [];
+      
+      await setCached(cacheKey, insights, 1800000);
+      return insights;
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch insights:', error.message);
+      
+      // Return empty array instead of throwing to prevent UI crashes
+      return [];
     }
   },
   
@@ -475,4 +494,4 @@ export const cacheUtils = {
   }
 };
 
-console.log('✅ Enhanced API service loaded with CORRECT backend URL!');
+console.log('✅ Enhanced API service loaded with FIXED fundamentals endpoint!');
