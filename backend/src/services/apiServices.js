@@ -18,9 +18,32 @@ const SECTOR_MAP = {
   XLC: { name: 'Communication', color: 'rgb(255, 159, 64)' }
 };
 
-// 🔧 FIXED: Enhanced FMP Service with proper intraday support and date range filtering
+// 🔧 FIXED: Enhanced FMP Service with proper intraday support and BRK.B normalization
 const fmpService = {
   baseURL: 'https://financialmodelingprep.com/api/v3',
+  
+  // ✅ FIXED: Enhanced symbol normalization with BRK.B support
+  normalizeSymbolForFMP(symbol) {
+    if (!symbol) return '';
+    
+    let normalized = symbol
+      .replace('.US', '')
+      .replace('.NYSE', '')
+      .replace('.NASDAQ', '')
+      .toUpperCase();
+    
+    // 🔧 CRITICAL FIX: Handle BRK.B specifically - FMP uses BRK-B format
+    if (normalized === 'BRK.B' || normalized === 'BRK-B') {
+      normalized = 'BRK-B';
+      console.log(`🔧 FIXED: BRK.B ticker converted to BRK-B for FMP API`);
+    } else {
+      // For other symbols, replace / with . (but not for BRK.B)
+      normalized = normalized.replace('/', '.');
+    }
+    
+    console.log(`🔄 Symbol normalized: ${symbol} → ${normalized}`);
+    return normalized;
+  },
   
   // ✅ Verify API key is loaded correctly
   get apiKey() {
@@ -45,9 +68,8 @@ const fmpService = {
     try {
       console.log(`🎯 FMP: Fetching quote for ${symbol}`);
       
-      // Clean symbol - remove .US suffix if present for FMP API
-      const cleanSymbol = symbol.replace('.US', '').replace('.NYSE', '').replace('.NASDAQ', '');
-      console.log(`🧹 Cleaned symbol: ${symbol} → ${cleanSymbol}`);
+      // 🔧 FIXED: Use proper symbol normalization including BRK.B handling
+      const cleanSymbol = this.normalizeSymbolForFMP(symbol);
       
       // Verify API key before making request
       if (!this.apiKey) {
@@ -116,8 +138,8 @@ const fmpService = {
   
   // ✅ Create fallback quote when API fails
   createFallbackQuote(symbol) {
-    const cleanSymbol = symbol.replace('.US', '');
-    console.log(`🔄 Creating fallback quote for ${symbol}`);
+    const cleanSymbol = this.normalizeSymbolForFMP(symbol);
+    console.log(`🔄 Creating fallback quote for ${symbol} (cleaned: ${cleanSymbol})`);
     
     // Use reasonable fallback prices for major indices
     const fallbackPrices = {
@@ -125,7 +147,8 @@ const fmpService = {
       'QQQ': 450.0,
       'DIA': 395.0,
       'IWM': 210.0,
-      'TLT': 98.0
+      'TLT': 98.0,
+      'BRK-B': 450.0  // Added BRK-B fallback price
     };
     
     const basePrice = fallbackPrices[cleanSymbol] || 100.0;
@@ -205,7 +228,7 @@ const fmpService = {
     }
   },
 
-  // 🚀 FIXED: Enhanced historical data with proper intraday support and date ranges
+  // 🚀 FIXED: Enhanced historical data with proper symbol normalization and better data fetching for MA200
   async getHistoricalData(symbol, period = null) {
     const cacheKey = period ? `history_${symbol}_${period}` : `history_${symbol}`;
     const cached = cache.get(cacheKey);
@@ -217,8 +240,8 @@ const fmpService = {
     try {
       console.log(`🎯 FMP: Fetching historical data for ${symbol}, period: ${period || 'default'}`);
       
-      // Clean symbol - remove .US suffix if present for FMP API
-      const cleanSymbol = symbol.replace('.US', '').replace('.NYSE', '').replace('.NASDAQ', '');
+      // 🔧 FIXED: Use proper symbol normalization including BRK.B handling
+      const cleanSymbol = this.normalizeSymbolForFMP(symbol);
       
       if (!this.apiKey) {
         throw new Error('FMP API key not configured');
@@ -256,10 +279,10 @@ const fmpService = {
         console.log(`📊 Using 1-hour intraday data for ${period} with date range: ${fromDate} to ${toDate}`);
         
       } else {
-        // Daily historical data for other periods with improved date range
+        // Daily historical data for other periods with enhanced date range for MA200 calculation
         endpoint = `/historical-price-full/${cleanSymbol}`;
         
-        // 🔧 FIXED: Add date range parameters for better performance and accuracy
+        // 🔧 ENHANCED: Add extra data for MA200 calculation when needed
         if (period) {
           const endDate = new Date();
           const startDate = new Date();
@@ -267,27 +290,38 @@ const fmpService = {
           switch (period) {
             case '1m':
               startDate.setMonth(endDate.getMonth() - 1);
+              // Add extra days for MA200 calculation
+              startDate.setDate(startDate.getDate() - 280);
               break;
             case '3m':
               startDate.setMonth(endDate.getMonth() - 3);
+              // Add extra days for MA200 calculation
+              startDate.setDate(startDate.getDate() - 280);
               break;
             case '6m':
               startDate.setMonth(endDate.getMonth() - 6);
+              // Add extra days for MA200 calculation
+              startDate.setDate(startDate.getDate() - 280);
               break;
             case '1y':
               startDate.setFullYear(endDate.getFullYear() - 1);
+              // Add extra days for MA200 calculation
+              startDate.setDate(startDate.getDate() - 280);
               break;
             case '5y':
               startDate.setFullYear(endDate.getFullYear() - 5);
+              // Add extra time for MA200 calculation with weekly data
+              startDate.setDate(startDate.getDate() - 400);
               break;
             default:
               startDate.setFullYear(endDate.getFullYear() - 5); // Default to 5 years
+              startDate.setDate(startDate.getDate() - 400);
           }
           
           const fromDate = startDate.toISOString().split('T')[0];
           const toDate = endDate.toISOString().split('T')[0];
           url = `${this.baseURL}${endpoint}?from=${fromDate}&to=${toDate}&apikey=${this.apiKey}`;
-          console.log(`📊 Using daily historical data for ${period} with date range: ${fromDate} to ${toDate}`);
+          console.log(`📊 Using daily historical data for ${period} with enhanced date range for MA200: ${fromDate} to ${toDate}`);
         } else {
           url = `${this.baseURL}${endpoint}?apikey=${this.apiKey}`;
           console.log(`📊 Using daily historical data for default period`);
@@ -399,6 +433,7 @@ const fmpService = {
           .sort((a, b) => new Date(a.date) - new Date(b.date));
 
         console.log(`✅ FMP: Processed ${processedData.length} daily points for ${symbol} (${period || 'default'})`);
+        console.log(`📊 Enhanced data range for MA200 calculation: ${processedData.length >= 200 ? 'SUFFICIENT' : 'INSUFFICIENT'} data points`);
       }
       
       // Log sample data for debugging
