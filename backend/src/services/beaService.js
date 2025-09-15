@@ -54,13 +54,18 @@ class BEAService {
   }
 
   async getGDPDataOnly() {
+    // Get only last 2 years of data (8 quarters)
+    const currentYear = new Date().getFullYear();
+    const startYear = currentYear - 2;
+    const years = `${startYear},${startYear + 1},${startYear + 2}`;
+    
     const params = {
       UserID: this.apiKey,
       method: 'GetData',
       datasetname: 'NIPA',
       TableName: 'T10101',
       Frequency: 'Q',
-      Year: 'ALL',
+      Year: years, // Only get last 3 years instead of ALL
       ResultFormat: 'json'
     };
 
@@ -94,13 +99,18 @@ class BEAService {
   async getCorporateProfitsData() {
     console.log('💰 CORPORATE PROFITS: Using correct Table T61600D...');
     
+    // Get only last 2 years of corporate profits data
+    const currentYear = new Date().getFullYear();
+    const startYear = currentYear - 2;
+    const years = `${startYear},${startYear + 1},${startYear + 2}`;
+    
     const params = {
       UserID: this.apiKey,
       method: 'GetData',
       datasetname: 'NIPA',
       TableName: 'T61600D', // ✅ CORRECT TABLE: Corporate Profits by Industry
       Frequency: 'Q',
-      Year: 'ALL',
+      Year: years, // Only get last 3 years instead of ALL
       ResultFormat: 'json'
     };
 
