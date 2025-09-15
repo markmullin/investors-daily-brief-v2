@@ -2,6 +2,7 @@
 """
 technical_indicators.py - Advanced Technical Indicators Calculation
 Provides comprehensive technical analysis indicators using scientific Python libraries
+FIXED: Proper price data extraction to handle different data formats
 """
 
 import sys
@@ -13,10 +14,58 @@ from scipy.signal import find_peaks
 import warnings
 warnings.filterwarnings('ignore')
 
+def extract_price_values(price_data):
+    """
+    Extract price values from various input formats
+    Handles: list of numbers, list of objects with price/close, etc.
+    """
+    try:
+        if not price_data:
+            return []
+        
+        # If it's already a list of numbers
+        if isinstance(price_data, list) and len(price_data) > 0:
+            first_item = price_data[0]
+            
+            # Case 1: List of numbers [100, 101, 102...]
+            if isinstance(first_item, (int, float)):
+                return [float(x) for x in price_data if isinstance(x, (int, float))]
+            
+            # Case 2: List of objects with price/close fields
+            elif isinstance(first_item, dict):
+                prices = []
+                for item in price_data:
+                    if isinstance(item, dict):
+                        # Try different price field names
+                        price = None
+                        for field in ['price', 'close', 'value']:
+                            if field in item and isinstance(item[field], (int, float)):
+                                price = float(item[field])
+                                break
+                        
+                        if price is not None:
+                            prices.append(price)
+                
+                return prices
+        
+        # Case 3: Single object with prices array
+        elif isinstance(price_data, dict):
+            if 'prices' in price_data:
+                return extract_price_values(price_data['prices'])
+            elif 'price_data' in price_data:
+                return extract_price_values(price_data['price_data'])
+        
+        return []
+        
+    except Exception as e:
+        print(f"Error extracting price values: {e}", file=sys.stderr)
+        return []
+
 def calculate_technical_indicators(price_data, indicators_requested):
     """
     Calculate comprehensive technical indicators for price data
     Returns detailed technical analysis with requested indicators
+    FIXED: Proper data extraction before pandas conversion
     """
     try:
         if not price_data or len(price_data) == 0:
@@ -25,22 +74,28 @@ def calculate_technical_indicators(price_data, indicators_requested):
                 'indicators': {}
             }
         
-        # Convert price data to pandas Series
-        if isinstance(price_data, dict) and 'prices' in price_data:
-            prices = pd.Series(price_data['prices'], dtype=float)
-        elif isinstance(price_data, list):
-            prices = pd.Series(price_data, dtype=float)
-        else:
+        # Extract prices using improved extraction
+        price_values = extract_price_values(price_data)
+        
+        if not price_values or len(price_values) == 0:
             return {
-                'error': 'Invalid price data format',
+                'error': 'No valid price values could be extracted',
+                'indicators': {},
+                'debug_info': {
+                    'input_type': str(type(price_data)),
+                    'input_length': len(price_data) if hasattr(price_data, '__len__') else 'N/A',
+                    'first_item_type': str(type(price_data[0])) if isinstance(price_data, list) and len(price_data) > 0 else 'N/A'
+                }
+            }
+        
+        if len(price_values) < 10:
+            return {
+                'error': f'Insufficient price data (have {len(price_values)}, need at least 10)',
                 'indicators': {}
             }
         
-        if len(prices) < 10:
-            return {
-                'error': 'Insufficient price data (need at least 10 data points)',
-                'indicators': {}
-            }
+        # Convert extracted price values to pandas Series - NOW SAFE
+        prices = pd.Series(price_values, dtype=float)
         
         indicators = {}
         
@@ -84,7 +139,11 @@ def calculate_technical_indicators(price_data, indicators_requested):
     except Exception as e:
         return {
             'error': f'Technical indicators calculation failed: {str(e)}',
-            'indicators': {}
+            'indicators': {},
+            'debug_info': {
+                'input_type': str(type(price_data)),
+                'error_location': 'calculate_technical_indicators'
+            }
         }
 
 def calculate_rsi(prices, period=14):
@@ -714,14 +773,14 @@ def main():
             input_data = json.load(f)
         
         # Extract data
-        prices = input_data.get('prices', [])
+        prices = input_data.get('prices', input_data.get('price_data', []))
         indicators_requested = input_data.get('indicators', ['rsi', 'ma200', 'bollinger_bands', 'macd'])
         
         # Perform analysis
         result = calculate_technical_indicators(prices, indicators_requested)
         
         # Output result
-        print(json.dumps(result, indent=2))
+        print(json.dumps(result, indent=2, default=str))
         
     except Exception as e:
         error_result = {

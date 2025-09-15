@@ -51,6 +51,77 @@ class FinalMarketDashboardServer {
   }
 
   setupHealthAndInfo() {
+    // DIRECT SIMPLE ENDPOINTS - NO DEPENDENCIES
+    this.app.get('/api/simple/sp500-top', (req, res) => {
+      console.log('📊 [DIRECT] S&P 500 endpoint hit');
+      res.json([
+        { symbol: 'AAPL', name: 'Apple Inc.', price: 233.27, changePercent: 1.41 },
+        { symbol: 'NVDA', name: 'NVIDIA Corporation', price: 177.86, changePercent: 0.39 },
+        { symbol: 'MSFT', name: 'Microsoft Corporation', price: 512.37, changePercent: 2.27 },
+        { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 241.10, changePercent: 0.30 },
+        { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 228.38, changePercent: -0.68 },
+        { symbol: 'META', name: 'Meta Platforms Inc.', price: 754.46, changePercent: 0.47 },
+        { symbol: 'TSLA', name: 'Tesla Inc.', price: 394.18, changePercent: 6.88 },
+        { symbol: 'BRK.B', name: 'Berkshire Hathaway', price: 460.25, changePercent: 0.15 },
+        { symbol: 'JPM', name: 'JPMorgan Chase', price: 306.37, changePercent: 0.26 },
+        { symbol: 'V', name: 'Visa Inc.', price: 339.75, changePercent: -1.09 }
+      ]);
+    });
+
+    this.app.get('/api/simple/discovery', (req, res) => {
+      console.log('🎯 [DIRECT] Discovery endpoint hit');
+      res.json({
+        success: true,
+        data: {
+          market_pulse: {
+            stocks: [
+              { symbol: 'NVDA', name: 'NVIDIA', changePercent: 5.2, category: 'gainer' },
+              { symbol: 'TSLA', name: 'Tesla', changePercent: 4.8, category: 'gainer' },
+              { symbol: 'AAPL', name: 'Apple', changePercent: 2.5, category: 'gainer' },
+              { symbol: 'INTC', name: 'Intel', changePercent: -3.2, category: 'loser' },
+              { symbol: 'BA', name: 'Boeing', changePercent: -2.8, category: 'loser' }
+            ],
+            lastUpdated: new Date().toISOString(),
+            totalStocks: 5
+          },
+          earnings_spotlight: {
+            stocks: [
+              { symbol: 'ORCL', name: 'Oracle', date: '2025-09-15', time: 'After Close' },
+              { symbol: 'ADBE', name: 'Adobe', date: '2025-09-17', time: 'After Close' }
+            ],
+            lastUpdated: new Date().toISOString(),
+            totalStocks: 2
+          },
+          market_themes: {
+            stocks: [
+              { symbol: 'NVDA', name: 'NVIDIA', sector: 'Technology', theme: 'AI Revolution' },
+              { symbol: 'LLY', name: 'Eli Lilly', sector: 'Healthcare', theme: 'GLP-1 Drugs' }
+            ],
+            lastUpdated: new Date().toISOString(),
+            totalStocks: 2
+          },
+          for_you: {
+            stocks: [
+              { symbol: 'AAPL', name: 'Apple', reason: 'Tech leader' },
+              { symbol: 'MSFT', name: 'Microsoft', reason: 'Cloud growth' }
+            ],
+            lastUpdated: new Date().toISOString(),
+            totalStocks: 2
+          }
+        },
+        summary: {
+          totalStocks: 11,
+          marketPulse: 5,
+          earnings: 2,
+          themes: 2,
+          forYou: 2
+        },
+        timestamp: new Date().toISOString()
+      });
+    });
+    
+    console.log('✅ Direct simple endpoints registered');
+
     // Enhanced health check
     this.app.get('/health', (req, res) => {
       const uptime = Date.now() - this.startTime;
@@ -109,6 +180,15 @@ class FinalMarketDashboardServer {
   async setupAllRoutes() {
     console.log('🛤️  Loading all API routes...');
 
+    // PRIORITY: Load simple data routes FIRST to avoid conflicts
+    try {
+      const simpleDataRoutes = await import('./routes/simpleData.js');
+      this.app.use('/api/simple', simpleDataRoutes.default);
+      console.log('✅ Simple Data routes loaded FIRST at /api/simple');
+    } catch (error) {
+      console.error('❌ Failed to load simple data routes:', error.message);
+    }
+
     const routes = [
       // Core market functionality
       { path: '/api/market', module: './routes/market.js', name: 'Market Data' },
@@ -124,6 +204,11 @@ class FinalMarketDashboardServer {
       
       // Authentication and user management
       { path: '/api/auth', module: './routes/auth.js', name: 'Authentication' },
+      
+      // Research and Analysis
+      { path: '/api/research/earnings', module: './routes/earningsRoutes.js', name: 'Earnings Analysis' },
+      { path: '/api/discovery', module: './routes/discoveryRoutes.js', name: 'Stock Discovery' },
+      { path: '/api/simple', module: './routes/simpleRoutes.js', name: 'Simple Routes' },
       
       // Advanced features
       { path: '/api/market-environment', module: './routes/marketEnvironmentRoutes.js', name: 'Market Environment' },

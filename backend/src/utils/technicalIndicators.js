@@ -150,6 +150,99 @@ export function calculateRSI(data, period = 14) {
 }
 
 /**
+ * Calculate Simple Moving Average (SMA)
+ * @param {Array} data - Array of price data objects
+ * @param {Number} period - Period for moving average
+ * @returns {Array} Data with SMA values added
+ */
+export function calculateSMA(data, period) {
+  if (!Array.isArray(data) || data.length === 0) {
+    console.error('Invalid data provided to calculateSMA');
+    return [];
+  }
+  
+  if (typeof period !== 'number' || period <= 0 || !Number.isInteger(period)) {
+    console.error(`Invalid period parameter: ${period}`);
+    return data;
+  }
+  
+  console.log(`Calculating SMA(${period}) for ${data.length} data points`);
+  
+  try {
+    // Create a copy and sort by date
+    const sortedData = [...data].sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateA - dateB;
+    });
+    
+    // Get price values
+    const prices = sortedData.map(item => {
+      const price = typeof item.price === 'number' ? item.price :
+                   typeof item.close === 'number' ? item.close :
+                   parseFloat(item.price || item.close || 0);
+      return isNaN(price) ? null : price;
+    });
+    
+    // Calculate SMA values
+    const smaValues = new Array(prices.length).fill(null);
+    
+    for (let i = period - 1; i < prices.length; i++) {
+      let sum = 0;
+      let count = 0;
+      
+      for (let j = i - period + 1; j <= i; j++) {
+        if (prices[j] !== null) {
+          sum += prices[j];
+          count++;
+        }
+      }
+      
+      if (count === period) {
+        smaValues[i] = Number((sum / period).toFixed(2));
+      }
+    }
+    
+    // Map SMA values back to data
+    const result = sortedData.map((item, index) => ({
+      ...item,
+      [`ma${period}`]: smaValues[index]
+    }));
+    
+    const validSMACount = smaValues.filter(v => v !== null).length;
+    console.log(`SMA(${period}) calculation complete. Valid values: ${validSMACount}/${prices.length}`);
+    
+    return result;
+  } catch (error) {
+    console.error(`Error calculating SMA(${period}):`, error.message);
+    return data.map(item => ({
+      ...item,
+      [`ma${period}`]: null
+    }));
+  }
+}
+
+/**
+ * Calculate multiple moving averages for chart display
+ * @param {Array} data - Array of price data objects
+ * @param {Array} periods - Array of periods to calculate (e.g., [20, 50, 200])
+ * @returns {Array} Data with all moving averages added
+ */
+export function calculateMovingAverages(data, periods = [20, 50, 200]) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return [];
+  }
+  
+  let result = [...data];
+  
+  for (const period of periods) {
+    result = calculateSMA(result, period);
+  }
+  
+  return result;
+}
+
+/**
  * Calculate MACD (Moving Average Convergence Divergence)
  * @param {Array} data - Array of price data objects
  * @param {Number} fastPeriod - Fast EMA period (default: 12)

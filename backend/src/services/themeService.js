@@ -1,5 +1,5 @@
-import axios from 'axios';
 import NodeCache from 'node-cache';
+import fmpService from './fmpService.js';
 
 const cache = new NodeCache({ stdTTL: 3600 }); // Cache for 1 hour
 
@@ -73,20 +73,15 @@ class ThemeService {
 
   async getStockDetails(symbols) {
     try {
-      const responses = await Promise.all(
-        symbols.map(symbol => 
-          axios.get(`https://eodhistoricaldata.com/api/real-time/${symbol}`, {
-            params: {
-              api_token: process.env.EOD_API_KEY,
-              fmt: 'json'
-            }
-          })
-        )
-      );
-
-      return responses.map((response, index) => ({
-        symbol: symbols[index],
-        ...response.data
+      // Use FMP batch quotes for efficiency
+      const quotes = await fmpService.getQuoteBatch(symbols);
+      
+      return quotes.map(quote => ({
+        symbol: quote.symbol,
+        price: quote.price,
+        change: quote.change,
+        change_p: quote.changesPercentage,
+        volume: quote.volume
       }));
     } catch (error) {
       console.error('Error fetching stock details:', error);

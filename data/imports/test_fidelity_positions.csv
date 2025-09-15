@@ -1,6 +1,0 @@
-Account Number,Account Name,Symbol,Description,Quantity,Last Price,Last Price Change,Current Value,Today's Gain/Loss Dollar,Today's Gain/Loss Percent,Total Gain/Loss Dollar,Total Gain/Loss Percent,Percent Of Account,Cost Basis Total,Average Cost Basis,Type
-123456789,Roth IRA,AVGO,BROADCOM INC,10,241.97,+2.54,2419.70,+25.40,+1.06%,+1928.70,+392.81%,25.92%,491.00,49.10,Equity
-123456789,Roth IRA,CRWD,CROWDSTRIKE HLDGS,3,458.81,-10.02,1376.43,-30.06,-2.14%,+1029.43,+296.66%,14.74%,347.00,115.67,Equity
-123456789,Roth IRA,ADBE,ADOBE INC,2,413.36,+1.13,826.72,+2.26,+0.27%,-222.53,-21.21%,8.86%,1049.25,524.63,Equity
-123456789,Roth IRA,MSFT,MICROSOFT CORP,5,458.68,+1.32,2293.40,+6.60,+0.28%,+1293.40,+129.34%,24.57%,1000.00,200.00,Equity
-123456789,Roth IRA,GOOGL,ALPHABET INC,10,171.86,-0.50,1718.60,-5.00,-0.30%,+243.60,+16.51%,18.41%,1475.00,147.50,Equity

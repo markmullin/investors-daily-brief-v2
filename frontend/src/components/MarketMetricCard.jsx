@@ -1,10 +1,15 @@
 import React, { useState, useMemo } from 'react';  // Changed this line
 import { ArrowUp, ArrowDown, TrendingUp } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis } from 'recharts';  // Added XAxis
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, CartesianGrid, YAxis } from 'recharts';  // Added XAxis
 import InfoTooltip from './InfoTooltip';
+import IntelligentAnalysis from './IntelligentAnalysis';
+import EducationIcon from './AI/EducationIcon';
+import AnalysisDropdown from './AI/AnalysisDropdown';
 
 function MarketMetricCard({ data, historicalData, description }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [analysisPosition, setAnalysisPosition] = useState({ top: 0, left: 0 });
 
   // Format historical data for the chart
   const chartData = useMemo(() => {
@@ -37,9 +42,18 @@ function MarketMetricCard({ data, historicalData, description }) {
     }
   };
 
+  const handleAnalysisRequest = async (event, { context, data }) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setAnalysisPosition({
+      top: rect.bottom + window.scrollY,
+      left: rect.left + rect.width / 2 + window.scrollX
+    });
+    setShowAnalysis(true);
+  };
+
   return (
     <div
-      className={`bg-white rounded-xl shadow-lg transition-all duration-300 ease-in-out
+      className={`bg-white rounded-xl shadow-lg transition-all duration-300 ease-in-out relative
         ${isExpanded ? 'md:col-span-2 md:row-span-2' : ''}`}
       onClick={() => setIsExpanded(!isExpanded)}
     >
@@ -53,6 +67,19 @@ function MarketMetricCard({ data, historicalData, description }) {
               </h3>
               <span className="text-sm text-gray-500">({data.symbol})</span>
               <InfoTooltip content={description} />
+              <EducationIcon
+                context="market_index"
+                data={{
+                  symbol: data.symbol,
+                  price: data.close,
+                  change: data.change_p,
+                  volume: data.volume,
+                  historicalData: chartData,
+                  displayName: getDisplayName(data.symbol)
+                }}
+                onAnalysisRequest={handleAnalysisRequest}
+                className="inline"
+              />
             </div>
             <div className="mt-2 flex items-baseline gap-3">
               <span className="text-3xl font-bold">
@@ -136,6 +163,22 @@ function MarketMetricCard({ data, historicalData, description }) {
           <span>Click to {isExpanded ? 'collapse' : 'expand'} details</span>
         </div>
       </div>
+      
+      {/* AI Analysis Dropdown */}
+      <AnalysisDropdown
+        isOpen={showAnalysis}
+        onClose={() => setShowAnalysis(false)}
+        context="market_index"
+        data={{
+          symbol: data.symbol,
+          price: data.close,
+          change: data.change_p,
+          volume: data.volume,
+          historicalData: chartData,
+          displayName: getDisplayName(data.symbol)
+        }}
+        position={analysisPosition}
+      />
     </div>
   );
 }

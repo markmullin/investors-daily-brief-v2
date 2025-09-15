@@ -1,0 +1,329 @@
+/**
+ * Intelligent Analysis Service - Orchestrates Python calculations and GPT-OSS insights
+ * Data Flow: FMP/FRED → Python (calculations) → GPT-OSS (insights) → Frontend
+ * UPDATED: Uses unified GPT-OSS service
+ */
+
+import axios from 'axios';
+import unifiedGptOssService from './unifiedGptOssService.js';
+
+class IntelligentAnalysisService {
+  constructor() {
+    this.pythonUrl = 'http://localhost:8000';
+    this.gptOssUrl = 'http://localhost:8080';
+  }
+
+  /**
+   * Generate analysis prompts based on data type and context
+   */
+  generateAnalysisPrompt(dataType, data, context = {}) {
+    const prompts = {
+      marketPhase: {
+        system: "You are a financial analyst providing clear, actionable market insights. Keep responses to 3-5 sentences that are informative yet accessible to retail investors.",
+        user: `Analyze the current market conditions:
+- Market Phase: ${data.phase} (${data.phaseScore}/100)
+- Trend: ${data.trend}
+- Breadth: ${data.breadth}% of stocks above 50-day MA
+- Volatility: VIX at ${data.vix}
+- Key Indices: S&P ${data.sp500Change}%, NASDAQ ${data.nasdaqChange}%
+
+Provide a clear assessment of what this means for investors right now. Focus on actionable insights.`
+      },
+      
+      marketIndices: {
+        system: "You are a market analyst explaining index movements to retail investors. Keep explanations clear, avoiding jargon. Response should be 3-5 sentences.",
+        user: `Analyze today's market performance:
+- ${data.indexName}: ${data.price} (${data.changePercent}%)
+- Volume: ${data.volumeVsAvg}% vs 20-day average
+- RSI: ${data.rsi}
+- P/E Ratio: ${data.peRatio}
+- 52-Week Position: ${data.weekPosition}% from low
+
+What's driving this movement and what should investors watch for?`
+      },
+      
+      sectorRotation: {
+        system: "You are a sector rotation analyst. Explain sector performance patterns in 3-5 clear sentences for retail investors.",
+        user: `Analyze sector rotation patterns:
+Top Performers: ${data.topSectors?.join(', ') || 'N/A'}
+Worst Performers: ${data.bottomSectors?.join(', ') || 'N/A'}
+Leader: ${data.leader} (+${data.leaderGain}%)
+Laggard: ${data.laggard} (${data.laggardLoss}%)
+Rotation Signal: ${data.rotationSignal}
+
+What does this sector movement tell us about market sentiment and positioning?`
+      },
+      
+      correlations: {
+        system: "You are explaining market relationships to investors. Keep it simple and actionable in 3-5 sentences.",
+        user: `Analyze this key market relationship:
+${data.pair}: Correlation of ${data.correlation}
+- ${data.asset1}: ${data.asset1Performance}%
+- ${data.asset2}: ${data.asset2Performance}%
+- Historical Average: ${data.historicalCorr}
+- Divergence: ${data.divergence}
+
+What does this relationship signal about current market dynamics?`
+      },
+      
+      macroeconomic: {
+        system: "You are a macro analyst explaining economic indicators to investors. Use clear language, 3-5 sentences.",
+        user: `Analyze the macroeconomic environment:
+- 10Y Treasury: ${data.tenYear}% (${data.tenYearChange} bps)
+- 2Y Treasury: ${data.twoYear}% 
+- Yield Curve: ${data.yieldCurve}
+- Fed Funds Rate: ${data.fedFunds}%
+- Next FOMC: ${data.nextFomc}
+
+How should investors position given this interest rate environment?`
+      }
+    };
+
+    const promptConfig = prompts[dataType] || prompts.marketPhase;
+    return promptConfig;
+  }
+
+  /**
+   * Main analysis pipeline - coordinates Python calculations and GPT-OSS insights
+   * SIMPLIFIED: Uses basic market data when Python unavailable
+   */
+  async generateAnalysis(dataType, rawData) {
+    const startTime = Date.now();
+    
+    try {
+      console.log(`📊 Starting intelligent analysis for: ${dataType}`);
+      
+      // Try Python calculations first, fallback to REAL FMP data
+      let calculatedData;
+      try {
+        const pythonResponse = await axios.post(`${this.pythonUrl}/analyze`, {
+          type: dataType,
+          data: rawData
+        }, { timeout: 5000 });
+        calculatedData = pythonResponse.data;
+        console.log(`✅ Python calculations complete for ${dataType}`);
+      } catch (pythonError) {
+        console.log(`⚠️  Python unavailable for ${dataType}, fetching REAL FMP data...`);
+        calculatedData = await this.generateBasicMarketData(dataType, rawData); // Now async
+      }
+      
+      // Step 2: Generate appropriate prompt
+      const prompt = this.generateAnalysisPrompt(dataType, calculatedData);
+      
+      // Step 3: Send to unified GPT-OSS service for insights (using fast Qwen model)
+      console.log(`🤖 Using Qwen 2.5 1.5B for fast ${dataType} analysis...`);
+      const gptResult = await unifiedGptOssService.generate(prompt.system, prompt.user, {
+        useModel: 'qwen',  // Force Qwen for intelligent analysis (fast responses)
+        temperature: 0.6,
+        maxTokens: 200
+      });
+      
+      if (!gptResult.success) {
+        throw new Error(`GPT-OSS failed: ${gptResult.error}`);
+      }
+      
+      const insight = gptResult.content;
+      console.log(`✅ GPT-OSS insight generated for ${dataType}`);
+      
+      // Step 4: Return combined analysis
+      return {
+        success: true,
+        type: dataType,
+        timestamp: new Date().toISOString(),
+        calculations: calculatedData,
+        insight: insight.trim(),
+        metadata: {
+          pythonVersion: calculatedData.version || '1.0',
+          gptModel: gptResult.modelName || gptResult.model || 'unknown',
+          processingTime: Date.now() - startTime
+        }
+      };
+      
+    } catch (error) {
+      console.error(`❌ Analysis pipeline error for ${dataType}:`, error.message);
+      
+      // Fallback to basic analysis
+      return this.generateFallbackAnalysis(dataType, rawData);
+    }
+  }
+
+  /**
+   * Generate basic market data when Python service unavailable
+   * FIXED: Fetch REAL data from FMP instead of hardcoded values
+   */
+  async generateBasicMarketData(dataType, rawData) {
+    console.log(`🔧 Fetching REAL market data from FMP for ${dataType}`);
+    
+    try {
+      const axios = await import('axios');
+      const FMP_KEY = process.env.FMP_API_KEY || '4qzhwAFGwKXQRDNT8pUZyjV1cOmD2fm1';
+      const now = new Date();
+      
+      // Fetch real market data from FMP
+      const [spyData, vixData, sectorData] = await Promise.all([
+        axios.default.get(`https://financialmodelingprep.com/api/v3/quote/SPY,QQQ,DIA,IWM?apikey=${FMP_KEY}`),
+        axios.default.get(`https://financialmodelingprep.com/api/v3/quote/^VIX?apikey=${FMP_KEY}`),
+        axios.default.get(`https://financialmodelingprep.com/api/v3/sector-performance?apikey=${FMP_KEY}`)
+      ]);
+      
+      const spy = spyData.data.find(d => d.symbol === 'SPY') || {};
+      const qqq = spyData.data.find(d => d.symbol === 'QQQ') || {};
+      const vix = vixData.data[0] || {};
+      const sectors = sectorData.data || [];
+      
+      // Calculate real breadth (approximation based on sector performance)
+      const positiveCount = sectors.filter(s => parseFloat(s.changesPercentage) > 0).length;
+      const breadth = (positiveCount / sectors.length) * 100;
+      
+      // Get data specific to the analysis type
+      if (dataType === 'marketPhase') {
+        return {
+          phase: vix.price < 15 ? 'BULL' : vix.price > 25 ? 'BEAR' : 'NEUTRAL',
+          phaseScore: Math.round(100 - (vix.price * 2.5)), // VIX-based score
+          trend: spy.changesPercentage > 0 ? 'Uptrend' : 'Downtrend',
+          breadth: breadth.toFixed(0),
+          vix: vix.price || 16.5,
+          sp500Change: spy.changesPercentage || 0,
+          nasdaqChange: qqq.changesPercentage || 0,
+          timestamp: now.toISOString()
+        };
+      } else if (dataType === 'marketIndices') {
+        // Fetch specific index data
+        const indexSymbol = rawData.symbol || '^GSPC';
+        const indexResponse = await axios.default.get(
+          `https://financialmodelingprep.com/api/v3/quote/${indexSymbol}?apikey=${FMP_KEY}`
+        );
+        const indexData = indexResponse.data[0] || {};
+        
+        return {
+          indexName: rawData.name || indexData.name || 'Market Index',
+          price: indexData.price || 0,
+          changePercent: indexData.changesPercentage || 0,
+          volumeVsAvg: indexData.volume && indexData.avgVolume ? 
+            Math.round((indexData.volume / indexData.avgVolume) * 100) : 100,
+          rsi: 50, // Would need technical indicators API
+          peRatio: indexData.pe || 0,
+          weekPosition: indexData.yearHigh && indexData.yearLow ?
+            Math.round(((indexData.price - indexData.yearLow) / (indexData.yearHigh - indexData.yearLow)) * 100) : 50
+        };
+      } else if (dataType === 'sectorRotation') {
+        // Process sector data
+        const sorted = sectors.sort((a, b) => parseFloat(b.changesPercentage) - parseFloat(a.changesPercentage));
+        const topThree = sorted.slice(0, 3).map(s => s.sector);
+        const bottomThree = sorted.slice(-3).map(s => s.sector);
+        
+        return {
+          topSectors: topThree,
+          bottomSectors: bottomThree,
+          leader: sorted[0]?.sector || 'N/A',
+          leaderGain: parseFloat(sorted[0]?.changesPercentage || 0),
+          laggard: sorted[sorted.length - 1]?.sector || 'N/A',
+          laggardLoss: parseFloat(sorted[sorted.length - 1]?.changesPercentage || 0),
+          rotationSignal: topThree.includes('Technology') ? 'Growth leading' : 'Value rotation'
+        };
+      } else if (dataType === 'correlations') {
+        // Fetch correlation pair data
+        const asset1 = rawData.asset1 || 'SPY';
+        const asset2 = rawData.asset2 || 'TLT';
+        
+        const pairResponse = await axios.default.get(
+          `https://financialmodelingprep.com/api/v3/quote/${asset1},${asset2}?apikey=${FMP_KEY}`
+        );
+        
+        const asset1Data = pairResponse.data.find(d => d.symbol === asset1) || {};
+        const asset2Data = pairResponse.data.find(d => d.symbol === asset2) || {};
+        
+        // Calculate simple correlation estimate based on direction
+        const sameDirection = (asset1Data.changesPercentage > 0) === (asset2Data.changesPercentage > 0);
+        const correlation = sameDirection ? 0.5 : -0.5; // Simplified
+        
+        return {
+          pair: `${asset1} vs ${asset2}`,
+          correlation: correlation.toFixed(2),
+          asset1: asset1,
+          asset1Performance: asset1Data.changesPercentage || 0,
+          asset2: asset2,
+          asset2Performance: asset2Data.changesPercentage || 0,
+          historicalCorr: asset1 === 'SPY' && asset2 === 'TLT' ? -0.4 : 0,
+          divergence: Math.abs(correlation - (-0.4)) > 0.3 ? 'Unusual' : 'Normal'
+        };
+      } else if (dataType === 'macroeconomic') {
+        // Fetch treasury yields
+        const treasuryResponse = await axios.default.get(
+          `https://financialmodelingprep.com/api/v4/treasury?from=${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}&to=${now.toISOString().split('T')[0]}&apikey=${FMP_KEY}`
+        );
+        
+        const latestTreasury = treasuryResponse.data[0] || {};
+        const tenYear = latestTreasury.year10 || 4.25;
+        const twoYear = latestTreasury.year2 || 4.85;
+        
+        return {
+          tenYear: tenYear,
+          tenYearChange: 0, // Would need historical comparison
+          twoYear: twoYear,
+          yieldCurve: twoYear > tenYear ? 'Inverted' : 'Normal',
+          fedFunds: 5.25, // Would need FRED API
+          nextFomc: 'Check Federal Reserve calendar'
+        };
+      }
+      
+      // Default fallback
+      return {
+        phase: 'NEUTRAL',
+        phaseScore: 50,
+        trend: 'Mixed',
+        breadth: 50,
+        vix: vix.price || 16.5,
+        sp500Change: spy.changesPercentage || 0,
+        nasdaqChange: qqq.changesPercentage || 0
+      };
+    } catch (error) {
+      console.error(`Failed to fetch FMP data for ${dataType}:`, error.message);
+      // Return minimal fallback data
+      return {
+        error: 'Data temporarily unavailable',
+        timestamp: new Date().toISOString()
+      };
+  }
+
+  /**
+   * Fallback analysis when pipeline fails
+   */
+  generateFallbackAnalysis(dataType, data) {
+    const fallbacks = {
+      marketPhase: "Market conditions are currently being analyzed. The market appears to be in a transitional phase with mixed signals across different indicators. Monitor key support and resistance levels closely for directional confirmation.",
+      marketIndices: "Index performance reflects current market sentiment and sector rotation patterns. Volume and momentum indicators suggest continued volatility. Watch for confirmation of trend continuation or reversal at key technical levels.",
+      sectorRotation: "Sector performance shows typical rotation patterns based on current economic conditions. Leading sectors indicate investor risk appetite while laggards may present value opportunities. Monitor for sustained leadership changes.",
+      correlations: "Asset correlations are displaying expected relationships given current market conditions. Any divergence from historical norms may signal regime change. Use correlation analysis to optimize portfolio diversification.",
+      macroeconomic: "Interest rate environment reflects Federal Reserve policy stance and inflation expectations. Current yield curve dynamics suggest specific economic outlook. Position portfolios according to rate sensitivity and duration risk."
+    };
+
+    return {
+      success: false,
+      type: dataType,
+      timestamp: new Date().toISOString(),
+      calculations: data,
+      insight: fallbacks[dataType] || fallbacks.marketPhase,
+      metadata: {
+        fallback: true,
+        reason: 'Pipeline unavailable'
+      }
+    };
+  }
+
+  /**
+   * Batch analysis for multiple data types
+   */
+  async batchAnalysis(requests) {
+    const results = await Promise.allSettled(
+      requests.map(req => this.generateAnalysis(req.type, req.data))
+    );
+
+    return results.map((result, index) => ({
+      type: requests[index].type,
+      ...(result.status === 'fulfilled' ? result.value : this.generateFallbackAnalysis(requests[index].type, requests[index].data))
+    }));
+  }
+}
+
+export default new IntelligentAnalysisService();

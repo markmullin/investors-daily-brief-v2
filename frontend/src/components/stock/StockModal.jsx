@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { X, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, BarChart3, Building, DollarSign, Calculator } from 'lucide-react';
 import { marketApi } from '../../services/api';
-import StockPriceCharts from './StockPriceCharts';
-import FundamentalsCharts from './FundamentalsCharts';
+import OverviewTab from './OverviewTab';
 import FundamentalsTab from './FundamentalsTab';
+import GrowthTab from './GrowthTab';
+import ValuationTab from './ValuationTab';
 
 /**
- * Enhanced Stock Modal Component - Modular and Production Ready
+ * Enhanced Stock Modal Component - Bloomberg Terminal Grade Analysis
  * 
- * This component provides a comprehensive stock analysis interface with:
- * - Real-time price charts with technical indicators
- * - Fundamental analysis with SEC EDGAR data
- * - Multiple time periods for historical analysis
- * - Modular component architecture for maintainability
+ * This component provides a comprehensive 4-tab stock analysis interface with:
+ * - Overview: Price charts, circular scores, investment thesis
+ * - Financials: Comprehensive fundamental analysis 
+ * - Growth: Revenue/earnings growth charts and analysis
+ * - Valuation: DCF calculator, peer comparison, price targets
  */
 const StockModal = ({ stock, onClose }) => {
   // Core state management
-  const [activeTab, setActiveTab] = useState('charts');
+  const [activeTab, setActiveTab] = useState('overview');
   const [selectedPeriod, setSelectedPeriod] = useState('1y');
   const [historicalData, setHistoricalData] = useState([]);
   const [fundamentalsData, setFundamentalsData] = useState(null);
@@ -33,9 +34,13 @@ const StockModal = ({ stock, onClose }) => {
   const safeStock = {
     symbol: stock?.symbol || 'N/A',
     name: stock?.name || stock?.shortName || 'Unknown Company',
-    price: Number(stock?.price || stock?.regularMarketPrice || 0),
+    price: Number(stock?.price || stock?.regularMarketPrice || stock?.close || 0),
     change: Number(stock?.change || stock?.regularMarketChange || 0),
     change_p: Number(stock?.change_p || stock?.regularMarketChangePercent || 0),
+    high: Number(stock?.high || stock?.regularMarketDayHigh || stock?.price || 0),
+    low: Number(stock?.low || stock?.regularMarketDayLow || stock?.price || 0),
+    volume: stock?.volume || stock?.regularMarketVolume || 0,
+    close: Number(stock?.close || stock?.price || stock?.regularMarketPrice || 0),
     ...stock
   };
 
@@ -106,13 +111,18 @@ const StockModal = ({ stock, onClose }) => {
       const data = await marketApi.getFundamentals(safeStock.symbol);
       
       setFundamentalsData(data);
-      console.log('Successfully loaded fundamentals data');
+      console.log('Successfully loaded fundamentals data', {
+        hasFiscalData: !!data.fiscalData,
+        fiscalDataKeys: data.fiscalData ? Object.keys(data.fiscalData) : null,
+        dataSource: data.dataSource
+      });
     } catch (error) {
       console.error('Error fetching fundamentals:', error);
       setErrors(prev => ({ 
         ...prev, 
         fundamentals: `Failed to load fundamentals: ${error.message}` 
       }));
+      setFundamentalsData(null);
     } finally {
       setLoading(prev => ({ ...prev, fundamentals: false }));
     }
@@ -152,7 +162,7 @@ const StockModal = ({ stock, onClose }) => {
    */
   const handleClose = () => {
     // Reset state on close
-    setActiveTab('charts');
+    setActiveTab('overview');
     setSelectedPeriod('1y');
     setHistoricalData([]);
     setFundamentalsData(null);
@@ -183,29 +193,72 @@ const StockModal = ({ stock, onClose }) => {
   const changeColor = isPositiveChange ? 'text-green-600' : 'text-red-600';
   const ChangeIcon = isPositiveChange ? TrendingUp : TrendingDown;
 
+  // Tab configuration
+  const tabs = [
+    {
+      id: 'overview',
+      label: 'Overview',
+      icon: BarChart3,
+      description: 'Price charts, scores & investment thesis'
+    },
+    {
+      id: 'financials',
+      label: 'Financials',
+      icon: Building,
+      description: 'Balance sheet, income & cash flow'
+    },
+    {
+      id: 'growth',
+      label: 'Growth',
+      icon: TrendingUp,
+      description: 'Revenue & earnings growth analysis'
+    },
+    {
+      id: 'valuation',
+      label: 'Valuation',
+      icon: Calculator,
+      description: 'DCF, multiples & price targets'
+    }
+  ];
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col">
         
-        {/* Modal Header */}
+        {/* Modal Header - Bloomberg Terminal Style */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{safeStock.symbol}</h2>
-              <p className="text-gray-600 text-sm">{safeStock.name}</p>
+              <h2 className="text-3xl font-bold text-gray-900">{safeStock.symbol}</h2>
+              <p className="text-gray-600 text-lg">{safeStock.name}</p>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-bold text-gray-900">
                   ${safeStock.price.toFixed(2)}
                 </p>
-                <div className={`flex items-center space-x-1 ${changeColor}`}>
-                  <ChangeIcon size={16} />
-                  <span className="font-semibold">
+                <div className={`flex items-center space-x-2 ${changeColor}`}>
+                  <ChangeIcon size={20} />
+                  <span className="font-semibold text-lg">
                     {isPositiveChange ? '+' : ''}${safeStock.change.toFixed(2)} 
                     ({isPositiveChange ? '+' : ''}{safeStock.change_p.toFixed(2)}%)
                   </span>
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-600 space-y-1">
+                <div className="flex justify-between">
+                  <span>High:</span>
+                  <span className="font-medium">${safeStock.high.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Low:</span>
+                  <span className="font-medium">${safeStock.low.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Volume:</span>
+                  <span className="font-medium">{Number(safeStock.volume).toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -220,105 +273,84 @@ const StockModal = ({ stock, onClose }) => {
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex space-x-1">
-            <button
-              onClick={() => handleTabChange('charts')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                activeTab === 'charts'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              <BarChart3 size={16} />
-              Price Charts
-            </button>
-            
-            <button
-              onClick={() => handleTabChange('fundamentals')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                activeTab === 'fundamentals'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              <TrendingUp size={16} />
-              Fundamentals
-            </button>
-          </div>
-
-          {/* Period Selector - Only show for Charts tab */}
-          {activeTab === 'charts' && (
-            <div className="flex space-x-1 bg-white rounded-lg p-1 border border-gray-200">
-              {periods.map((period) => (
+        {/* Bloomberg Terminal Style Tab Navigation */}
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex space-x-2">
+            {tabs.map((tab) => {
+              const IconComponent = tab.icon;
+              return (
                 <button
-                  key={period.value}
-                  onClick={() => handlePeriodChange(period.value)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
-                    selectedPeriod === period.value
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-700 hover:bg-gray-100'
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`group relative px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-3 ${
+                    activeTab === tab.id
+                      ? 'bg-blue-600 text-white shadow-lg transform scale-105'
+                      : 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-gray-200 shadow-sm'
                   }`}
+                  title={tab.description}
                 >
-                  {period.label}
+                  <IconComponent size={18} />
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold">{tab.label}</span>
+                    <span className={`text-xs ${activeTab === tab.id ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {tab.description}
+                    </span>
+                  </div>
+                  
+                  {/* Active tab indicator */}
+                  {activeTab === tab.id && (
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-600 rounded-full shadow-lg"></div>
+                  )}
                 </button>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
 
         {/* Modal Content */}
         <div className="flex-1 overflow-auto">
-          {activeTab === 'charts' && (
+          {activeTab === 'overview' && (
             <div className="p-6">
-              {/* Price Charts Section */}
-              <StockPriceCharts
+              <OverviewTab 
+                symbol={safeStock.symbol}
+                safeStock={safeStock}
                 historicalData={historicalData}
                 loading={loading.historical}
+                onPeriodChange={handlePeriodChange}
                 selectedPeriod={selectedPeriod}
-                safeStock={safeStock}
               />
-              
-              {/* Historical Data Error Display */}
-              {errors.historical && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-800 text-sm">{errors.historical}</p>
-                  <button
-                    onClick={() => fetchHistoricalData(selectedPeriod)}
-                    className="mt-2 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-                  >
-                    Retry
-                  </button>
-                </div>
-              )}
-
-              {/* Fundamentals Charts Section */}
-              <div className="mt-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Financial Performance</h3>
-                <FundamentalsCharts
-                  fundamentalsData={fundamentalsData}
-                  loading={loading.fundamentals}
-                  error={errors.fundamentals}
-                />
-              </div>
             </div>
           )}
 
-          {activeTab === 'fundamentals' && (
+          {activeTab === 'financials' && (
             <div className="p-6">
               <FundamentalsTab symbol={safeStock.symbol} />
+            </div>
+          )}
+
+          {activeTab === 'growth' && (
+            <div className="p-6">
+              <GrowthTab symbol={safeStock.symbol} />
+            </div>
+          )}
+
+          {activeTab === 'valuation' && (
+            <div className="p-6">
+              <ValuationTab symbol={safeStock.symbol} />
             </div>
           )}
         </div>
 
         {/* Loading Overlay */}
         {(loading.historical || loading.fundamentals) && (
-          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
-            <div className="flex flex-col items-center space-y-4">
+          <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center backdrop-blur-sm">
+            <div className="flex flex-col items-center space-y-4 p-8 bg-white rounded-lg shadow-lg">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              <p className="text-gray-600 font-medium">
+              <p className="text-gray-600 font-medium text-lg">
                 {loading.historical ? 'Loading price data...' : 'Loading fundamentals...'}
+              </p>
+              <p className="text-gray-500 text-sm">
+                Fetching comprehensive analysis for {safeStock.symbol}
               </p>
             </div>
           </div>

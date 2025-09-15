@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, TrendingUp, Clock, ExternalLink, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { aiAnalysisApi } from '../services/api'; // Use our fixed API service
+import { Sparkles, TrendingUp, Clock, ExternalLink, Loader2, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { aiAnalysisApi } from '../services/api';
 
-const TypewriterText = ({ text, speed = 30, onComplete }) => {
+const TypewriterText = ({ text, speed = 15, onComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const intervalRef = useRef(null);
@@ -31,33 +31,52 @@ const TypewriterText = ({ text, speed = 30, onComplete }) => {
   }, [text]);
 
   return (
-    <div className="whitespace-pre-wrap leading-relaxed">
+    <div className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base">
       {displayedText}
-      <span className="animate-pulse text-blue-500">|</span>
+      <span className="animate-pulse text-blue-500 font-bold">|</span>
     </div>
   );
 };
 
 const SourceCitation = ({ source, index }) => (
-  <div className="group flex items-center gap-2 p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
-    <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">
+  <div className="group flex items-center gap-3 p-4 bg-gray-50 hover:bg-blue-50 rounded-xl transition-all duration-200 border border-gray-200 hover:border-blue-300 hover:shadow-md">
+    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
       {index + 1}
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-sm font-medium text-gray-900 truncate">{source.source}</p>
-      <p className="text-xs text-gray-500 truncate">{source.title}</p>
+      <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+        {source.source}
+      </p>
+      <p className="text-xs text-gray-600 truncate mt-1 leading-relaxed">{source.title}</p>
+      <div className="flex items-center gap-2 mt-2">
+        {source.company && (
+          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md font-medium">
+            {source.company}
+          </span>
+        )}
+        {source.sector && (
+          <span className="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-md font-medium">
+            {source.sector}
+          </span>
+        )}
+        {source.category && (
+          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-md font-medium">
+            {source.category}
+          </span>
+        )}
+      </div>
     </div>
-    {source.url !== '#' && (
-      <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+    {source.url && source.url !== '#' && (
+      <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
     )}
   </div>
 );
 
 const LoadingSteps = ({ currentStep, steps }) => (
-  <div className="space-y-3">
+  <div className="space-y-4">
     {steps.map((step, index) => (
       <div key={index} className="flex items-center gap-3">
-        <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
           index < currentStep 
             ? 'bg-green-100 text-green-600' 
             : index === currentStep 
@@ -65,11 +84,11 @@ const LoadingSteps = ({ currentStep, steps }) => (
             : 'bg-gray-100 text-gray-400'
         }`}>
           {index < currentStep ? (
-            <CheckCircle2 className="w-3 h-3" />
+            <CheckCircle2 className="w-4 h-4" />
           ) : index === currentStep ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <div className="w-2 h-2 rounded-full bg-current" />
+            <div className="w-3 h-3 rounded-full bg-current" />
           )}
         </div>
         <span className={`text-sm font-medium transition-colors ${
@@ -82,6 +101,10 @@ const LoadingSteps = ({ currentStep, steps }) => (
   </div>
 );
 
+/**
+ * ✅ RESTORED: AI Market Analysis with Typewriter Effect and Comprehensive Coverage
+ * Enhanced with expanded S&P 500 coverage, sector diversification, and investment context
+ */
 const AIInsights = () => {
   const [analysis, setAnalysis] = useState('');
   const [sources, setSources] = useState([]);
@@ -90,21 +113,20 @@ const AIInsights = () => {
   const [loadingStep, setLoadingStep] = useState(0);
   const [generatedAt, setGeneratedAt] = useState(null);
   const [isTypewriterComplete, setIsTypewriterComplete] = useState(false);
+  const [metadata, setMetadata] = useState(null);
   
-  // **FIXED**: Use useRef for stepInterval to prevent scope issues
   const stepIntervalRef = useRef(null);
 
   const loadingSteps = [
-    'Connecting to Bloomberg, CNBC, Barron\'s...',
-    'Analyzing Fed decisions & geopolitical events...',
-    'Processing earnings reports & market movers...',
-    'Generating professional investment insights...'
+    'Connecting to premium financial sources...',
+    'Fetching expanded S&P 500 coverage with sector diversification...',
+    'Processing comprehensive market analysis with investment context...',
+    'Preparing expanded source list and insights for display...'
   ];
 
   useEffect(() => {
     fetchAIInsights();
     
-    // **FIXED**: Cleanup on unmount
     return () => {
       if (stepIntervalRef.current) {
         clearInterval(stepIntervalRef.current);
@@ -118,18 +140,17 @@ const AIInsights = () => {
       setError(null);
       setLoadingStep(0);
       setIsTypewriterComplete(false);
+      setSources([]);
 
-      // **FIXED**: Clear any existing interval before starting new one
       if (stepIntervalRef.current) {
         clearInterval(stepIntervalRef.current);
       }
 
-      // Simulate loading steps for better UX showing real progress
+      // Simulate loading steps with more time for comprehensive analysis
       stepIntervalRef.current = setInterval(() => {
         setLoadingStep(prev => {
           const next = prev + 1;
           if (next >= loadingSteps.length) {
-            // **FIXED**: Clear interval when steps complete
             if (stepIntervalRef.current) {
               clearInterval(stepIntervalRef.current);
               stepIntervalRef.current = null;
@@ -137,42 +158,49 @@ const AIInsights = () => {
           }
           return next;
         });
-      }, 1200);
+      }, 1200); // Slightly longer for comprehensive analysis
 
-      console.log('🚀 Fetching REAL current events from premium financial sources...');
+      console.log('🤖 Fetching comprehensive AI market analysis...');
       
-      // FIXED: Use our enhanced API service instead of direct fetch
       const data = await aiAnalysisApi.getCurrentEventsAnalysis();
       
-      console.log('✅ REAL premium source analysis received:', data);
+      console.log('✅ Comprehensive AI analysis received:', data);
+      console.log('📰 Sources received:', data.sources?.length || 0);
 
       if (data.status === 'success' && data.analysis) {
-        setAnalysis(data.analysis.content);
-        setSources(data.sources || []);
-        setGeneratedAt(data.analysis.generatedAt);
+        // Set analysis and sources
+        setAnalysis(data.analysis.content || '');
         
-        // **FIXED**: Clear interval on success
+        // Set sources
+        const sourcesArray = data.sources || [];
+        console.log('📊 Setting sources array:', sourcesArray.length);
+        setSources(sourcesArray);
+        
+        setGeneratedAt(data.analysis.generatedAt);
+        setMetadata(data.metadata || {});
+        
         if (stepIntervalRef.current) {
           clearInterval(stepIntervalRef.current);
           stepIntervalRef.current = null;
         }
-        setLoadingStep(loadingSteps.length); // Complete all steps
+        setLoadingStep(loadingSteps.length);
+        
       } else {
-        throw new Error(data.message || 'Failed to generate real current events analysis from premium sources');
+        throw new Error(data.message || 'Failed to generate comprehensive market analysis');
       }
 
     } catch (err) {
-      console.error('❌ Error fetching REAL premium source analysis:', err);
+      console.error('❌ Error fetching AI analysis:', err);
       
-      // **FIXED**: Clear interval on error
       if (stepIntervalRef.current) {
         clearInterval(stepIntervalRef.current);
         stepIntervalRef.current = null;
       }
       
-      setError(`Failed to connect to premium news sources: ${err.message}`);
+      setError(`Market analysis failed: ${err.message}`);
       setAnalysis('');
       setSources([]);
+      setMetadata(null);
     } finally {
       setLoading(false);
     }
@@ -180,24 +208,28 @@ const AIInsights = () => {
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-2xl shadow-xl border border-gray-200 p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Daily Market Brief</h2>
-            <p className="text-sm text-gray-600">Real news from Bloomberg • CNBC • Barron's • WSJ</p>
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+        {/* Premium Header with Gradient */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">AI Market Analysis</h2>
+              <p className="text-blue-100">Comprehensive S&P 500 coverage • Sector diversification • Investment context</p>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        {/* Loading Content */}
+        <div className="p-6">
           <LoadingSteps currentStep={loadingStep} steps={loadingSteps} />
           
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-700">
-              <Sparkles className="w-4 h-4 inline mr-2" />
-              Gathering breaking news from premium financial sources: Fed decisions, earnings reports, geopolitical events, market movers...
+          <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+            <p className="text-sm text-blue-700 flex items-center">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Analyzing expanded S&P 500 coverage with comprehensive investment insights...
             </p>
           </div>
         </div>
@@ -207,119 +239,170 @@ const AIInsights = () => {
 
   if (error) {
     return (
-      <div className="bg-gradient-to-br from-red-50 via-white to-orange-50 rounded-2xl shadow-xl border border-red-200 p-8">
-        <div className="flex items-center gap-3 mb-4">
-          <AlertCircle className="w-8 h-8 text-red-500" />
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Premium News Analysis Failed</h2>
-            <p className="text-sm text-gray-600">Error: {error}</p>
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+        {/* Error Header */}
+        <div className="bg-gradient-to-r from-red-500 to-orange-600 p-6 text-white">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-8 h-8" />
+            <div>
+              <h2 className="text-xl font-bold">Market Analysis Unavailable</h2>
+              <p className="text-red-100">Error: {error}</p>
+            </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="p-6">
           <button
             onClick={fetchAIInsights}
-            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+            className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-medium flex items-center justify-center gap-2"
           >
-            Retry Premium Source Analysis
+            <RefreshCw className="w-4 h-4" />
+            Retry Analysis
           </button>
         </div>
       </div>
     );
   }
 
+  // Get enhanced metadata for display
+  const enhancedFeatures = metadata?.enhancedFeatures || [];
+  const newsBreakdown = metadata?.enhancedNewsBreakdown || {};
+  const companyCount = newsBreakdown.companyDiversity?.uniqueCompanies || 0;
+  const sectorCount = newsBreakdown.sectorDiversity?.sectorsRepresented || 0;
+
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 px-8 py-6 text-white">
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+      {/* Premium Header with Gradient - Enhanced with Stats */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">Daily Market Brief</h2>
-              <p className="text-blue-100">Current events analysis • Financial advisor perspective</p>
+              <h2 className="text-2xl font-bold">AI Market Analysis</h2>
+              <p className="text-blue-100">
+                Comprehensive coverage • {sources.length} sources • 
+                {companyCount > 0 && ` ${companyCount} companies`}
+                {sectorCount > 0 && ` • ${sectorCount} sectors`}
+              </p>
             </div>
           </div>
           
-          {generatedAt && (
-            <div className="flex items-center gap-2 text-blue-100">
-              <Clock className="w-4 h-4" />
-              <span className="text-sm">
-                {new Date(generatedAt).toLocaleTimeString()} PM
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {generatedAt && (
+              <div className="flex items-center gap-2 text-blue-100">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm">
+                  {new Date(generatedAt).toLocaleTimeString()}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={fetchAIInsights}
+              className="p-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors"
+              title="Refresh analysis"
+            >
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="p-8">
-        {/* Main Analysis */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div className="prose prose-gray max-w-none">
-            <TypewriterText 
-              text={analysis} 
-              speed={20}
-              onComplete={() => setIsTypewriterComplete(true)}
-            />
-          </div>
+      <div className="p-6">
+        {/* 🎯 RESTORED: Full Analysis with Typewriter Effect */}
+        <div className="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-100">
+          {analysis ? (
+            <div className="prose prose-gray max-w-none">
+              <TypewriterText 
+                text={analysis} 
+                speed={15}
+                onComplete={() => setIsTypewriterComplete(true)}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
+              <p className="text-gray-500">Loading comprehensive market analysis...</p>
+            </div>
+          )}
         </div>
 
-        {/* Premium Sources Section */}
-        {isTypewriterComplete && sources.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-5 h-5 text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Premium Financial Sources</h3>
-              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+        {/* Enhanced Sources Section - Only show after typewriter completes or immediately if no animation */}
+        {sources.length > 0 && isTypewriterComplete && (
+          <div className="bg-blue-50 rounded-xl p-6 mb-6 border border-blue-200">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp className="w-6 h-6 text-blue-600" />
+              <h3 className="text-xl font-bold text-gray-900">Premium Sources</h3>
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-bold rounded-full">
                 {sources.length} Sources
               </span>
+              {companyCount > 0 && (
+                <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-bold rounded-full">
+                  {companyCount} Companies
+                </span>
+              )}
+              {sectorCount > 0 && (
+                <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-bold rounded-full">
+                  {sectorCount} Sectors
+                </span>
+              )}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {sources.slice(0, 8).map((source, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sources.map((source, index) => (
                 <a
                   key={index}
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={source.url !== '#' ? 'cursor-pointer' : 'cursor-default'}
+                  className={source.url && source.url !== '#' ? 'cursor-pointer' : 'cursor-default'}
                 >
                   <SourceCitation source={source} index={index} />
                 </a>
               ))}
             </div>
             
-            {sources.length > 8 && (
-              <p className="text-sm text-gray-500 text-center mt-4">
-                and {sources.length - 8} more premium financial news sources...
+            <div className="mt-6 p-4 bg-blue-100 rounded-xl border border-blue-300">
+              <p className="text-sm text-blue-800 font-medium flex items-center">
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                <strong>Comprehensive Coverage:</strong> 
+                {enhancedFeatures.length > 0 ? 
+                  ` ${enhancedFeatures.slice(0, 3).join(', ')}.` : 
+                  ' Premium sources only with sector diversification and investment context.'
+                }
               </p>
-            )}
+            </div>
           </div>
         )}
 
-        {/* Footer with Quality Indicators */}
-        {isTypewriterComplete && (
-          <div className="mt-6 flex items-center justify-between text-sm text-gray-500 animate-fade-in">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>Live from Bloomberg, CNBC, Barron's</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                <span>Premium sources only</span>
-              </div>
+        {/* Enhanced Footer with Feature Display */}
+        <div className="mt-6 flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <span>Comprehensive analysis</span>
             </div>
-            <button
-              onClick={fetchAIInsights}
-              className="px-3 py-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors font-medium"
-            >
-              Refresh Analysis
-            </button>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <span>Investment context</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-purple-500" />
+              <span>Sector diversified</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-blue-500" />
+              <span>Premium sources</span>
+            </div>
           </div>
-        )}
+          <button
+            onClick={fetchAIInsights}
+            className="px-3 py-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors font-medium"
+          >
+            Refresh Analysis
+          </button>
+        </div>
       </div>
     </div>
   );

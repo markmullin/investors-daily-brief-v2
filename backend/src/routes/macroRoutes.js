@@ -95,4 +95,67 @@ router.get('/labor-consumer', async (req, res) => {
   }
 });
 
+// Get leading indicators - ADDED
+router.get('/leading', async (req, res) => {
+  try {
+    const cachedData = cache.get('macro_leading');
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
+    const data = await fredService.getLeadingIndicators();
+    cache.set('macro_leading', data);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Leading indicators endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch leading indicators',
+      details: error.message 
+    });
+  }
+});
+
+// Get housing indicators - ADDED
+router.get('/housing', async (req, res) => {
+  try {
+    const cachedData = cache.get('macro_housing');
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
+    const data = await fredService.getHousingIndicators();
+    cache.set('macro_housing', data);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Housing indicators endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch housing indicators',
+      details: error.message 
+    });
+  }
+});
+
+// Get monetary policy data - ADDED
+router.get('/monetary', async (req, res) => {
+  try {
+    const cachedData = cache.get('macro_monetary');
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
+    const data = await fredService.getMonetaryPolicy();
+    cache.set('macro_monetary', data);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Monetary policy endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch monetary policy data',
+      details: error.message 
+    });
+  }
+});
+
 export default router;

@@ -1,0 +1,310 @@
+import { Mistral } from '@mistralai/mistralai';
+
+/**
+ * 🧠 MISTRAL AI FINANCIAL ANALYSIS SERVICE - PHASE 2A
+ * 
+ * MISSION: Replace rule-based insights with sophisticated financial AI analysis using Mistral
+ * APPROACH: Advanced prompting + Financial domain expertise + Natural language explanations
+ * 
+ * CURRENT IMPLEMENTATION: Mistral AI with sophisticated financial prompting
+ * FUTURE UPGRADE: DeepSeek-Math integration for mathematical reasoning (Phase 2B)
+ * 
+ * CAPABILITIES:
+ * ✅ Market sentiment analysis using quantitative indicators  
+ * ✅ Sector rotation predictions with economic reasoning
+ * ✅ Earnings analysis with financial context
+ * ✅ Risk assessment with portfolio theory
+ * ✅ Personalized recommendations with investment strategy
+ * 
+ * ADVANTAGES OVER BASIC RULES:
+ * ✅ Context-aware analysis that considers multiple variables
+ * ✅ Financial reasoning and valuation methodology
+ * ✅ Learning from financial patterns and correlations
+ * ✅ Natural language explanations at high school level
+ * ✅ Real-time adaptation to market conditions
+ */
+
+class MistralFinancialService {
+  constructor() {
+    this.mistral = new Mistral({
+      apiKey: process.env.MISTRAL_API_KEY
+    });
+    
+    // Financial analysis model configuration
+    this.model = 'mistral-large-latest';
+    this.temperature = 0.3; // Lower for more analytical responses
+    this.maxTokens = 1500;
+    
+    console.log('🧠 [MISTRAL FINANCIAL] Service initialized with advanced financial intelligence');
+  }
+
+  /**
+   * 📈 ANALYZE MARKET PULSE WITH QUANTITATIVE REASONING
+   */
+  async analyzeMarketPulse(indices, gainers, losers, volumeData) {
+    try {
+      console.log('🧠 [MISTRAL AI] Analyzing market pulse with quantitative reasoning...');
+      
+      const marketData = {
+        indices: indices || [],
+        gainers: gainers?.slice(0, 10) || [],
+        losers: losers?.slice(0, 10) || [],
+        volumeData: volumeData || {}
+      };
+      
+      const prompt = `You are a sophisticated financial analyst with deep expertise in quantitative market analysis. 
+
+Analyze this real-time market data and provide insights:
+
+MARKET INDICES:
+${JSON.stringify(marketData.indices, null, 2)}
+
+TOP GAINERS:
+${JSON.stringify(marketData.gainers, null, 2)}
+
+TOP LOSERS: 
+${JSON.stringify(marketData.losers, null, 2)}
+
+Please provide:
+
+1. MARKET SENTIMENT ANALYSIS (score 0-100):
+   - Calculate sentiment based on advance/decline ratios, momentum, volume
+   - Consider breadth indicators and cross-asset correlations
+   - Provide mathematical reasoning for the sentiment score
+
+2. KEY MARKET MOVEMENTS (3-4 insights):
+   - Identify the most significant price movements and their drivers
+   - Explain the quantitative factors behind major moves
+   - Connect movements to macroeconomic or sector-specific catalysts
+
+3. INVESTMENT IMPLICATIONS:
+   - What does this market behavior mean for different investment strategies?
+   - Risk-on vs risk-off positioning recommendations
+   - Sector allocation suggestions based on rotation patterns
+
+4. RISK ASSESSMENT:
+   - Calculate implied volatility and correlation breakdowns
+   - Identify potential market stress indicators
+   - Quantify downside risks and protection strategies
+
+Explain everything at a high school level while maintaining analytical rigor. Focus on actionable insights backed by quantitative reasoning.`;
+
+      const response = await this.mistral.chat.complete({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: this.temperature,
+        maxTokens: this.maxTokens
+      });
+
+      const analysis = response.choices[0].message.content;
+      
+      // Parse the AI response into structured insights
+      return this.parseMarketPulseAnalysis(analysis, marketData);
+      
+    } catch (error) {
+      console.error('❌ [MISTRAL FINANCIAL] Market pulse analysis error:', error);
+      return this.getFallbackMarketPulse();
+    }
+  }
+
+  /**
+   * 📊 ANALYZE EARNINGS WITH FINANCIAL CONTEXT
+   */
+  async analyzeEarnings(earningsData, marketContext) {
+    try {
+      console.log('🧠 [MISTRAL AI] Analyzing earnings with financial context...');
+      
+      const prompt = `As a financial analyst specializing in earnings analysis, evaluate this earnings calendar:
+
+UPCOMING EARNINGS:
+${JSON.stringify(earningsData, null, 2)}
+
+MARKET CONTEXT:
+${JSON.stringify(marketContext, null, 2)}
+
+Provide sophisticated earnings analysis:
+
+1. SECTOR THEMES (identify 2-3 key themes):
+   - What are the dominant earnings themes this quarter?
+   - Which sectors are most likely to surprise positively/negatively?
+   - How do current market conditions affect earnings expectations?
+
+2. INDIVIDUAL COMPANY INSIGHTS:
+   - For each major company, provide specific insights about:
+     * Revenue growth expectations and key drivers
+     * Margin expansion/contraction probabilities  
+     * Management guidance reliability patterns
+     * Market reaction predictions based on historical patterns
+
+3. INVESTMENT STRATEGY:
+   - Pre-earnings positioning recommendations
+   - Post-earnings opportunity identification
+   - Risk management for earnings season volatility
+
+4. QUANTITATIVE EXPECTATIONS:
+   - Calculate expected earnings surprise rates by sector
+   - Analyze correlation between earnings beats and stock performance
+   - Identify companies with highest earnings leverage to stock moves
+
+Use financial theory and quantitative methods. Explain complex concepts simply for educational value.`;
+
+      const response = await this.mistral.chat.complete({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: this.temperature,
+        maxTokens: this.maxTokens
+      });
+
+      return this.parseEarningsAnalysis(response.choices[0].message.content, earningsData);
+      
+    } catch (error) {
+      console.error('❌ [MISTRAL FINANCIAL] Earnings analysis error:', error);
+      return this.getFallbackEarningsAnalysis();
+    }
+  }
+
+  /**
+   * 🔥 ANALYZE MARKET THEMES WITH TREND DETECTION
+   */
+  async analyzeMarketThemes(sectorData, economicData, newsData) {
+    try {
+      console.log('🧠 [MISTRAL AI] Detecting market themes with trend analysis...');
+      
+      const prompt = `You are a market strategist identifying emerging investment themes. Analyze:
+
+SECTOR PERFORMANCE:
+${JSON.stringify(sectorData, null, 2)}
+
+ECONOMIC INDICATORS:
+${JSON.stringify(economicData, null, 2)}
+
+Identify and analyze market themes:
+
+1. DOMINANT THEMES (rank top 3-5):
+   - Calculate theme strength scores (0-100) based on:
+     * Sector performance correlations
+     * Economic data alignment  
+     * Momentum indicators
+     * Historical pattern recognition
+   - Explain the quantitative basis for each score
+
+2. THEME ANALYSIS:
+   - Economic drivers behind each theme
+   - Key beneficiary stocks and sectors
+   - Sustainability analysis (is this theme durable?)
+   - Risk factors that could derail each theme
+
+3. EMERGING vs FADING THEMES:
+   - New themes gaining momentum (early stage)
+   - Mature themes showing exhaustion signs
+   - Contrarian opportunities in out-of-favor themes
+
+4. INVESTMENT IMPLICATIONS:
+   - Portfolio allocation recommendations by theme
+   - Timing considerations for theme rotation
+   - Risk management within thematic investing
+
+Use quantitative methods to support theme identification. Provide actionable insights for different investor types.`;
+
+      const response = await this.mistral.chat.complete({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: this.temperature,
+        maxTokens: this.maxTokens
+      });
+
+      return this.parseThemeAnalysis(response.choices[0].message.content);
+      
+    } catch (error) {
+      console.error('❌ [MISTRAL FINANCIAL] Theme analysis error:', error);
+      return this.getFallbackThemeAnalysis();
+    }
+  }
+
+  /**
+   * ↻ ANALYZE SECTOR ROTATION WITH ECONOMIC THEORY
+   */
+  async analyzeSectorRotation(sectorPerformance, economicCycle, marketData) {
+    try {
+      console.log('🧠 [MISTRAL AI] Analyzing sector rotation with economic theory...');
+      
+      const prompt = `As a quantitative strategist, analyze sector rotation patterns:
+
+SECTOR PERFORMANCE DATA:
+${JSON.stringify(sectorPerformance, null, 2)}
+
+ECONOMIC CYCLE INDICATORS:
+${JSON.stringify(economicCycle, null, 2)}
+
+MARKET CONDITIONS:
+${JSON.stringify(marketData, null, 2)}
+
+Provide sector rotation analysis:
+
+1. ROTATION PATTERN IDENTIFICATION:
+   - What type of rotation is occurring? (defensive to growth, cyclical, etc.)
+   - Calculate rotation momentum scores for each sector
+   - Identify sectors in early, mid, or late rotation phases
+
+2. ECONOMIC CYCLE POSITIONING:
+   - Where are we in the economic cycle?
+   - Which sectors typically outperform in this phase?
+   - Leading vs lagging economic indicators impact on sectors
+
+3. QUANTITATIVE SECTOR ANALYSIS:
+   - Relative strength calculations vs S&P 500
+   - Momentum indicators (3-month, 6-month trends)
+   - Correlation analysis between sectors
+   - Risk-adjusted return comparisons
+
+4. FORWARD-LOOKING STRATEGY:
+   - Next 3-6 month sector allocation recommendations
+   - Contrarian opportunities in oversold sectors
+   - Risk management during rotation periods
+   - Timing indicators for sector switches
+
+Apply Modern Portfolio Theory and economic cycle analysis. Explain rotation mechanics clearly for educational purposes.`;
+
+      const response = await this.mistral.chat.complete({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: this.temperature,
+        maxTokens: this.maxTokens
+      });
+
+      return this.parseSectorRotationAnalysis(response.choices[0].message.content, sectorPerformance);
+      
+    } catch (error) {
+      console.error('❌ [MISTRAL FINANCIAL] Sector rotation analysis error:', error);
+      return this.getFallbackSectorRotationAnalysis();
+    }
+  }
+
+  /**
+   * ❤️ GENERATE PERSONALIZED RECOMMENDATIONS WITH PORTFOLIO THEORY
+   */
+  async generatePersonalizedRecommendations(userProfile, marketConditions, portfolioData) {
+    try {
+      console.log('🧠 [MISTRAL AI] Generating personalized recommendations with portfolio theory...');
+      
+      const prompt = `You are a personalized investment advisor using Modern Portfolio Theory. Analyze:
+
+USER PROFILE:
+${JSON.stringify(userProfile, null, 2)}
+
+CURRENT MARKET CONDITIONS:
+${JSON.stringify(marketConditions, null, 2)}
+
+EXISTING PORTFOLIO (if any):
+${JSON.stringify(portfolioData, null, 2)}
+
+Generate sophisticated personalized recommendations:
+
+1. PORTFOLIO ANALYSIS:
+   - Calculate current portfolio metrics (risk, return, correlation)
+   - Identify gaps in diversification
+   - Assess alignment with stated investment goals
+
+2. STOCK RECOMMENDATIONS (3-5 stocks):
+   - Score each recommendation (0-100) based on:
+     * Fundamental val

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine, Legend, Bar
 } from 'recharts';
+import EducationIcon from './AI/EducationIcon';
+import AnalysisDropdown from './AI/AnalysisDropdown';
 
 /**
  * Custom component to render the candlestick body and wick
@@ -135,6 +137,23 @@ const CandlestickChart = ({
   showMa = true,
   rsiHeight = 80
 }) => {
+  const [analysisDropdown, setAnalysisDropdown] = useState({
+    isOpen: false,
+    position: { top: 0, left: 0 }
+  });
+
+  // Handle education analysis requests
+  const handleEducationAnalysis = async (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setAnalysisDropdown({
+      isOpen: true,
+      position: {
+        top: rect.bottom,
+        left: rect.left + rect.width / 2
+      }
+    });
+  };
+
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
@@ -173,7 +192,16 @@ const CandlestickChart = ({
   };
   
   return (
-    <div className="w-full" style={{ height }}>
+    <div className="w-full relative" style={{ height }}>
+      {/* Chart Header with Education Icon */}
+      <div className="absolute top-2 right-2 z-10">
+        <EducationIcon
+          context="candlestick_chart"
+          data={{ chartData: data, indicators: { showRsi, showMa, showVolume } }}
+          onAnalysisRequest={handleEducationAnalysis}
+          className="bg-white bg-opacity-90 rounded-full p-1"
+        />
+      </div>
       <div style={{ height: mainChartHeight }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
@@ -258,6 +286,15 @@ const CandlestickChart = ({
           </ResponsiveContainer>
         </div>
       )}
+
+      {/* Analysis Dropdown */}
+      <AnalysisDropdown
+        isOpen={analysisDropdown.isOpen}
+        onClose={() => setAnalysisDropdown({ isOpen: false, position: { top: 0, left: 0 } })}
+        context="candlestick_chart"
+        data={{ chartData: data, indicators: { showRsi, showMa, showVolume } }}
+        position={analysisDropdown.position}
+      />
     </div>
   );
 };

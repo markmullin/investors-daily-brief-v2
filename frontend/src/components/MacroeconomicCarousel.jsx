@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, AlertCircle, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, Info, Brain, TrendingUp, AlertTriangle } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, Area, ComposedChart, AreaChart, Bar
@@ -41,14 +41,25 @@ const CustomTooltip = ({ active, payload, label }) => {
       <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
         <p className="font-bold text-gray-800">{new Date(label).toLocaleDateString()}</p>
         <div className="mt-2 space-y-1">
-          {payload.map((entry, index) => (
-            <div key={index} className="flex justify-between gap-4">
-              <span className="text-gray-600 text-sm">{entry.name}:</span>
-              <span className="font-semibold text-sm" style={{ color: entry.color }}>
-                {entry.value !== null && entry.value !== undefined ? `${entry.value.toFixed(2)}%` : 'N/A'}
-              </span>
-            </div>
-          ))}
+          {payload.map((entry, index) => {
+            // Format based on data type
+            let formattedValue = 'N/A';
+            if (entry.value !== null && entry.value !== undefined) {
+              if (entry.name === 'Money Market Funds') {
+                formattedValue = `${entry.value.toFixed(0)}B`;
+              } else {
+                formattedValue = `${entry.value.toFixed(2)}%`;
+              }
+            }
+            return (
+              <div key={index} className="flex justify-between gap-4">
+                <span className="text-gray-600 text-sm">{entry.name}:</span>
+                <span className="font-semibold text-sm" style={{ color: entry.color }}>
+                  {formattedValue}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -57,7 +68,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 /**
- * Macroeconomic Analysis Carousel Component
+ * Enhanced Macroeconomic Analysis Carousel Component with Python + AI Integration
  */
 const MacroeconomicCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -66,7 +77,7 @@ const MacroeconomicCarousel = () => {
   const [error, setError] = useState(null);
   const { viewMode } = useViewMode();
 
-  // Enhanced chart configuration with reorganized data
+  // Enhanced chart configuration with Python analysis integration
   const charts = [
     {
       id: 'interest-rates',
@@ -81,9 +92,15 @@ const MacroeconomicCarousel = () => {
       icon: '🏛️'
     },
     {
-      id: 'inflation-monetary',
-      title: 'Inflation & Money Supply',
-      subtitle: 'Price Pressures & Monetary Policy',
+      id: 'inflation',
+      title: 'Inflation Indicators',
+      subtitle: 'CPI, PCE, and PPI Year-over-Year',
+      icon: '📈'
+    },
+    {
+      id: 'money-supply',
+      title: 'Money Supply & Market Funds',
+      subtitle: 'M2 Growth and Money Market Fund Assets',
       icon: '💰'
     },
     {
@@ -103,24 +120,30 @@ const MacroeconomicCarousel = () => {
     setCurrentIndex((prev) => (prev === 0 ? charts.length - 1 : prev - 1));
   };
 
-  // Fetch macroeconomic data
+  // Fetch enhanced macroeconomic data with Python analysis
   useEffect(() => {
     const fetchMacroData = async () => {
       try {
         setLoading(true);
         setError(null);
         
+        console.log('🏛️ MACRO COMPONENT: Fetching enhanced macro data...');
         const data = await macroeconomicApi.getAll();
-        console.log('📊 Macro data received (BEA + FRED with release dates):', data);
+        console.log('📊 Enhanced macro data received:', {
+          hasPythonAnalysis: !!data.pythonAnalysis,
+          hasMistralEducation: !!data.mistralEducation,
+          riskLevel: data.enhancedMetadata?.riskLevel,
+          marketRegime: data.enhancedMetadata?.marketRegime
+        });
         
         if (data) {
           setMacroData(data);
         } else {
-          setError('No macroeconomic data available');
+          setError('No enhanced macroeconomic data available');
         }
       } catch (err) {
-        console.error('Error fetching macro data:', err);
-        setError('Failed to load macroeconomic data');
+        console.error('❌ MACRO COMPONENT: Enhanced macro data failed:', err);
+        setError('Failed to load enhanced macroeconomic data');
       } finally {
         setLoading(false);
       }
@@ -133,7 +156,7 @@ const MacroeconomicCarousel = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Process data for charts
+  // Process data for charts (same logic as before)
   const processInterestRateData = () => {
     if (!macroData?.interestRates?.data) return [];
     
@@ -167,47 +190,34 @@ const MacroeconomicCarousel = () => {
     }).filter(d => d.twoYear !== null || d.tenYear !== null || d.thirtyYear !== null);
   };
 
-  // NEW: Process GDP + Corporate Profits data with release dates
+  // Process GDP + Corporate Profits data with release dates
   const processGrowthCorporateData = () => {
     if (!macroData?.growthInflation?.data) return [];
-    
-    console.log('🏛️ Processing GDP + Corporate Profits with RELEASE DATES...');
     
     const growthData = macroData.growthInflation?.data || {};
     const gdp = growthData.A191RL1Q225SBEA || [];
     
-    console.log(`📊 GDP data points: ${gdp.length}`);
-    
-    // Filter to recent data and map with release dates
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     
     const processedData = gdp
       .filter(point => {
-        // Use release date for filtering, not quarter start date
         const releaseDate = point.releaseDate || point.date;
         return new Date(releaseDate) >= oneYearAgo;
       })
-      .map(point => {
-        const result = {
-          date: point.releaseDate || point.date,  // Use release date as chart date
-          gdpGrowth: point.value,
-          corporateProfits: point.corporateProfits || null,
-          corporateProfitsGrowth: point.corporateProfitsGrowth || null,
-          beaQuarter: point.quarter,
-          releaseDate: point.releaseDate
-        };
-        
-        console.log(`✅ Chart Point: ${point.quarter} released ${point.releaseDate} - GDP: ${point.value}%, Profits: ${point.corporateProfits || 'N/A'}`);
-        
-        return result;
-      });
+      .map(point => ({
+        date: point.releaseDate || point.date,
+        gdpGrowth: point.value,
+        corporateProfits: point.corporateProfits || null,
+        corporateProfitsGrowth: point.corporateProfitsGrowth || null,
+        beaQuarter: point.quarter,
+        releaseDate: point.releaseDate
+      }));
     
-    console.log(`📈 Final chart data: ${processedData.length} points`);
     return processedData;
   };
 
-  // NEW: Process inflation + M2 data separately
+  // Process inflation + M2 data + Money Market Funds
   const processInflationMonetaryData = () => {
     if (!macroData?.growthInflation?.data && !macroData?.monetaryPolicy?.data) return [];
     
@@ -216,12 +226,16 @@ const MacroeconomicCarousel = () => {
     
     const cpi = growthData.CPI_YOY || [];
     const pce = growthData.PCE_YOY || [];
+    const ppi = growthData.PPI_YOY || [];
     const m2YoY = monetaryData.M2_YOY || [];
+    const moneyMarketFunds = monetaryData.MONEY_MARKET_FUNDS || [];
     
     const allDates = new Set([
       ...cpi.map(d => d.date),
       ...pce.map(d => d.date),
-      ...m2YoY.map(d => d.date)
+      ...ppi.map(d => d.date),
+      ...m2YoY.map(d => d.date),
+      ...moneyMarketFunds.map(d => d.date)
     ]);
     
     const sortedDates = Array.from(allDates).sort();
@@ -232,15 +246,19 @@ const MacroeconomicCarousel = () => {
     return filteredDates.map(date => {
       const cpiPoint = cpi.find(d => d.date === date);
       const pcePoint = pce.find(d => d.date === date);
+      const ppiPoint = ppi.find(d => d.date === date);
       const m2Point = m2YoY.find(d => d.date === date);
+      const mmfPoint = moneyMarketFunds.find(d => d.date === date);
       
       return {
         date,
         cpi: cpiPoint?.value || null,
         pce: pcePoint?.value || null,
-        m2Supply: m2Point?.value || null
+        ppi: ppiPoint?.value || null,
+        m2Supply: m2Point?.value || null,
+        moneyMarketFunds: mmfPoint ? mmfPoint.value : null // Already in billions, don't divide!
       };
-    }).filter(d => d.cpi !== null || d.pce !== null || d.m2Supply !== null);
+    }).filter(d => d.cpi !== null || d.pce !== null || d.ppi !== null || d.m2Supply !== null || d.moneyMarketFunds !== null);
   };
 
   const processLaborConsumerData = () => {
@@ -249,10 +267,12 @@ const MacroeconomicCarousel = () => {
     const { data } = macroData.laborConsumer;
     const unemployment = data.UNRATE || [];
     const retail = data.RETAIL_YOY || [];
+    const realIncome = data.REAL_PERSONAL_INCOME || [];
     
     const allDates = new Set([
       ...unemployment.map(d => d.date),
-      ...retail.map(d => d.date)
+      ...retail.map(d => d.date),
+      ...realIncome.map(d => d.date)
     ]);
     
     const sortedDates = Array.from(allDates).sort();
@@ -263,13 +283,15 @@ const MacroeconomicCarousel = () => {
     return filteredDates.map(date => {
       const unemploymentPoint = unemployment.find(d => d.date === date);
       const retailPoint = retail.find(d => d.date === date);
+      const incomePoint = realIncome.find(d => d.date === date);
       
       return {
         date,
         unemployment: unemploymentPoint?.value || null,
-        retailSales: retailPoint?.value || null
+        retailSales: retailPoint?.value || null,
+        realPersonalIncome: incomePoint?.value || null
       };
-    }).filter(d => d.unemployment !== null || d.retailSales !== null);
+    }).filter(d => d.unemployment !== null || d.retailSales !== null || d.realPersonalIncome !== null);
   };
 
   // Get processed data
@@ -278,7 +300,7 @@ const MacroeconomicCarousel = () => {
   const inflationMonetaryData = processInflationMonetaryData();
   const laborConsumerData = processLaborConsumerData();
 
-  // Updated latest values with corporate profits
+  // Enhanced latest values with Python analysis
   const getLatestValues = () => {
     if (!macroData) return {
       twoYear: { value: 'N/A', date: '' },
@@ -288,9 +310,12 @@ const MacroeconomicCarousel = () => {
       corporateProfits: { value: 'N/A', date: '' },
       cpi: { value: 'N/A', date: '' },
       pce: { value: 'N/A', date: '' },
+      ppi: { value: 'N/A', date: '' },
       m2Supply: { value: 'N/A', date: '' },
+      moneyMarketFunds: { value: 'N/A', date: '' },
       unemployment: { value: 'N/A', date: '' },
-      retailSales: { value: 'N/A', date: '' }
+      retailSales: { value: 'N/A', date: '' },
+      realPersonalIncome: { value: 'N/A', date: '' }
     };
     
     const latest = macroData.interestRates?.latest || {};
@@ -324,9 +349,14 @@ const MacroeconomicCarousel = () => {
         { value: 'N/A', date: '' },
       cpi: latestDate(latestGrowth.cpi),
       pce: latestDate(latestGrowth.pce),
-      m2Supply: latestDate(latestMonetary.m2Growth),
+      ppi: latestDate(latestGrowth.ppi),
+      m2Supply: latestDate(latestGrowth.m2Growth),
+      moneyMarketFunds: latestGrowth.moneyMarketFunds ? 
+        { value: (latestGrowth.moneyMarketFunds.value).toFixed(0), date: latestGrowth.moneyMarketFunds.date ? new Date(latestGrowth.moneyMarketFunds.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '' } :
+        { value: 'N/A', date: '' },
       unemployment: latestDate(latestLabor.unemployment),
-      retailSales: latestDate(latestLabor.retailSales)
+      retailSales: latestDate(latestLabor.retailSales),
+      realPersonalIncome: latestDate(latestLabor.realPersonalIncome)
     };
   };
 
@@ -338,42 +368,30 @@ const MacroeconomicCarousel = () => {
     return `${date.getMonth() + 1}/${date.getFullYear().toString().substr(-2)}`;
   };
 
-  // Enhanced investment descriptions
-  const getInvestmentDescription = (chartId) => {
-    const safeParseFloat = (value) => {
-      if (!value || value === 'N/A') return 0;
-      const parsed = parseFloat(value);
-      return isNaN(parsed) ? 0 : parsed;
-    };
+  // Enhanced Python analysis display
+  const getPythonAnalysisDisplay = () => {
+    if (!macroData?.pythonAnalysis) {
+      return {
+        available: false,
+        riskLevel: 5,
+        marketRegime: 'Unknown',
+        insights: ['Python analysis unavailable']
+      };
+    }
 
-    const twoYearValue = safeParseFloat(latestValues.twoYear?.value);
-    const tenYearValue = safeParseFloat(latestValues.tenYear?.value);
-    const gdpValue = safeParseFloat(latestValues.gdpGrowth?.value);
-    const profitsValue = safeParseFloat(latestValues.corporateProfits?.value);
-    const pceValue = safeParseFloat(latestValues.pce?.value);
-    const m2Value = safeParseFloat(latestValues.m2Supply?.value);
-    const unemploymentValue = safeParseFloat(latestValues.unemployment?.value);
-
-    const descriptions = {
-      'interest-rates': {
-        basic: "Higher interest rates make bonds more attractive but can hurt stock prices. When rates rise, growth stocks often underperform value stocks.",
-        advanced: `The 2Y-10Y spread is ${(tenYearValue - twoYearValue).toFixed(2)}bp. ${tenYearValue < twoYearValue ? 'Inverted yield curve historically signals recession within 12-18 months. Consider defensive sectors and quality bonds.' : 'Normal yield curve supports financial sector performance and suggests economic expansion ahead.'}`
-      },
-      'growth-corporate': {
-        basic: `GDP growth of ${latestValues.gdpGrowth?.value || 'N/A'}% with corporate profits ${profitsValue > 0 ? 'growing' : profitsValue < 0 ? 'declining' : 'flat'} at ${latestValues.corporateProfits?.value || 'N/A'}% YoY. ${gdpValue > 2 ? 'Strong growth supports cyclical and growth stocks' : gdpValue < 0 ? 'Economic contraction favors defensive sectors and quality bonds' : 'Moderate growth suggests balanced portfolio allocation'}.`,
-        advanced: `GDP at ${latestValues.gdpGrowth?.value || 'N/A'}%, corporate profits ${latestValues.corporateProfits?.value || 'N/A'}% YoY. ${profitsValue > 10 ? 'Strong profit growth supports equity valuations - favor quality growth and cyclical sectors. ' : profitsValue < -5 ? 'Declining profits signal earnings pressure - reduce equity exposure, increase defensive allocations. ' : 'Moderate profit growth supports current equity valuations. '}${gdpValue < 0 && profitsValue < 0 ? 'Both GDP and profits declining - consider recession hedges, utilities, and long-duration Treasuries.' : 'Economic fundamentals support balanced equity exposure.'}`
-      },
-      'inflation-monetary': {
-        basic: `Inflation at ${latestValues.pce?.value || 'N/A'}% (PCE) with M2 money supply ${m2Value > 0 ? 'growing' : m2Value < 0 ? 'contracting' : 'stable'} at ${latestValues.m2Supply?.value || 'N/A'}% YoY. ${pceValue > 3 ? 'High inflation pressures favor real assets and inflation-protected securities' : 'Controlled inflation supports balanced portfolios'}.`,
-        advanced: `PCE at ${latestValues.pce?.value || 'N/A'}%, M2 growing ${latestValues.m2Supply?.value || 'N/A'}% YoY. ${m2Value < -2 ? 'Contracting money supply signals tight policy - favor long-duration assets if rates peak. ' : m2Value > 8 ? 'Rapid money growth may drive inflation - favor real assets, commodities, REITs. ' : 'Moderate money growth supports balanced allocations. '}${pceValue > 3 ? 'Above-target inflation - consider TIPS, energy, materials, and international exposure.' : pceValue < 2 ? 'Below-target inflation suggests potential rate cuts - favor growth stocks and duration assets.' : 'Inflation near Fed target supports diversified portfolios.'}`
-      },
-      'labor-consumer': {
-        basic: `Unemployment at ${latestValues.unemployment?.value || 'N/A'}% with retail sales ${latestValues.retailSales?.value === 'N/A' ? 'data pending' : `growing ${latestValues.retailSales?.value}% YoY`}. ${unemploymentValue < 4 ? 'Tight labor market supports consumer spending and cyclical stocks' : unemploymentValue > 5 ? 'Weakening employment suggests defensive positioning' : 'Balanced labor conditions support broad market exposure'}.`,
-        advanced: `Unemployment at ${latestValues.unemployment?.value || 'N/A'}%, retail sales ${latestValues.retailSales?.value || 'N/A'}% YoY. ${unemploymentValue < 4 ? 'Tight labor market drives wage inflation and consumer strength - favor consumer discretionary, but monitor Fed policy response. ' : unemploymentValue > 5 ? 'Labor market weakness emerging - reduce cyclical exposure, increase utilities, staples, and defensive growth. ' : 'Stable employment supports balanced allocations. '}Monitor for inflection points in employment trends as leading economic indicator.`
-      }
+    const analysis = macroData.pythonAnalysis;
+    return {
+      available: true,
+      riskLevel: analysis.overall_risk_level || 5,
+      marketRegime: analysis.market_regime || 'Unknown',
+      confidence: analysis.regime_confidence || 0,
+      riskSignals: analysis.risk_signals || [],
+      insights: analysis.actionable_insights || [],
+      crossAssetAnalysis: analysis.analysis || {}
     };
-    return descriptions[chartId] || { basic: '', advanced: '' };
   };
+
+  const pythonAnalysis = getPythonAnalysisDisplay();
 
   // Enhanced current values display
   const getCurrentValues = () => {
@@ -404,7 +422,7 @@ const MacroeconomicCarousel = () => {
             </div>
           </div>
         );
-      case 'inflation-monetary':
+      case 'inflation':
         return (
           <div className="space-y-1">
             <div className="text-sm">
@@ -414,7 +432,18 @@ const MacroeconomicCarousel = () => {
               <span className="font-semibold">PCE:</span> {latestValues.pce.value}% <span className="text-xs text-gray-500">({latestValues.pce.date})</span>
             </div>
             <div className="text-sm">
+              <span className="font-semibold">PPI:</span> {latestValues.ppi?.value || 'N/A'}% <span className="text-xs text-gray-500">({latestValues.ppi?.date || ''})</span>
+            </div>
+          </div>
+        );
+      case 'money-supply':
+        return (
+          <div className="space-y-1">
+            <div className="text-sm">
               <span className="font-semibold">M2 Supply:</span> {latestValues.m2Supply.value}% <span className="text-xs text-gray-500">({latestValues.m2Supply.date})</span>
+            </div>
+            <div className="text-sm">
+              <span className="font-semibold">Money Market Funds:</span> ${latestValues.moneyMarketFunds?.value || 'N/A'}B <span className="text-xs text-gray-500">({latestValues.moneyMarketFunds?.date || ''})</span>
             </div>
           </div>
         );
@@ -426,6 +455,9 @@ const MacroeconomicCarousel = () => {
             </div>
             <div className="text-sm">
               <span className="font-semibold">Retail Sales:</span> {latestValues.retailSales.value}% <span className="text-xs text-gray-500">({latestValues.retailSales.date})</span>
+            </div>
+            <div className="text-sm">
+              <span className="font-semibold">Real Personal Income:</span> {latestValues.realPersonalIncome?.value || 'N/A'}% <span className="text-xs text-gray-500">({latestValues.realPersonalIncome?.date || ''})</span>
             </div>
           </div>
         );
@@ -457,7 +489,7 @@ const MacroeconomicCarousel = () => {
     ];
   };
 
-  // IMPROVED: Better dual-axis domain calculation with proper ranges
+  // Improved dual-axis domain calculation
   const calculateDualAxisDomains = (data, leftKeys, rightKeys) => {
     const leftValues = [];
     const rightValues = [];
@@ -482,10 +514,8 @@ const MacroeconomicCarousel = () => {
       const max = Math.max(...values);
       const range = max - min;
       
-      // Ensure minimum visual range for readability
       const padding = Math.max(range * 0.15, minRange * 0.25);
       
-      // Round to clean decimal places to avoid floating point issues
       const cleanMin = Math.round((min - padding) * 10) / 10;
       const cleanMax = Math.round((max + padding) * 10) / 10;
       
@@ -493,25 +523,23 @@ const MacroeconomicCarousel = () => {
     };
     
     return {
-      left: calculateDomainWithMinRange(leftValues, 1.5),   // Unemployment - ensure at least 1.5% range
-      right: calculateDomainWithMinRange(rightValues, 3.0)  // Retail Sales - ensure at least 3% range
+      left: calculateDomainWithMinRange(leftValues, 1.5),
+      right: calculateDomainWithMinRange(rightValues, 3.0)
     };
   };
 
   // Tick formatters for clean Y-axis display
   const formatLeftYAxisTick = (value) => {
-    // Handle very small numbers and floating point precision issues
     if (Math.abs(value) < 0.01) return '0.0%';
     return `${parseFloat(value.toFixed(1))}%`;
   };
 
   const formatRightYAxisTick = (value) => {
-    // Handle very small numbers and floating point precision issues
     if (Math.abs(value) < 0.01) return '0.0%';
     return `${parseFloat(value.toFixed(1))}%`;
   };
 
-  // Enhanced chart rendering with new layouts
+  // Enhanced chart rendering
   const renderChart = () => {
     const chart = charts[currentIndex];
     
@@ -601,17 +629,72 @@ const MacroeconomicCarousel = () => {
           </div>
         );
 
-      case 'inflation-monetary':
-        const inflationDomain = calculateDomain(inflationMonetaryData, ['cpi', 'pce', 'm2Supply']);
+      case 'inflation':
+        // Pure inflation chart - only CPI, PCE, PPI
+        const inflationData = processInflationMonetaryData().map(d => ({
+          date: d.date,
+          cpi: d.cpi,
+          pce: d.pce,
+          ppi: d.ppi
+          // Explicitly exclude m2Supply and moneyMarketFunds
+        }));
+        const inflationDomain = calculateDomain(inflationData, ['cpi', 'pce', 'ppi']);
         
         return (
           <div style={{ height: chartHeight }}>
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={inflationMonetaryData} margin={chartMargin}>
+              <LineChart data={inflationData} margin={chartMargin}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={formatDate}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                  interval={Math.floor(Math.max(1, inflationData.length / 8))}
+                  tick={{ fontSize: 11 }}
+                />
+                <YAxis 
+                  domain={inflationDomain}
+                  label={{ value: 'YoY Change (%)', angle: -90, position: 'insideLeft' }}
+                  tick={{ fontSize: 11 }}
+                  width={50}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Line type="monotone" dataKey="cpi" stroke="#ef4444" name="CPI (YoY)" strokeWidth={2} dot={false} connectNulls />
+                <Line type="monotone" dataKey="pce" stroke="#f59e0b" name="PCE (YoY)" strokeWidth={2} dot={false} connectNulls />
+                <Line type="monotone" dataKey="ppi" stroke="#10b981" name="PPI (YoY)" strokeWidth={2} dot={false} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        );
+
+      case 'money-supply':
+        // Separate money supply chart - M2 and Money Market Funds
+        const moneySupplyData = processInflationMonetaryData().map(d => ({
+          date: d.date,
+          m2Supply: d.m2Supply,
+          moneyMarketFunds: d.moneyMarketFunds
+        }));
+        const moneyDomains = calculateDualAxisDomains(
+          moneySupplyData,
+          ['m2Supply'],
+          ['moneyMarketFunds']
+        );
+        
+        return (
+          <div style={{ height: chartHeight }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={moneySupplyData} margin={chartMargin}>
                 <defs>
                   <linearGradient id="m2Gradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
                     <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="mmfGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.6}/>
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.1}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -621,31 +704,39 @@ const MacroeconomicCarousel = () => {
                   angle={-45}
                   textAnchor="end"
                   height={60}
-                  interval={Math.floor(Math.max(1, inflationMonetaryData.length / 8))}
+                  interval={Math.floor(Math.max(1, moneySupplyData.length / 8))}
                   tick={{ fontSize: 11 }}
                 />
                 <YAxis 
-                  domain={inflationDomain}
-                  label={{ value: 'Rate (%)', angle: -90, position: 'insideLeft' }}
+                  yAxisId="left"
+                  domain={moneyDomains.left}
+                  label={{ value: 'M2 Growth YoY (%)', angle: -90, position: 'insideLeft' }}
                   tick={{ fontSize: 11 }}
                   width={50}
                 />
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  domain={moneyDomains.right}
+                  label={{ value: 'MMF ($B)', angle: 90, position: 'insideRight' }}
+                  tick={{ fontSize: 11 }}
+                  width={60}
+                  tickFormatter={(value) => `${(value).toFixed(0)}B`}
+                />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Line type="monotone" dataKey="cpi" stroke="#ef4444" name="CPI (YoY)" strokeWidth={2} dot={false} connectNulls />
-                <Line type="monotone" dataKey="pce" stroke="#f59e0b" name="PCE (YoY)" strokeWidth={2} dot={false} connectNulls />
-                <Area type="monotone" dataKey="m2Supply" stroke="#8b5cf6" fill="url(#m2Gradient)" name="M2 Money Supply" strokeWidth={3} connectNulls />
+                <Area yAxisId="left" type="monotone" dataKey="m2Supply" stroke="#8b5cf6" fill="url(#m2Gradient)" name="M2 Supply (YoY)" strokeWidth={2} connectNulls />
+                <Area yAxisId="right" type="monotone" dataKey="moneyMarketFunds" stroke="#06b6d4" fill="url(#mmfGradient)" name="Money Market Funds" strokeWidth={2} connectNulls />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
         );
 
       case 'labor-consumer':
-        // Use the improved dual-axis domain calculation function
         const domains = calculateDualAxisDomains(
           laborConsumerData, 
           ['unemployment'], 
-          ['retailSales']
+          ['retailSales', 'realPersonalIncome']
         );
         
         return (
@@ -674,7 +765,7 @@ const MacroeconomicCarousel = () => {
                   yAxisId="right"
                   orientation="right"
                   domain={domains.right}
-                  label={{ value: 'Retail Sales YoY (%)', angle: 90, position: 'insideRight' }}
+                  label={{ value: 'Growth YoY (%)', angle: 90, position: 'insideRight' }}
                   tick={{ fontSize: 11 }}
                   tickFormatter={formatRightYAxisTick}
                   width={60}
@@ -683,6 +774,7 @@ const MacroeconomicCarousel = () => {
                 <Legend />
                 <Area yAxisId="left" type="monotone" dataKey="unemployment" fill="#fef3c7" stroke="#f59e0b" name="Unemployment Rate" strokeWidth={2} connectNulls />
                 <Line yAxisId="right" type="monotone" dataKey="retailSales" stroke="#3b82f6" name="Retail Sales (YoY)" strokeWidth={2} dot={false} connectNulls />
+                <Line yAxisId="right" type="monotone" dataKey="realPersonalIncome" stroke="#10b981" name="Real Personal Income (YoY)" strokeWidth={2} dot={false} connectNulls />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -705,7 +797,6 @@ const MacroeconomicCarousel = () => {
   }, []);
 
   const currentChart = charts[currentIndex];
-  const description = getInvestmentDescription(currentChart.id);
 
   return (
     <div className="bg-white rounded-xl shadow-lg relative overflow-hidden transition-all duration-300">
@@ -738,8 +829,8 @@ const MacroeconomicCarousel = () => {
                 {currentChart.title}
               </h3>
               <InfoTooltip
-                basicContent={description.basic}
-                advancedContent={description.advanced}
+                basicContent="Economic indicators that influence market conditions and investment opportunities."
+                advancedContent="Cross-asset macroeconomic analysis using Python algorithms for market regime identification and investment positioning."
               />
             </div>
             <p className="text-sm text-gray-600 mb-3">{currentChart.subtitle}</p>
@@ -764,18 +855,6 @@ const MacroeconomicCarousel = () => {
         {/* Chart */}
         {renderChart()}
         
-        {/* Investment-Focused Description */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <h4 className="font-semibold text-blue-900 mb-2">💡 Investment Implications</h4>
-          <p className="text-sm text-blue-800">
-            {viewMode === 'basic' ? description.basic : description.advanced}
-          </p>
-          {currentChart.id === 'growth-corporate' && (
-            <p className="text-xs text-blue-700 mt-2 italic">
-              ✅ RELEASE DATES: GDP and Corporate Profits data shows actual BEA release dates, not quarter periods.
-            </p>
-          )}
-        </div>
       </div>
     </div>
   );

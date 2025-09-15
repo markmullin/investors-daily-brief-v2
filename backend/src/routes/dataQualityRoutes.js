@@ -3,7 +3,6 @@
 
 import express from 'express';
 import portfolioDataQualityService from '../services/portfolioDataQualityService.js';
-import edgarService from '../services/edgarService.js';
 
 const router = express.Router();
 
@@ -108,75 +107,6 @@ router.get('/last-report', async (req, res) => {
       success: false,
       error: error.message,
       message: 'Failed to get last validation report'
-    });
-  }
-});
-
-// GET /api/data-quality/freshness/:ticker - Check data freshness for specific stock
-router.get('/freshness/:ticker', async (req, res) => {
-  try {
-    const ticker = req.params.ticker.toUpperCase();
-    console.log(`📅 API: Checking data freshness for ${ticker}...`);
-    
-    // Get EDGAR data and check freshness
-    const edgarData = await edgarService.getCompanyFacts(ticker);
-    
-    if (!edgarData || !edgarData.fiscalData) {
-      return res.status(404).json({
-        success: false,
-        message: `No fiscal data available for ${ticker}`
-      });
-    }
-    
-    const freshness = {
-      ticker,
-      lastUpdated: new Date().toISOString(),
-      quarterly: {},
-      annual: {}
-    };
-    
-    // Check quarterly data freshness
-    if (edgarData.fiscalData.Revenues && edgarData.fiscalData.Revenues.quarterly.length > 0) {
-      const latestQuarterly = edgarData.fiscalData.Revenues.quarterly[0];
-      const quarterlyDate = new Date(latestQuarterly.end);
-      const ageMonths = (new Date() - quarterlyDate) / (1000 * 60 * 60 * 24 * 30);
-      
-      freshness.quarterly = {
-        latestPeriod: latestQuarterly.end,
-        ageMonths: Math.round(ageMonths),
-        value: latestQuarterly.val,
-        formatted: `$${(latestQuarterly.val / 1e9).toFixed(2)}B`,
-        status: ageMonths <= 3 ? 'FRESH' : ageMonths <= 6 ? 'STALE' : 'VERY_STALE'
-      };
-    }
-    
-    // Check annual data freshness
-    if (edgarData.fiscalData.Revenues && edgarData.fiscalData.Revenues.annual.length > 0) {
-      const latestAnnual = edgarData.fiscalData.Revenues.annual[0];
-      const annualDate = new Date(latestAnnual.end);
-      const ageMonths = (new Date() - annualDate) / (1000 * 60 * 60 * 24 * 30);
-      
-      freshness.annual = {
-        latestPeriod: latestAnnual.end,
-        ageMonths: Math.round(ageMonths),
-        value: latestAnnual.val,
-        formatted: `$${(latestAnnual.val / 1e9).toFixed(2)}B`,
-        status: ageMonths <= 12 ? 'FRESH' : ageMonths <= 18 ? 'STALE' : 'VERY_STALE'
-      };
-    }
-    
-    res.json({
-      success: true,
-      data: freshness,
-      message: `Data freshness for ${ticker} retrieved successfully`
-    });
-    
-  } catch (error) {
-    console.error(`❌ API: Data freshness for ${req.params.ticker} failed:`, error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      message: `Failed to check data freshness for ${req.params.ticker}`
     });
   }
 });

@@ -1,6 +1,6 @@
 import express from 'express';
 import eodService from '../services/eodService.js';
-import mistralService from '../services/mistralService.js';
+import unifiedGptOssService from '../services/unifiedGptOssService.js';
 import braveNewsService from '../services/braveNewsService.js';
 import axios from 'axios';
 import fredService from '../services/fredService.js';
@@ -74,7 +74,7 @@ router.get('/detailed', async (req, res) => {
     
     // Check Mistral AI API
     try {
-      const mistralHealth = mistralService.getStatus();
+      const mistralHealth = await unifiedGptOssService.healthCheck();
       results.apis.mistral = {
         status: mistralHealth.clientInitialized ? 'healthy' : 'degraded',
         initialized: mistralHealth.clientInitialized,
@@ -271,24 +271,17 @@ router.post('/reset-circuit-breakers', async (req, res) => {
       };
     }
     
-    // Clear Mistral cache
+    // Clear AI cache
     try {
-      if (typeof mistralService.clearCache === 'function') {
-        mistralService.clearCache();
-        results.services.mistral = {
-          status: 'reset',
-          message: 'Mistral API cache cleared successfully'
-        };
-      } else {
-        results.services.mistral = {
-          status: 'skipped',
-          message: 'Cache clear method not available'
-        };
-      }
-    } catch (mistralError) {
-      results.services.mistral = {
+      // AI service doesn't have a clearCache method
+      results.services.ai = {
+        status: 'skipped',
+        message: 'Cache clear method not available'
+      };
+    } catch (aiError) {
+      results.services.ai = {
         status: 'error',
-        error: mistralError.message
+        error: aiError.message
       };
     }
     
@@ -343,10 +336,11 @@ router.get('/api-status', async (req, res) => {
     }
     
     // Check Mistral API status
-    let mistralStatus = mistralService.getStatus();
+    let mistralStatus = await unifiedGptOssService.healthCheck();
     try {
       // Optionally try to generate a test message to verify API is working
-      const testText = await mistralService.generateText('Provide a brief one-sentence test response.');
+      const result = await unifiedGptOssService.generate('You are a helpful assistant.', 'Provide a brief one-sentence test response.', { maxTokens: 50 });
+      const testText = result.success ? result.content : null;
       mistralStatus.testResponse = testText ? 'success' : 'failed';
     } catch (mistralError) {
       mistralStatus.testResponse = 'failed';

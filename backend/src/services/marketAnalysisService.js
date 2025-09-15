@@ -1,22 +1,15 @@
 // backend/src/services/marketAnalysisService.js
-import axios from 'axios';
 import { marketService } from './apiServices.js';
 import { SP500_COMPONENTS } from '../data/sp500Components.js';
+import fmpService from './fmpService.js';
 
 class MarketAnalysisService {
   async getNewsForSymbol(symbol) {
     try {
-      const response = await axios.get(`https://eodhd.com/api/news`, {
-        params: {
-          s: symbol,
-          api_token: process.env.EOD_API_KEY,
-          limit: 1,
-          offset: 0
-        }
-      });
-
-      if (response.data && response.data.length > 0) {
-        return response.data[0].title;
+      const newsData = await fmpService.getStockNews(symbol, 1);
+      
+      if (newsData && newsData.length > 0) {
+        return newsData[0].title;
       }
       return null;
     } catch (error) {

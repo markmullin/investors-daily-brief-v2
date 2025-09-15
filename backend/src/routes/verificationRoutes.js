@@ -2,7 +2,7 @@
  * BACKEND VERIFICATION - Test if streamlined optimizations are loaded
  */
 import express from 'express';
-import streamlinedNewsService from '../services/streamlinedNewsService.js';
+import newsService from '../services/newsService.js';
 
 const router = express.Router();
 
@@ -16,12 +16,12 @@ router.get('/verify-optimizations', async (req, res) => {
   };
   
   try {
-    // Test 1: Streamlined News Service
-    console.log('📰 Testing streamlined news service...');
+    // Test 1: News Service
+    console.log('📰 Testing news service...');
     const newsStart = Date.now();
     
     const newsResult = await Promise.race([
-      streamlinedNewsService.getMarketNews(),
+      newsService.getNews(),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('News test timeout')), 5000)
       )
@@ -32,12 +32,12 @@ router.get('/verify-optimizations', async (req, res) => {
     results.tests.streamlinedNews = {
       status: 'SUCCESS',
       responseTime: newsTime,
-      articlesCount: newsResult.articles.length,
-      source: newsResult.source,
+      articlesCount: newsResult.articles?.length || 0,
+      source: newsResult.source || 'newsService',
       cached: !!newsResult.timestamp
     };
     
-    console.log(`✅ News service test: ${newsTime}ms, ${newsResult.articles.length} articles`);
+    console.log(`✅ News service test: ${newsTime}ms, ${newsResult.articles?.length || 0} articles`);
     
     // Test 2: Route Priority Check
     results.tests.routePriority = {
@@ -68,7 +68,7 @@ router.get('/verify-optimizations', async (req, res) => {
     };
     results.troubleshooting = [
       'Restart backend server: npm start',
-      'Check streamlinedNewsService.js exists',
+      'Check newsService.js exists',
       'Verify API keys in .env file',
       'Check network connectivity'
     ];

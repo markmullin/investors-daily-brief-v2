@@ -16,6 +16,11 @@ const windowStartTimes = new Map();
  * Rate limiting middleware implementation
  */
 function rateLimit(req, res, next) {
+  // DISABLE RATE LIMITING FOR GPT-OSS ENDPOINTS
+  if (req.path.includes('/gpt-oss/')) {
+    return next();
+  }
+  
   // Skip rate limiting if disabled
   if (process.env.RATE_LIMIT_ENABLED !== 'true') {
     return next();

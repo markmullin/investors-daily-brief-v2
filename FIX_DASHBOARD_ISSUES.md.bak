@@ -1,0 +1,169 @@
+# Fix Guide for Your Dashboard Issues
+
+## Problem 1: Raw Debug Text in AI Market Analysis
+The component is showing raw debug output like `<|channel|>analysis<|message|>` instead of formatted text.
+
+**Issue:** The response parsing is broken - it's displaying the raw GPT-OSS tokens instead of the actual message content.
+
+## Problem 2: Wrong Component Order
+AI News & Market Summary should be BELOW Market Environment, not above it.
+
+## Problem 3: Python Output Instead of GPT-OSS
+The text looks like Python analysis output, not GPT-OSS generated insights.
+
+---
+
+## COMPLETE FIX:
+
+### 1. Fix the Backend Route (gptOSSSimple.js)
+The issue is the response from llama.cpp includes special tokens. Update the parsing:
+
+```javascript
+// In backend/src/routes/gptOSSSimple.js
+// After line 89, fix the response parsing:
+
+const response = await axios.post(`${llamaURL}/v1/chat/completions`, {
+  model: 'gpt-oss-20b',
+  messages: [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt }
+  ],
+  temperature: 0.7,
+  max_tokens: 150,
+  stream: false
+}, {
+  timeout: 60000
+});
+
+// FIX: Clean the response text
+let analysis = response.data.choices[0].message.content;
+
+// Remove GPT-OSS special tokens
+analysis = analysis.replace(/<\|channel\|>.*?<\|message\|>/g, '');
+analysis = analysis.replace(/<\|.*?\|>/g, ''); // Remove any remaining tokens
+analysis = analysis.trim();
+
+// If analysis is empty or too short, use fallback
+if (!analysis || analysis.length < 20) {
+  analysis = getFallbackAnalysis(req.body.analysisType);
+}
+```
+
+### 2. Fix Component Order in MarketAwareness.jsx
+Find where components are rendered and reorder them:
+
+```jsx
+// The correct order should be:
+<div>
+  {/* AI Market Analysis at top */}
+  <AIMarketAnalysis />
+  
+  {/* Market Environment section */}
+  <MarketEnvironment />
+  
+  {/* AI News & Market Summary BELOW Market Environment */}
+  <AINewsMarketSummary />
+  
+  {/* Rest of components */}
+</div>
+```
+
+### 3. Ensure GPT-OSS is Actually Running
+Check that llama.cpp is using GPT-OSS model:
+
+```bash
+# Check GPU usage
+nvidia-smi
+
+# Should show ~7.7GB VRAM used by llama-server.exe
+```
+
+### 4. Test the Endpoint Directly
+```bash
+curl -X POST http://localhost:5000/api/gpt-oss/market-analysis \
+  -H "Content-Type: application/json" \
+  -d '{"analysisType": "marketPhase"}' \
+  | jq .
+```
+
+You should see clean JSON with properly formatted analysis text, not debug output.
+
+---
+
+## Quick Frontend Component Fix:
+
+Replace the broken AI Market Analysis component with this clean version:
+
+```jsx
+// AIMarketAnalysis.jsx
+import React, { useState, useEffect } from 'react';
+import { Brain } from 'lucide-react';
+
+const AIMarketAnalysis = () => {
+  const [analysis, setAnalysis] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    
+    const fetchAnalysis = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/gpt-oss/market-analysis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            analysisType: 'marketPhase',
+            sp500Price: 6481.41,
+            sp500Change: 0.24,
+            vix: 15
+          })
+        });
+
+        const data = await response.json();
+        
+        if (mounted) {
+          // Extract clean text from response
+          const text = data?.data?.analysis || data?.analysis || 
+            "Market analysis is being generated. Please wait...";
+          
+          // Clean any remaining tokens
+          const cleanText = text.replace(/<\|.*?\|>/g, '').trim();
+          
+          setAnalysis(cleanText);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Analysis fetch error:', error);
+        if (mounted) {
+          setAnalysis("Market showing bullish momentum. Monitor support levels.");
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchAnalysis();
+    return () => { mounted = false; };
+  }, []); // Empty array - fetch once
+
+  return (
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      <div className="flex items-center gap-2 mb-4">
+        <Brain className="w-5 h-5 text-orange-500" />
+        <h2 className="text-lg font-semibold">AI MARKET ANALYSIS</h2>
+      </div>
+      {loading ? (
+        <div className="animate-pulse">Loading GPU analysis...</div>
+      ) : (
+        <p className="text-gray-700 leading-relaxed">{analysis}</p>
+      )}
+      <div className="mt-4 text-xs text-gray-500">
+        Powered by GPT-OSS-20B on RTX 5060
+      </div>
+    </div>
+  );
+};
+
+export default AIMarketAnalysis;
+```
+
+This should fix all three issues!

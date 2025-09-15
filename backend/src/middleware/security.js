@@ -216,7 +216,7 @@ export const securityMiddleware = () => {
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "https:", "blob:"],
         scriptSrc: ["'self'"],
-        connectSrc: ["'self'", "wss:", "https://api.financialmodelingprep.com", "https://eodhistoricaldata.com"],
+        connectSrc: ["'self'", "wss:", "https://api.financialmodelingprep.com"],
         frameSrc: ["'none'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],

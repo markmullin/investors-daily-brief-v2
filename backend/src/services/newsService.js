@@ -1,10 +1,9 @@
 /**
- * News Service
- * Fetches real market news using EOD Historical Data News API
- * Falls back to S&P 500 stock price streaming
+ * News Service - FMP ONLY
+ * Fetches real market news using FMP API exclusively
  */
-import axios from 'axios';
 import NodeCache from 'node-cache';
+import fmpService from './fmpService.js';
 
 // Cache configuration - keep news for 15 minutes
 const newsCache = new NodeCache({ stdTTL: 15 * 60, checkperiod: 120 });
@@ -20,17 +19,7 @@ const SP500_TOP_COMPANIES = [
 
 class NewsService {
   constructor() {
-    this.apiKey = process.env.EOD_API_KEY || '678aec6f82cd71.08686199';
-    this.baseUrl = 'https://eodhd.com/api';
-    
-    // Configure axios instance for EOD API
-    this.client = axios.create({
-      baseURL: this.baseUrl,
-      headers: {
-        'Accept': 'application/json'
-      },
-      timeout: 10000 // 10 second timeout
-    });
+    this.fmpService = fmpService;
     
     // Cache keys
     this.CACHE_KEYS = {
@@ -40,7 +29,7 @@ class NewsService {
   }
   
   /**
-   * Get real market news from EOD News API
+   * Get real market news from FMP News API
    */
   async getMarketNews() {
     const cacheKey = this.CACHE_KEYS.MARKET_NEWS;
@@ -53,36 +42,23 @@ class NewsService {
     }
     
     try {
-      console.log('Fetching market news from EOD News API');
+      console.log('Fetching market news from FMP News API');
       
-      // Use EOD's news API endpoint for real market news
-      const response = await this.client.get('/news', {
-        params: {
-          api_token: this.apiKey,
-          s: 'SPY.US,QQQ.US,DIA.US,IWM.US', // Major indices for market news
-          limit: 50,
-          offset: 0,
-          from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Last 7 days
-          to: new Date().toISOString().split('T')[0]
-        }
-      });
-      
-      console.log('EOD News API response status:', response.status);
-      
-      const newsData = response.data || [];
+      // Use FMP's general news endpoint for market news
+      const newsData = await this.fmpService.getGeneralNews(50);
       const articles = [];
       
       // Process news items
       newsData.forEach((item, index) => {
-        if (!item.title || !item.link) return;
+        if (!item.title || !item.url) return;
         
         articles.push({
-          id: `eod-news-${item.date}-${index}`,
+          id: `fmp-news-${item.publishedDate}-${index}`,
           title: item.title,
-          description: item.content || '',
-          url: item.link,
-          source: 'Market News',
-          publishedAt: item.date || new Date().toISOString(),
+          description: item.text || item.summary || '',
+          url: item.url,
+          source: item.site || 'Financial Modeling Prep',
+          publishedAt: item.publishedDate || new Date().toISOString(),
           category: 'markets'
         });
       });
@@ -96,7 +72,7 @@ class NewsService {
         
         const formattedNews = {
           articles: topArticles,
-          source: 'eod'
+          source: 'fmp'
         };
         
         newsCache.set(cacheKey, formattedNews);
@@ -106,14 +82,14 @@ class NewsService {
         return this.getStockPriceStream();
       }
     } catch (error) {
-      console.error('Error fetching market news from EOD API:', error.message);
+      console.error('Error fetching market news from FMP API:', error.message);
       // Fall back to stock price streaming
       return this.getStockPriceStream();
     }
   }
   
   /**
-   * Get S&P 500 stock prices for streaming
+   * Get S&P 500 stock prices for streaming via FMP
    */
   async getStockPriceStream() {
     const cacheKey = this.CACHE_KEYS.STOCK_PRICES;
@@ -126,32 +102,23 @@ class NewsService {
     }
     
     try {
-      console.log('Fetching S&P 500 stock prices for streaming');
+      console.log('Fetching S&P 500 stock prices for streaming via FMP');
       
-      // Batch request for top S&P 500 companies
-      const symbols = SP500_TOP_COMPANIES.slice(0, 30).map(s => `${s}.US`).join(',');
-      
-      const response = await this.client.get(`/real-time/${symbols}`, {
-        params: {
-          api_token: this.apiKey,
-          fmt: 'json'
-        }
-      });
-      
-      const stockData = Array.isArray(response.data) ? response.data : [response.data];
+      // Get batch quotes from FMP for top S&P 500 companies
+      const symbols = SP500_TOP_COMPANIES.slice(0, 30);
+      const stockData = await this.fmpService.getQuoteBatch(symbols);
       const articles = [];
       
       stockData.forEach((stock) => {
-        if (!stock.code || stock.volume === 0) return;
+        if (!stock.symbol || !stock.price) return;
         
-        const symbol = stock.code.replace('.US', '');
-        const change = stock.change_p || 0;
+        const symbol = stock.symbol;
+        const change = stock.changesPercentage || 0;
         const direction = change >= 0 ? '▲' : '▼';
-        const color = change >= 0 ? 'green' : 'red';
         
         articles.push({
           id: `stock-${symbol}-${Date.now()}`,
-          title: `${symbol} ${stock.close} ${direction} ${Math.abs(change).toFixed(2)}%`,
+          title: `${symbol} ${stock.price} ${direction} ${Math.abs(change).toFixed(2)}%`,
           description: '',
           url: `https://finance.yahoo.com/quote/${symbol}`,
           source: 'Stock Price',
@@ -170,7 +137,7 @@ class NewsService {
       
       return formattedData;
     } catch (error) {
-      console.error('Error fetching stock prices:', error.message);
+      console.error('Error fetching stock prices from FMP:', error.message);
       return {
         articles: [],
         source: 'error',

@@ -11,9 +11,21 @@ import {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
+    
+    // Format display date based on whether it's intraday or daily data
+    let displayDate = '';
+    if (data.originalDate) {
+      const date = new Date(data.originalDate);
+      if (data.isIntraday) {
+        displayDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+      } else {
+        displayDate = date.toLocaleDateString();
+      }
+    }
+    
     return (
       <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-        <p className="font-bold text-gray-800">{data.date ? new Date(data.date).toLocaleDateString() : ''}</p>
+        <p className="font-bold text-gray-800">{displayDate}</p>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
           <p className="text-gray-600">Price:</p>
           <p className="font-semibold">${Number(data.price || data.close).toFixed(2)}</p>
@@ -63,19 +75,56 @@ const StockPriceCharts = ({
     );
   }
 
-  // Process historical data to ensure proper format
+  console.log('📊 [CHART_COMPONENT] Raw historical data:', {
+    length: historicalData.length,
+    firstPoint: historicalData[0],
+    lastPoint: historicalData[historicalData.length - 1],
+    selectedPeriod,
+    sampleDates: historicalData.slice(0, 3).map(d => d.date)
+  });
+
+  // ✅ FIXED: Process historical data to preserve time information for intraday
   const processedHistoricalData = historicalData
     .filter(item => item && item.isDisplayed !== false)
-    .map(item => ({
-      ...item,
-      date: item.date ? new Date(item.date).toISOString().split('T')[0] : '',
-      price: typeof item.price === 'number' ? item.price : 
-             (typeof item.close === 'number' ? item.close : null),
-      ma200: typeof item.ma200 === 'number' ? item.ma200 : null,
-      rsi: typeof item.rsi === 'number' ? item.rsi : null,
-      volume: typeof item.volume === 'number' ? item.volume : 0
-    }))
+    .map((item, index) => {
+      const originalDate = item.date;
+      const dateObj = new Date(originalDate);
+      
+      // Determine if this is intraday data based on time component
+      const isIntraday = selectedPeriod === '1d' || selectedPeriod === '5d' || 
+                        (dateObj.getHours() !== 0 || dateObj.getMinutes() !== 0 || dateObj.getSeconds() !== 0);
+      
+      // Format chart key based on data type
+      let chartKey;
+      if (isIntraday) {
+        // For intraday: keep timestamp as-is for proper chart ordering
+        chartKey = originalDate;
+      } else {
+        // For daily: use date only
+        chartKey = dateObj.toISOString().split('T')[0];
+      }
+      
+      return {
+        ...item,
+        chartKey, // Used for chart X-axis
+        originalDate, // Preserve original for tooltip
+        isIntraday,
+        price: typeof item.price === 'number' ? item.price : 
+               (typeof item.close === 'number' ? item.close : null),
+        ma200: typeof item.ma200 === 'number' ? item.ma200 : null,
+        rsi: typeof item.rsi === 'number' ? item.rsi : null,
+        volume: typeof item.volume === 'number' ? item.volume : 0
+      };
+    })
     .filter(item => item.price !== null);
+
+  console.log('📊 [CHART_COMPONENT] Processed data:', {
+    length: processedHistoricalData.length,
+    firstPoint: processedHistoricalData[0],
+    lastPoint: processedHistoricalData[processedHistoricalData.length - 1],
+    isIntraday: processedHistoricalData[0]?.isIntraday,
+    chartKeys: processedHistoricalData.slice(0, 5).map(d => d.chartKey)
+  });
 
   // Chart calculations
   const visibleDataPoints = processedHistoricalData;
@@ -83,6 +132,7 @@ const StockPriceCharts = ({
   const hasRsi = visibleDataPoints.some(item => item.rsi !== null && item.rsi !== undefined);
   const hasVolume = visibleDataPoints.some(item => item.volume && item.volume > 0);
   const hasData = visibleDataPoints.length > 0;
+  const isIntradayData = visibleDataPoints.length > 0 && visibleDataPoints[0]?.isIntraday;
   
   // Hide RSI and MA200 for intraday periods
   const showRSI = selectedPeriod !== '1d' && selectedPeriod !== '5d' && hasRsi;
@@ -159,25 +209,40 @@ const StockPriceCharts = ({
     return item.price >= prevPrice ? '#22c55e' : '#ef4444';
   };
 
-  // Format date based on period
-  const formatDate = (date) => {
-    if (!date) return '';
+  // ✅ FIXED: Format date to show proper time labels for intraday data
+  const formatDate = (chartKey) => {
+    if (!chartKey) return '';
     try {
-      const d = new Date(date);
-      if (selectedPeriod === '1d' || selectedPeriod === '5d') {
-        const hasIntraday = historicalData.some(item => item.isIntraday);
-        if (hasIntraday) {
+      if (isIntradayData && (selectedPeriod === '1d' || selectedPeriod === '5d')) {
+        // For intraday data, show time only for 1D, date+time for 5D
+        const d = new Date(chartKey);
+        if (selectedPeriod === '1d') {
+          return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+        } else {
           return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+        }
+      } else {
+        // For daily data, show dates
+        const d = new Date(chartKey);
+        if (selectedPeriod === '5y') {
+          return `${d.getMonth() + 1}/${d.getFullYear()}`;
         } else {
           return `${d.getMonth() + 1}/${d.getDate()}`;
         }
-      } else if (selectedPeriod === '5y') {
-        return `${d.getMonth() + 1}/${d.getFullYear()}`;
-      } else {
-        return `${d.getMonth() + 1}/${d.getDate()}`;
       }
     } catch (e) {
+      console.error('Date formatting error:', e, chartKey);
       return '';
+    }
+  };
+
+  // Calculate appropriate tick interval for X-axis
+  const getTickInterval = () => {
+    if (selectedPeriod === '1d' && isIntradayData) {
+      // For 1D intraday, show every 6th tick (roughly hourly for 5-min data)
+      return Math.floor(Math.max(1, visibleDataPoints.length / 6));
+    } else {
+      return Math.floor(Math.max(1, visibleDataPoints.length / 8));
     }
   };
 
@@ -193,11 +258,11 @@ const StockPriceCharts = ({
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis 
-              dataKey="date"
+              dataKey="chartKey"
               tickFormatter={formatDate}
               axisLine={{ stroke: '#e0e0e0' }}
               tickLine={{ stroke: '#e0e0e0' }}
-              interval={Math.floor(Math.max(1, visibleDataPoints.length / 8))}
+              interval={getTickInterval()}
             />
             <YAxis
               domain={[domainMin, domainMax]}
@@ -275,9 +340,9 @@ const StockPriceCharts = ({
               syncId="stockCharts"
             >
               <XAxis 
-                dataKey="date" 
+                dataKey="chartKey" 
                 hide={true}
-                interval={Math.floor(Math.max(1, visibleDataPoints.length / 8))}
+                interval={getTickInterval()}
               />
               <YAxis
                 domain={[volumeMin, volumeMax]}
@@ -344,11 +409,11 @@ const StockPriceCharts = ({
               
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis 
-                dataKey="date"
+                dataKey="chartKey"
                 tickFormatter={formatDate}
                 axisLine={{ stroke: '#e0e0e0' }}
                 tickLine={{ stroke: '#e0e0e0' }}
-                interval={Math.floor(Math.max(1, visibleDataPoints.length / 8))}
+                interval={getTickInterval()}
                 height={25}
               />
               <YAxis
@@ -434,7 +499,8 @@ const StockPriceCharts = ({
           <p>Period: {selectedPeriod} | Data Points: {visibleDataPoints.length}</p>
           <p>Has MA200: {hasMa200.toString()} | Has RSI: {hasRsi.toString()} | Has Volume: {hasVolume.toString()}</p>
           <p>Show MA200: {showMA200.toString()} | Show RSI: {showRSI.toString()} | Show Volume: {showVolume.toString()}</p>
-          <p>Is Intraday: {historicalData.some(d => d.isIntraday).toString()}</p>
+          <p>Is Intraday: {isIntradayData.toString()}</p>
+          <p>First chart key: {visibleDataPoints[0]?.chartKey} | Last: {visibleDataPoints[visibleDataPoints.length - 1]?.chartKey}</p>
         </div>
       )}
     </div>

@@ -1,0 +1,207 @@
+/* Chrome/Platinum Theme for Investors Daily Brief */
+
+:root {
+  /* Primary Colors - Clean White & Chrome */
+  --color-primary: #ffffff;
+  --color-background: #fafafa;
+  --color-surface: #ffffff;
+  
+  /* Accent Colors - Platinum/Chrome */
+  --color-accent: #c0c0c0;
+  --color-accent-dark: #808080;
+  --color-accent-light: #e8e8e8;
+  --color-chrome: #b8b8b8;
+  --color-platinum: #d4d4d4;
+  
+  /* Text Colors */
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #4a4a4a;
+  --color-text-muted: #6b6b6b;
+  
+  /* Status Colors */
+  --color-success: #10b981;
+  --color-success-light: #34d399;
+  --color-danger: #ef4444;
+  --color-danger-light: #f87171;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fbbf24;
+  
+  /* Borders & Shadows */
+  --border-chrome: 1px solid var(--color-accent);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  --shadow-chrome: 0 0 20px rgba(192, 192, 192, 0.2);
+  
+  /* Transitions */
+  --transition-fast: all 0.15s ease;
+  --transition-medium: all 0.3s ease;
+  --transition-slow: all 0.5s ease;
+}
+
+/* Override Blue/Purple Colors Globally */
+.text-blue-600,
+.text-blue-500,
+.text-blue-400,
+.text-purple-600,
+.text-purple-500,
+.text-indigo-600,
+.text-indigo-500 {
+  color: var(--color-text-primary) !important;
+}
+
+.bg-blue-600,
+.bg-blue-500,
+.bg-purple-600,
+.bg-purple-500,
+.bg-indigo-600,
+.bg-indigo-500 {
+  background: linear-gradient(135deg, var(--color-platinum), var(--color-chrome)) !important;
+}
+
+.bg-blue-50,
+.bg-purple-50,
+.bg-indigo-50 {
+  background: var(--color-accent-light) !important;
+}
+
+.border-blue-200,
+.border-blue-300,
+.border-purple-200,
+.border-purple-300,
+.border-indigo-200,
+.border-indigo-300 {
+  border-color: var(--color-chrome) !important;
+}
+
+/* Gradient Backgrounds */
+.bg-gradient-to-r.from-blue-600.to-purple-600 {
+  background: linear-gradient(135deg, var(--color-chrome), var(--color-platinum)) !important;
+}
+
+.bg-gradient-to-br.from-blue-500.to-purple-600 {
+  background: linear-gradient(135deg, var(--color-platinum), var(--color-accent)) !important;
+}
+
+/* Chrome Components */
+.analysis-card {
+  background: var(--color-surface);
+  border: var(--border-chrome);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-medium);
+}
+
+.analysis-card:hover {
+  box-shadow: var(--shadow-chrome);
+  transform: translateY(-2px);
+}
+
+.chrome-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, var(--color-platinum), var(--color-chrome));
+  color: var(--color-text-primary);
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+}
+
+.chrome-button {
+  background: linear-gradient(135deg, var(--color-platinum), var(--color-chrome));
+  color: var(--color-text-primary);
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.chrome-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  background: linear-gradient(135deg, var(--color-chrome), var(--color-accent-dark));
+}
+
+/* AI Insight Styling */
+.ai-insight {
+  background: linear-gradient(135deg, #fafafa, #f5f5f5);
+  border-left: 3px solid var(--color-chrome);
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* Loading States */
+.chrome-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-accent-light) 0%,
+    var(--color-platinum) 50%,
+    var(--color-accent-light) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Hover Effects for Chrome Theme */
+.hover\:bg-blue-50:hover {
+  background: var(--color-accent-light) !important;
+}
+
+.hover\:bg-blue-100:hover {
+  background: var(--color-platinum) !important;
+}
+
+.hover\:text-blue-600:hover,
+.hover\:text-blue-700:hover {
+  color: var(--color-accent-dark) !important;
+}
+
+/* Focus States */
+.focus\:border-blue-500:focus,
+.focus\:ring-blue-500:focus {
+  border-color: var(--color-chrome) !important;
+  box-shadow: 0 0 0 3px rgba(192, 192, 192, 0.2) !important;
+}
+
+/* Progress Bar */
+.progress-bar {
+  height: 4px;
+  background: var(--color-accent-light);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-chrome), var(--color-platinum));
+  animation: progress 2s ease-in-out infinite;
+}
+
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

@@ -8398,3 +8398,836 @@
   message: 'Mistral sentiment analysis failed:',
   timestamp: '2025-06-16 11:36:06'
 }
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 20:56:01'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "Federal Reserve FOMC meeting":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "Federal Reserve FOMC meeting":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "stock market news today":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "stock market news today":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "Federal Reserve FOMC meeting":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'News sentiment analysis failed:',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'News sentiment analysis failed:',
+  timestamp: '2025-06-25 20:56:02'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 20:56:03'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 20:56:03'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:00:03'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:00:03'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "Federal Reserve FOMC meeting":',
+  timestamp: '2025-06-25 21:00:03'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "stock market news today":',
+  timestamp: '2025-06-25 21:00:03'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "Federal Reserve FOMC meeting":',
+  timestamp: '2025-06-25 21:00:03'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 21:00:03'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:00:03'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'News sentiment analysis failed:',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:00:04'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:03:22'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:03:22'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "stock market news today":',
+  timestamp: '2025-06-25 21:03:22'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "stock market news today":',
+  timestamp: '2025-06-25 21:03:22'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "Federal Reserve FOMC meeting":',
+  timestamp: '2025-06-25 21:03:22'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:03:22'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'News sentiment analysis failed:',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'News sentiment analysis failed:',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 21:03:23'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:16:39'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "Federal Reserve FOMC meeting":',
+  timestamp: '2025-06-25 21:16:40'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 21:16:40'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 21:16:40'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 21:16:40'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:16:41'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:16:41'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:16:41'
+}
+{
+  message: '✅ Received request for /market-sentiment',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:20:04'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:20:04'
+}
+{
+  message: '✅ Received request for /market-sentiment',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:20:04'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:20:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "stock market news today":',
+  timestamp: '2025-06-25 21:20:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "Federal Reserve FOMC meeting":',
+  timestamp: '2025-06-25 21:20:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "Federal Reserve FOMC meeting":',
+  timestamp: '2025-06-25 21:20:04'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'News sentiment analysis failed:',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  message: '✅ Successfully fetched market sentiment.',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:20:05'
+}
+{
+  message: '✅ Successfully fetched market sentiment.',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:20:07'
+}
+{
+  message: '✅ Received request for /market-sentiment',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:26:18'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:26:18'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "stock market news today":',
+  timestamp: '2025-06-25 21:26:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:26:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:26:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:26:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'News sentiment analysis failed:',
+  timestamp: '2025-06-25 21:26:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "earnings season calendar":',
+  timestamp: '2025-06-25 21:26:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "economic data releases":',
+  timestamp: '2025-06-25 21:26:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for events "geopolitical market impact":',
+  timestamp: '2025-06-25 21:26:20'
+}
+{
+  message: '✅ Successfully fetched market sentiment.',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:26:20'
+}
+{
+  message: '✅ Received request for /market-sentiment',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:31:18'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:31:18'
+}
+{
+  message: '✅ Received request for /market-sentiment',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:31:18'
+}
+{
+  message: 'Starting enhanced sentiment analysis with FMP API',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:31:18'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:31:18'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:31:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "stock market news today":',
+  timestamp: '2025-06-25 21:31:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:31:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "Federal Reserve interest rates":',
+  timestamp: '2025-06-25 21:31:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "S&P 500 earnings outlook":',
+  timestamp: '2025-06-25 21:31:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'Failed to search for "market volatility news":',
+  timestamp: '2025-06-25 21:31:19'
+}
+{
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  level: 'warn',
+  message: 'News sentiment analysis failed:',
+  timestamp: '2025-06-25 21:31:19'
+}
+{
+  message: '✅ Successfully fetched market sentiment.',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:31:19'
+}
+{
+  message: '✅ Successfully fetched market sentiment.',
+  level: 'info',
+  service: 'market-dashboard-backend',
+  environment: 'development',
+  timestamp: '2025-06-25 21:31:21'
+}

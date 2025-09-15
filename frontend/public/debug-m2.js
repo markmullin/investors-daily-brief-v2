@@ -6,8 +6,8 @@ async function testM2Data() {
   
   try {
     // Test macroeconomic API endpoint
-    console.log('🧪 Testing macroeconomic/all endpoint...');
-    const response = await axios.get('http://localhost:5173/api/macroeconomic/all');
+    console.log('🧪 Testing macroeconomic/simple endpoint...');
+    const response = await axios.get('http://localhost:5173/api/macroeconomic/simple');
     
     console.log(`📊 Response status: ${response.status}`);
     

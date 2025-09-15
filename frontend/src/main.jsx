@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import AppWrapper from "./AppWrapper.jsx";
 import "./index.css";
+import "./styles/chrome-theme.css";
+import "./utils/consoleCleaner.js";
 import clearAllCache from "./utils/clearAllCache.js";
 
 // Make cache clearing available globally

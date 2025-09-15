@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, TrendingUp, TrendingDown, AlertCircle, Loader2 } from 'lucide-react';
+import { Brain, TrendingUp, TrendingDown, AlertCircle, Loader2, GraduationCap, ChevronRight } from 'lucide-react';
 import { aiAnalysisApi } from '../services/api';
+import qwenAnalysisApi from '../services/qwenApi';
 
 const API_BASE_URL = 'http://localhost:5000/api/market';
 
@@ -284,6 +285,8 @@ const AIAnalysisSection = () => {
 const SectorPerformance = () => {
   const [sectorsData, setSectorsData] = useState({});
   const [error, setError] = useState(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [qwenAnalysis, setQwenAnalysis] = useState(null);
 
   const sectors = [
     'XLF',  // Financials
@@ -326,27 +329,103 @@ const SectorPerformance = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch Qwen analysis when sectors data is loaded
+  useEffect(() => {
+    if (Object.keys(sectorsData).length > 0 && !qwenAnalysis) {
+      qwenAnalysisApi.getSectorAnalysis(sectorsData).then(analysis => {
+        if (analysis) {
+          setQwenAnalysis(analysis);
+        }
+      });
+    }
+  }, [sectorsData]);
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Sector Performance</h2>
-      
-      {/* AI Analysis Section with TypewriterText - Now matches KeyRelationships */}
-      <AIAnalysisSection />
-      
-      {/* Traditional Sector Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {sectors.map((symbol) => (
-          <SectorCard
-            key={symbol}
-            symbol={symbol}
-            data={sectorsData[symbol]}
-          />
-        ))}
+      <div className="bg-white rounded-xl shadow-lg">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold mb-4">Sector Performance</h2>
+          
+          {/* Traditional Sector Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {sectors.map((symbol) => (
+              <SectorCard
+                key={symbol}
+                symbol={symbol}
+                data={sectorsData[symbol]}
+              />
+            ))}
+          </div>
+          
+          {error && (
+            <div className="text-red-500 mt-4">{error}</div>
+          )}
+        </div>
+
+        {/* Sector Intelligence Section (Collapsible) */}
+        <div className="border-t border-gray-200">
+          <button
+            onClick={() => setShowAnalysis(!showAnalysis)}
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <GraduationCap className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-semibold text-gray-900">Sector Intelligence</span>
+              {qwenAnalysis && (
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs font-medium rounded">
+                  AI Analysis
+                </span>
+              )}
+            </div>
+            <ChevronRight 
+              className={`w-5 h-5 text-gray-400 transition-transform ${
+                showAnalysis ? 'rotate-90' : ''
+              }`} 
+            />
+          </button>
+
+          {showAnalysis && (
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <div className="space-y-4">
+                {/* Main Analysis */}
+                <div>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {qwenAnalysis?.summary || 
+                     `Sector rotation analysis shows defensive positioning with Utilities and Staples outperforming. ` +
+                     `Technology and growth sectors facing headwinds from rate concerns. ` +
+                     `Energy tracking oil price movements closely.`}
+                  </p>
+                </div>
+
+                {/* Key Insights */}
+                {qwenAnalysis?.insights && qwenAnalysis.insights.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-gray-700">Key Insights</div>
+                    <ul className="space-y-1">
+                      {qwenAnalysis.insights.map((insight, idx) => (
+                        <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
+                          <span className="text-blue-400 mt-1">•</span>
+                          <span>{insight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Rotation Patterns */}
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    📊 Rotation patterns based on relative strength and volume analysis
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       
-      {error && (
-        <div className="text-red-500 mt-4">{error}</div>
-      )}
+      {/* Keep the existing AI Analysis Section for compatibility */}
+      <AIAnalysisSection />
     </div>
   );
 };

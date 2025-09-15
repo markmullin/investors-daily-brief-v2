@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Info, AlertCircle, TrendingUp, TrendingDown, Brain, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, AlertCircle, TrendingUp, TrendingDown, Brain, Loader2, BarChart3, GraduationCap } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend
@@ -8,43 +8,6 @@ import InfoTooltip from './InfoTooltip';
 import TimePeriodSelector from './TimePeriodSelector';
 import { useViewMode } from '../context/ViewModeContext';
 import { marketApi, aiAnalysisApi } from '../services/api';
-
-// TypewriterText component for AI analysis
-const TypewriterText = ({ text, speed = 30, onComplete }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const intervalRef = useRef(null);
-
-  useEffect(() => {
-    if (currentIndex < text.length) {
-      intervalRef.current = setTimeout(() => {
-        setDisplayedText(prev => prev + text[currentIndex]);
-        setCurrentIndex(prev => prev + 1);
-      }, speed);
-    } else {
-      onComplete && onComplete();
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearTimeout(intervalRef.current);
-      }
-    };
-  }, [currentIndex, text, speed, onComplete]);
-
-  // Reset when text changes
-  useEffect(() => {
-    setDisplayedText('');
-    setCurrentIndex(0);
-  }, [text]);
-
-  return (
-    <div className="whitespace-pre-wrap leading-relaxed">
-      {displayedText}
-      <span className="animate-pulse text-purple-500">|</span>
-    </div>
-  );
-};
 
 /**
  * Symbol name mapping
@@ -89,333 +52,6 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-/**
- * AI Analysis component for each relationship with Typewriter Effect
- */
-const AIRelationshipAnalysis = ({ relationshipId, currentData, symbols }) => {
-  const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isTypewriterComplete, setIsTypewriterComplete] = useState(false);
-
-  const fetchAiAnalysis = async () => {
-    if (!relationshipId) return;
-    
-    setLoading(true);
-    setError(null);
-    setIsTypewriterComplete(false);
-    
-    try {
-      const analysis = await aiAnalysisApi.getRelationshipAnalysis(relationshipId);
-      setAiAnalysis(analysis);
-    } catch (err) {
-      console.error(`Error fetching AI analysis for ${relationshipId}:`, err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAiAnalysis();
-  }, [relationshipId]);
-
-  const getSourceBadgeColor = (source) => {
-    switch (source) {
-      case 'ai':
-        return 'bg-purple-100 text-purple-800';
-      case 'enhanced-algorithmic':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="mt-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-100">
-        <div className="flex items-center gap-2 mb-3">
-          <Brain className="w-4 h-4 text-purple-600" />
-          <h4 className="font-semibold text-gray-800">AI Relationship Analysis</h4>
-        </div>
-        
-        <div className="flex items-center justify-center py-6">
-          <div className="flex items-center gap-2 text-purple-600">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Analyzing relationship dynamics...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="mt-4 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg p-4 border border-red-100">
-        <div className="flex items-center gap-2 mb-3">
-          <AlertCircle className="w-4 h-4 text-red-600" />
-          <h4 className="font-semibold text-gray-800">AI Analysis Unavailable</h4>
-        </div>
-        
-        <div className="space-y-2">
-          <p className="text-red-700 text-sm">
-            AI relationship analysis is temporarily unavailable.
-          </p>
-          <button 
-            onClick={fetchAiAnalysis}
-            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!aiAnalysis) return null;
-
-  return (
-    <div className="mt-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-100">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Brain className="w-4 h-4 text-purple-600" />
-          <h4 className="font-semibold text-gray-800">AI Relationship Analysis</h4>
-        </div>
-        
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSourceBadgeColor(aiAnalysis.source)}`}>
-          {aiAnalysis.source === 'ai' ? 'AI Generated' : 
-           aiAnalysis.source === 'enhanced-algorithmic' ? 'Enhanced Analysis' : 
-           'Algorithmic'}
-        </span>
-      </div>
-
-      {/* AI Analysis with Typewriter Effect */}
-      <div className="bg-white rounded-lg p-4 border border-purple-100 mb-3">
-        <div className="prose prose-sm max-w-none text-gray-700">
-          {aiAnalysis.analysis ? (
-            <TypewriterText 
-              text={aiAnalysis.analysis}
-              speed={25}
-              onComplete={() => setIsTypewriterComplete(true)}
-            />
-          ) : (
-            'AI analysis unavailable'
-          )}
-        </div>
-      </div>
-
-      {/* Timestamp - Show after typewriter completes */}
-      {isTypewriterComplete && aiAnalysis.generatedAt && (
-        <div className="flex items-center justify-between text-xs text-gray-500 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-            <span>Generated at {new Date(aiAnalysis.generatedAt).toLocaleString()}</span>
-          </div>
-          <button
-            onClick={fetchAiAnalysis}
-            className="px-3 py-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
-          >
-            Refresh Analysis
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * Analysis component for each relationship - KEPT AS FALLBACK
- */
-const RelationshipAnalysis = ({ relationshipId, currentData, symbols }) => {
-  const analyses = {
-    'spy-vs-tlt': {
-      title: 'Stocks vs Bonds Analysis',
-      interpretation: {
-        positive: 'When SPY outperforms TLT, it indicates risk-on sentiment. Investors are moving money from safe bonds to riskier stocks.',
-        negative: 'When TLT outperforms SPY, it shows flight to safety. Economic concerns drive investors to government bonds.',
-        neutral: 'Similar performance suggests market uncertainty. Neither risk assets nor safe havens are clearly preferred.'
-      },
-      signals: [
-        'Divergence often precedes major market moves',
-        'Both falling together may indicate liquidity crisis',
-        'Both rising suggests abundant liquidity'
-      ],
-      tradingImplications: [
-        'SPY > TLT: Consider growth stocks, cyclicals',
-        'TLT > SPY: Consider defensive sectors, quality bonds',
-        'Large divergence: Potential mean reversion opportunity'
-      ]
-    },
-    'spy-vs-eem-vs-efa': {
-      title: 'Global Equity Markets Analysis',
-      interpretation: {
-        spyLead: 'US outperformance shows American exceptionalism. Dollar strength and US tech dominance.',
-        eemLead: 'Emerging markets outperformance indicates high global risk appetite. Weak dollar environment.',
-        efaLead: 'Developed international markets leading suggests global recovery outside US.'
-      },
-      signals: [
-        'EEM leading often marks late-cycle behavior',
-        'SPY isolated strength may be unsustainable',
-        'Convergence suggests synchronized global growth'
-      ],
-      tradingImplications: [
-        'EEM > SPY: Consider commodities, international exposure',
-        'SPY > EEM: Focus on US large-cap, technology',
-        'All rising: Broad global equity exposure appropriate'
-      ]
-    },
-    'ive-vs-ivw': {
-      title: 'Value vs Growth Analysis',
-      interpretation: {
-        growthLead: 'Growth outperformance typical in low-rate environments. Innovation and future earnings valued.',
-        valueLead: 'Value outperformance suggests economic recovery, rising rates, or late-cycle rotation.',
-        neutral: 'Balanced performance indicates stable market without strong style preference.'
-      },
-      signals: [
-        'Major style rotations often last 3-5 years',
-        'Value leads at economic turning points',
-        'Growth dominates during monetary expansion'
-      ],
-      tradingImplications: [
-        'IVW > IVE: Focus on tech, healthcare, discretionary',
-        'IVE > IVW: Consider financials, energy, industrials',
-        'Rotation starting: Rebalance portfolio gradually'
-      ]
-    },
-    'ibit-vs-gld': {
-      title: 'Digital vs Traditional Store of Value',
-      interpretation: {
-        bitcoinLead: 'Bitcoin outperformance shows risk-on sentiment and technology adoption.',
-        goldLead: 'Gold outperformance indicates traditional safe-haven demand and inflation concerns.',
-        correlation: 'Both rising suggests currency debasement fears and inflation hedging.'
-      },
-      signals: [
-        'Bitcoin more volatile but higher potential returns',
-        'Gold more stable during market stress',
-        'Divergence shows changing investor preferences'
-      ],
-      tradingImplications: [
-        'IBIT > GLD: Risk-on, consider growth assets',
-        'GLD > IBIT: Defensive positioning warranted',
-        'Both rising: Hedge against currency devaluation'
-      ]
-    },
-    'bnd-vs-jnk': {
-      title: 'Credit Spread Analysis',
-      interpretation: {
-        tightening: 'JNK outperforming BND shows credit spread tightening. Risk appetite increasing.',
-        widening: 'BND outperforming JNK indicates credit spread widening. Quality flight underway.',
-        stable: 'Similar performance suggests stable credit conditions.'
-      },
-      signals: [
-        'Spreads widen before recessions',
-        'Tight spreads indicate late-cycle complacency',
-        'Direction changes are more important than levels'
-      ],
-      tradingImplications: [
-        'JNK > BND: Consider credit risk, high yield',
-        'BND > JNK: Reduce credit exposure, quality focus',
-        'Spreads widening: Defensive positioning'
-      ]
-    },
-    'uso-vs-uup': {
-      title: 'Commodity-Currency Dynamics',
-      interpretation: {
-        oilStrength: 'Oil outperforming dollar suggests inflationary pressures and commodity supercycle.',
-        dollarStrength: 'Dollar outperforming oil indicates deflationary forces and US strength.',
-        inverse: 'Traditional inverse relationship holding. Normal market dynamics.'
-      },
-      signals: [
-        'Breaking correlation warns of regime change',
-        'Both rising rare - usually unsustainable',
-        'Oil leads inflation expectations'
-      ],
-      tradingImplications: [
-        'USO > UUP: Commodity exposure, international assets',
-        'UUP > USO: US assets, growth stocks',
-        'Correlation breaking: Review all positions'
-      ]
-    },
-    'xlp-vs-xly': {
-      title: 'Consumer Behavior Analysis',
-      interpretation: {
-        discretionaryLead: 'XLY outperformance shows consumer confidence and economic expansion.',
-        staplesLead: 'XLP outperformance indicates defensive positioning and economic concerns.',
-        balanced: 'Similar performance suggests transitional economic phase.'
-      },
-      signals: [
-        'XLY/XLP ratio predicts economic cycles',
-        'Extreme readings mark turning points',
-        'Consumer behavior leads broader economy'
-      ],
-      tradingImplications: [
-        'XLY > XLP: Cyclical sectors, growth focus',
-        'XLP > XLY: Defensive sectors, dividend stocks',
-        'Ratio turning: Prepare for cycle change'
-      ]
-    },
-    'smh-vs-xsw': {
-      title: 'Technology Sector Dynamics',
-      interpretation: {
-        semiconductorLead: 'SMH outperformance indicates hardware cycle upturn and manufacturing strength.',
-        softwareLead: 'XSW outperformance shows preference for recurring revenue and SaaS models.',
-        synchronized: 'Both performing well suggests broad tech strength.'
-      },
-      signals: [
-        'SMH more cyclical than XSW',
-        'Software generally more defensive',
-        'AI boom benefits both but hardware more'
-      ],
-      tradingImplications: [
-        'SMH > XSW: Early cycle tech recovery',
-        'XSW > SMH: Late cycle or defensive tech',
-        'Both strong: Broad tech exposure'
-      ]
-    }
-  };
-  
-  const analysis = analyses[relationshipId];
-  if (!analysis || !currentData || currentData.length === 0) return null;
-
-  // Determine current relationship state
-  const latestData = currentData[currentData.length - 1];
-  const getPerformance = (symbol) => latestData[symbol] || 0;
-  
-  return (
-    <div className="mt-4 bg-gray-50 rounded-lg p-6">
-      <h4 className="font-semibold text-gray-800 mb-3">{analysis.title}</h4>
-      
-      <div className="space-y-3">
-        <div className="bg-white rounded-lg p-4">
-          <h5 className="font-medium text-gray-700 mb-2">Interpretation</h5>
-          <div className="space-y-2 text-sm text-gray-600">
-            {Object.entries(analysis.interpretation).map(([key, value]) => (
-              <p key={key}>• {value}</p>
-            ))}
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg p-4">
-          <h5 className="font-medium text-gray-700 mb-2">Key Signals</h5>
-          <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-            {analysis.signals.map((signal, idx) => (
-              <li key={idx}>{signal}</li>
-            ))}
-          </ul>
-        </div>
-        
-        <div className="bg-white rounded-lg p-4">
-          <h5 className="font-medium text-gray-700 mb-2">Trading Implications</h5>
-          <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-            {analysis.tradingImplications.map((implication, idx) => (
-              <li key={idx}>{implication}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /**
  * Relationship configuration
@@ -521,25 +157,67 @@ const relationships = [
 
 /**
  * Key Relationships Component
+ * FIXED: Added onRelationshipChange callback to notify parent of current relationship
  */
-const KeyRelationships = ({ historicalData: initialHistoricalData = {}, sectorData }) => {
+const KeyRelationships = ({ historicalData: initialHistoricalData = {}, sectorData, onRelationshipChange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState('1y');
   const [historicalData, setHistoricalData] = useState(initialHistoricalData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
   const { viewMode } = useViewMode();
 
   const currentRelationship = relationships[currentIndex];
 
   // Navigation functions
   const goNext = () => {
-    setCurrentIndex((prev) => (prev === relationships.length - 1 ? 0 : prev + 1));
+    const nextIndex = currentIndex === relationships.length - 1 ? 0 : currentIndex + 1;
+    setCurrentIndex(nextIndex);
   };
 
   const goPrev = () => {
-    setCurrentIndex((prev) => (prev === 0 ? relationships.length - 1 : prev - 1));
+    const prevIndex = currentIndex === 0 ? relationships.length - 1 : currentIndex - 1;
+    setCurrentIndex(prevIndex);
   };
+
+  // Fetch AI analysis
+  const fetchAiAnalysis = async () => {
+    try {
+      const response = await fetch('/api/intelligent-analysis/relationships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          relationship: currentRelationship,
+          chartData: chartData,
+          period: selectedPeriod
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAiAnalysis(data.analysis);
+      }
+    } catch (error) {
+      console.error('Error fetching AI analysis:', error);
+    }
+  };
+
+  // Notify parent when relationship changes
+  useEffect(() => {
+    if (onRelationshipChange && currentRelationship) {
+      // Create correlation pair data for intelligent analysis
+      const correlationData = {
+        pair: currentRelationship.id,
+        asset1: currentRelationship.symbols[0],
+        asset2: currentRelationship.symbols[1],
+        name: currentRelationship.title,
+        description: currentRelationship.description
+      };
+      onRelationshipChange(correlationData);
+    }
+  }, [currentIndex, currentRelationship, onRelationshipChange]);
 
   // Fetch data when period or relationship changes
   useEffect(() => {
@@ -552,11 +230,11 @@ const KeyRelationships = ({ historicalData: initialHistoricalData = {}, sectorDa
       try {
         const newData = {};
         for (const symbol of currentRelationship.symbols) {
-          const symbolWithUS = `${symbol}.US`;
+          // 🎯 FIXED: Remove .US suffix - backend expects just the symbol
+          console.log(`🔍 Fetching data for ${symbol} with period ${selectedPeriod}`);
           
-          // Always fetch fresh data when period changes
-          const data = await marketApi.getHistory(symbolWithUS, selectedPeriod);
-          newData[symbolWithUS] = { data, period: selectedPeriod };
+          const data = await marketApi.getHistory(symbol, selectedPeriod);
+          newData[symbol] = { data, period: selectedPeriod };
         }
         
         setHistoricalData(prev => ({
@@ -584,9 +262,9 @@ const KeyRelationships = ({ historicalData: initialHistoricalData = {}, sectorDa
     let latestCommonDate = null;
     const dataAvailability = {};
 
-    // First, get all data for each symbol
+    // First, get all data for each symbol (removed .US suffix)
     currentRelationship.symbols.forEach(symbol => {
-      const data = historicalData[`${symbol}.US`]?.data || [];
+      const data = historicalData[symbol]?.data || [];
       if (data.length > 0) {
         symbolsData[symbol] = data;
         dataAvailability[symbol] = {
@@ -823,10 +501,14 @@ const KeyRelationships = ({ historicalData: initialHistoricalData = {}, sectorDa
           {/* Header */}
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-xl font-semibold text-gray-800">
-                {currentRelationship.displayTitle || currentRelationship.title}
-              </h3>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="text-blue-600" size={20} />
+                <h3 className="text-xl font-semibold text-gray-800">
+                  {currentRelationship.displayTitle || currentRelationship.title}
+                </h3>
+
+              </div>
+              <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">
                   {currentRelationship.symbols.join(' vs ')}
                 </span>
@@ -975,15 +657,75 @@ const KeyRelationships = ({ historicalData: initialHistoricalData = {}, sectorDa
             </div>
           )}
           
-          {/* AI Analysis Section with Typewriter Effect - Replaces static analysis */}
-          {hasData && !isLoading && (
-            <AIRelationshipAnalysis 
-              relationshipId={currentRelationship.id}
-              currentData={chartData}
-              symbols={currentRelationship.symbols}
-            />
-          )}
         </div>
+      </div>
+
+      {/* Market Intelligence Section (Collapsible) */}
+      <div className="bg-white rounded-xl shadow-lg mt-4">
+        <button
+          onClick={() => {
+            setShowAnalysis(!showAnalysis);
+            if (!showAnalysis && !aiAnalysis) {
+              fetchAiAnalysis();
+            }
+          }}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <GraduationCap className="w-5 h-5 text-gray-600" />
+            <span className="text-sm font-semibold text-gray-900">Relationship Intelligence</span>
+            {aiAnalysis?.confidence && (
+              <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs font-medium rounded">
+                {aiAnalysis.confidence}% confidence
+              </span>
+            )}
+          </div>
+          <ChevronRight 
+            className={`w-5 h-5 text-gray-400 transition-transform ${
+              showAnalysis ? 'rotate-90' : ''
+            }`} 
+          />
+        </button>
+
+        {showAnalysis && (
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="space-y-4">
+              {/* Main Analysis */}
+              <div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {aiAnalysis?.summary || 
+                   `${currentRelationship.displayTitle} shows a ${chartData && chartData.length > 1 ? 
+                     'dynamic relationship' : 'correlation'} over the ${selectedPeriod} period. ` +
+                   `${currentRelationship.description.basic}`}
+                </p>
+              </div>
+
+              {/* Key Insights */}
+              {aiAnalysis?.insights && aiAnalysis.insights.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-gray-700">Key Insights</div>
+                  <ul className="space-y-1">
+                    {aiAnalysis.insights.map((insight, idx) => (
+                      <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
+                        <span className="text-blue-400 mt-1">•</span>
+                        <span>{insight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Trading Implications */}
+              {(aiAnalysis?.implications || currentRelationship.description.advanced) && (
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    {aiAnalysis?.implications || currentRelationship.description.advanced}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Analysis Debug Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #555;
+            font-size: 18px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .data-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            color: #666;
+            font-weight: 500;
+        }
+        .value {
+            font-weight: bold;
+            color: #333;
+        }
+        .positive {
+            color: #4CAF50;
+        }
+        .negative {
+            color: #f44336;
+        }
+        .neutral {
+            color: #666;
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.ok {
+            background: #4CAF50;
+            color: white;
+        }
+        .status.error {
+            background: #f44336;
+            color: white;
+        }
+        .status.warning {
+            background: #ff9800;
+            color: white;
+        }
+        .insight {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-style: italic;
+            color: #555;
+            line-height: 1.5;
+        }
+        .refresh-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        .refresh-btn:hover {
+            background: #45a049;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .error-msg {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Intelligent Analysis Debug Dashboard</h1>
+        <p>This dashboard shows exactly what data is being used by each component.</p>
+        
+        <button class="refresh-btn" onclick="refreshAll()">🔄 Refresh All Data</button>
+        
+        <div class="grid">
+            <!-- Real FMP Data -->
+            <div class="card">
+                <h2>📊 Real FMP Data</h2>
+                <div id="fmp-data" class="loading">Loading...</div>
+            </div>
+            
+            <!-- Python Calculations -->
+            <div class="card">
+                <h2>🐍 Python Calculations</h2>
+                <div id="python-data" class="loading">Loading...</div>
+            </div>
+            
+            <!-- Backend Analysis -->
+            <div class="card">
+                <h2>🧠 AI Analysis (Market Phase)</h2>
+                <div id="ai-market" class="loading">Loading...</div>
+            </div>
+            
+            <!-- Sector Analysis -->
+            <div class="card">
+                <h2>📈 Sector Analysis</h2>
+                <div id="sector-data" class="loading">Loading...</div>
+            </div>
+            
+            <!-- Correlation Analysis -->
+            <div class="card">
+                <h2>🔗 Correlation (SPY vs EEM vs EFA)</h2>
+                <div id="correlation-data" class="loading">Loading...</div>
+            </div>
+            
+            <!-- System Status -->
+            <div class="card">
+                <h2>⚙️ System Status</h2>
+                <div id="system-status" class="loading">Checking...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchFMPData() {
+            const container = document.getElementById('fmp-data');
+            try {
+                const response = await fetch('https://financialmodelingprep.com/api/v3/quote/SPY,QQQ,^VIX?apikey=4qzhwAFGwKXQRDNT8pUZyjV1cOmD2fm1');
+                const data = await response.json();
+                
+                const spy = data.find(d => d.symbol === 'SPY') || {};
+                const vix = data.find(d => d.symbol === '^VIX') || {};
+                
+                container.innerHTML = `
+                    <div class="data-row">
+                        <span class="label">SPY Price:</span>
+                        <span class="value">$${spy.price?.toFixed(2) || 'N/A'}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">SPY Change:</span>
+                        <span class="value ${spy.changesPercentage > 0 ? 'positive' : spy.changesPercentage < 0 ? 'negative' : 'neutral'}">
+                            ${spy.changesPercentage?.toFixed(2) || '0.00'}%
+                        </span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">VIX:</span>
+                        <span class="value">${vix.price?.toFixed(2) || 'N/A'}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">Status:</span>
+                        <span class="status ok">LIVE DATA</span>
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `<div class="error-msg">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function fetchPythonData() {
+            const container = document.getElementById('python-data');
+            try {
+                const response = await fetch('http://localhost:8000/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'marketPhase', data: {} })
+                });
+                const data = await response.json();
+                
+                container.innerHTML = `
+                    <div class="data-row">
+                        <span class="label">Phase:</span>
+                        <span class="value">${data.phase || 'N/A'}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">VIX:</span>
+                        <span class="value">${data.vix || 'N/A'}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">S&P Change:</span>
+                        <span class="value ${data.sp500Change > 0 ? 'positive' : data.sp500Change < 0 ? 'negative' : 'neutral'}">
+                            ${data.sp500Change || '0.00'}%
+                        </span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">Accuracy:</span>
+                        <span class="status ok">${data.accuracy || 'Real FMP'}</span>
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="error-msg">Python service not running!</div>
+                    <p>Run: <code>npm run analysis:start</code></p>
+                `;
+            }
+        }
+        
+        async function fetchAIAnalysis() {
+            const container = document.getElementById('ai-market');
+            try {
+                const response = await fetch('http://localhost:5000/api/intelligent-analysis/market-phase');
+                const data = await response.json();
+                
+                let html = '';
+                if (data.calculations) {
+                    html += `
+                        <div class="data-row">
+                            <span class="label">VIX Used:</span>
+                            <span class="value">${data.calculations.vix || 'N/A'}</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="label">S&P Used:</span>
+                            <span class="value">${data.calculations.sp500Change || '0'}%</span>
+                        </div>
+                    `;
+                }
+                
+                if (data.insight) {
+                    // Check if AI is using correct numbers
+                    const mentionsVix = data.calculations && data.insight.includes(data.calculations.vix?.toString());
+                    const isAccurate = mentionsVix ? 'ok' : 'warning';
+                    
+                    html += `
+                        <div class="data-row">
+                            <span class="label">Accuracy:</span>
+                            <span class="status ${isAccurate}">${mentionsVix ? 'USING REAL DATA' : 'MAY BE HALLUCINATING'}</span>
+                        </div>
+                        <div class="insight">${data.insight.substring(0, 200)}...</div>
+                    `;
+                }
+                
+                container.innerHTML = html || '<div class="error-msg">No analysis data</div>';
+            } catch (error) {
+                container.innerHTML = `<div class="error-msg">Backend error: ${error.message}</div>`;
+            }
+        }
+        
+        async function fetchSectorData() {
+            const container = document.getElementById('sector-data');
+            try {
+                const response = await fetch('https://financialmodelingprep.com/api/v3/sector-performance?apikey=4qzhwAFGwKXQRDNT8pUZyjV1cOmD2fm1');
+                const data = await response.json();
+                
+                const sorted = data.sort((a, b) => 
+                    parseFloat(b.changesPercentage) - parseFloat(a.changesPercentage)
+                );
+                
+                const top = sorted[0];
+                const bottom = sorted[sorted.length - 1];
+                
+                container.innerHTML = `
+                    <div class="data-row">
+                        <span class="label">Top Sector:</span>
+                        <span class="value positive">${top.sector} (${top.changesPercentage})</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">Worst Sector:</span>
+                        <span class="value negative">${bottom.sector} (${bottom.changesPercentage})</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">Total Sectors:</span>
+                        <span class="value">${data.length}</span>
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `<div class="error-msg">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function fetchCorrelationData() {
+            const container = document.getElementById('correlation-data');
+            try {
+                const response = await fetch('http://localhost:5000/api/intelligent-analysis/correlations/spy-vs-eem-vs-efa');
+                const data = await response.json();
+                
+                let html = '';
+                if (data.calculations) {
+                    html += `
+                        <div class="data-row">
+                            <span class="label">Asset 1:</span>
+                            <span class="value">${data.calculations.asset1} (${data.calculations.asset1Performance}%)</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="label">Asset 2:</span>
+                            <span class="value">${data.calculations.asset2} (${data.calculations.asset2Performance}%)</span>
+                        </div>
+                    `;
+                }
+                
+                if (data.insight) {
+                    const correctAssets = data.insight.includes('SPY') && data.insight.includes('EEM');
+                    html += `
+                        <div class="data-row">
+                            <span class="label">Correct Assets:</span>
+                            <span class="status ${correctAssets ? 'ok' : 'error'}">${correctAssets ? 'YES' : 'NO - WRONG!'}</span>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html || '<div class="error-msg">No correlation data</div>';
+            } catch (error) {
+                container.innerHTML = `<div class="error-msg">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function checkSystemStatus() {
+            const container = document.getElementById('system-status');
+            let html = '';
+            
+            // Check Python
+            try {
+                await fetch('http://localhost:8000/health');
+                html += `
+                    <div class="data-row">
+                        <span class="label">Python Service:</span>
+                        <span class="status ok">RUNNING</span>
+                    </div>
+                `;
+            } catch {
+                html += `
+                    <div class="data-row">
+                        <span class="label">Python Service:</span>
+                        <span class="status error">NOT RUNNING</span>
+                    </div>
+                `;
+            }
+            
+            // Check Backend
+            try {
+                await fetch('http://localhost:5000/health');
+                html += `
+                    <div class="data-row">
+                        <span class="label">Backend:</span>
+                        <span class="status ok">RUNNING</span>
+                    </div>
+                `;
+            } catch {
+                html += `
+                    <div class="data-row">
+                        <span class="label">Backend:</span>
+                        <span class="status error">NOT RUNNING</span>
+                    </div>
+                `;
+            }
+            
+            // Check Ollama
+            try {
+                const response = await fetch('http://localhost:11434/api/tags');
+                const data = await response.json();
+                const hasQwen = data.models?.some(m => m.name.includes('qwen'));
+                html += `
+                    <div class="data-row">
+                        <span class="label">Qwen Model:</span>
+                        <span class="status ${hasQwen ? 'ok' : 'warning'}">${hasQwen ? 'INSTALLED' : 'NOT FOUND'}</span>
+                    </div>
+                `;
+            } catch {
+                html += `
+                    <div class="data-row">
+                        <span class="label">Ollama:</span>
+                        <span class="status error">NOT RUNNING</span>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        async function refreshAll() {
+            document.querySelectorAll('.card > div').forEach(el => {
+                if (!el.id.includes('status')) {
+                    el.innerHTML = '<div class="loading">Loading...</div>';
+                }
+            });
+            
+            await Promise.all([
+                fetchFMPData(),
+                fetchPythonData(),
+                fetchAIAnalysis(),
+                fetchSectorData(),
+                fetchCorrelationData(),
+                checkSystemStatus()
+            ]);
+        }
+        
+        // Load on page load
+        refreshAll();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(refreshAll, 30000);
+    </script>
+</body>
+</html>

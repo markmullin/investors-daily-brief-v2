@@ -9,19 +9,17 @@ import cors from 'cors';
 import compression from 'compression';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import marketEnvironmentScheduler from './src/schedulers/marketEnvironmentScheduler.js';
 
-console.log('🚀 STARTING: Market Dashboard Server with All Required Endpoints...');
 
 class FixedMarketDashboardServer {
   constructor() {
     this.app = express();
     this.server = null;
     this.startTime = Date.now();
-    console.log('✅ Express app created');
   }
 
   setupMiddleware() {
-    console.log('🔧 Setting up production middleware...');
     
     // Security
     this.app.use(helmet({
@@ -47,80 +45,70 @@ class FixedMarketDashboardServer {
       skip: (req) => req.url === '/health' || req.url === '/favicon.ico'
     }));
 
-    console.log('✅ Middleware configured');
   }
 
   setupHealthAndInfo() {
-    // Enhanced health check
+    // Health check
     this.app.get('/health', (req, res) => {
-      const uptime = Date.now() - this.startTime;
-      
       res.json({
         status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: `${Math.floor(uptime / 1000)}s`,
-        version: '3.2.0-all-endpoints',
-        environment: process.env.NODE_ENV || 'development',
-        features: {
-          enhancedAiAnalysis: true,
-          allRequiredEndpoints: true,
-          riskPositioning: true,
-          comprehensiveMarketData: true,
-          marketSentiment: true,
-          typewriterEffects: true
-        },
-        apis: {
-          fmp: Boolean(process.env.FMP_API_KEY),
-          brave: Boolean(process.env.BRAVE_API_KEY),
-          mistral: Boolean(process.env.MISTRAL_API_KEY)
-        }
+        uptime: Math.floor((Date.now() - this.startTime) / 1000),
+        version: '3.2.0'
       });
     });
 
     // API info endpoint
     this.app.get('/', (req, res) => {
       res.json({
-        name: 'Market Dashboard API - All Endpoints Fixed',
-        version: '3.2.0-all-endpoints',
-        status: 'running',
-        message: '🤖 All Required Endpoints + Enhanced AI Analysis',
-        endpoints: {
-          health: '/health',
-          market: '/api/market/*',
-          aiAnalysis: '/api/ai-analysis/*',
-          currentEvents: '/api/ai/ai-analysis',
-          macroeconomic: '/api/macroeconomic/*',
-          riskPositioning: '/api/market/risk-positioning',
-          comprehensive: '/api/market/comprehensive',
-          sentiment: '/api/brave/market-sentiment'
-        }
+        name: 'Market Dashboard API',
+        version: '3.2.0',
+        status: 'running'
       });
     });
 
-    console.log('✅ Health and info endpoints configured');
   }
 
   async setupAllRoutes() {
-    console.log('🛤️  Loading all required routes...');
+
+    // Disable rate limiting for GPT-OSS endpoints (they take 30-50 seconds)
+    this.app.use('/api/gpt-oss', (req, res, next) => {
+      req.skipRateLimit = true;
+      next();
+    });
 
     const routes = [
-      // ENHANCED AI ROUTES (WORKING)
-      { path: '/api/ai-analysis', module: './src/routes/enhancedAiRoutes.js', name: 'Enhanced AI Analysis' },
-      { path: '/api/ai', module: './src/routes/currentEventsAiRoutes.js', name: 'Current Events AI' },
+      // CORE AI ROUTES (FIXED)
+      { path: '/api/ai-analysis', module: './src/routes/streamlinedAiRoutes.js', name: 'Enhanced AI Analysis' },
+      { path: '/api/ai', module: './src/routes/aiRoutes.js', name: 'AI Services' },
       
       // CORE MARKET ROUTES (ESSENTIAL)
       { path: '/api/market', module: './src/routes/market.js', name: 'Market Data' },
       { path: '/api/macroeconomic', module: './src/routes/macroeconomic.js', name: 'Macroeconomic' },
       { path: '/api/batch', module: './src/routes/batch.js', name: 'Batch Operations' },
       
-      // MISSING ROUTES (FIXED)
-      { path: '/api/market', module: './src/routes/missingRoutes.js', name: 'Missing Market Routes' },
-      { path: '/api/brave', module: './src/routes/braveRoutesFixed.js', name: 'Brave Market Sentiment' },
+      // RESEARCH & ANALYSIS FEATURES
+      { path: '/api/research', module: './src/routes/research.js', name: 'Research Hub' },
+      { path: '/api/research/earnings', module: './src/routes/earningsRoutes.js', name: 'Earnings Analysis' },
+      { path: '/api/themes', module: './src/routes/themeRoutes.js', name: 'Theme Discovery' },
+      
+      // ENHANCED RESEARCH HUB FEATURES
+      { path: '/api/discovery', module: './src/routes/discovery.js', name: 'Discovery API' },
+      { path: '/api/watchlist', module: './src/routes/enhanced/watchlistRoutes.js', name: 'Professional Watchlist' },
+      { path: '/api/enhanced-discovery', module: './src/routes/enhanced/enhancedDiscoveryRoutes.js', name: 'Enhanced Discovery' },
       
       // ADDITIONAL FEATURES
       { path: '/api/portfolio', module: './src/routes/portfolio.js', name: 'Portfolio Tracking' },
-      { path: '/api/edgar', module: './src/routes/edgarRoutes.js', name: 'SEC Edgar' },
-      { path: '/api/market-environment', module: './src/routes/marketEnvironmentRoutes.js', name: 'Market Environment' }
+      { path: '/api/market-environment', module: './src/routes/marketEnvironmentRoutes.js', name: 'Market Environment' },
+      { path: '/api/market-env', module: './src/routes/marketEnvironmentV2-simple.js', name: 'Market Environment V2' },
+      
+      // GPT-OSS LOCAL AI MODEL
+      { path: '/api/gpt-oss', module: './src/routes/gptOSSRoutes.js', name: 'GPT-OSS Local AI' },
+      
+      // INTELLIGENT ANALYSIS (Python → GPT-OSS Pipeline)
+      
+      // QWEN 3 8B ANALYSIS
+      { path: '/api/qwen-analysis', module: './src/routes/qwen-analysis.js', name: 'Qwen 3 8B Analysis' },
+      { path: '/api/intelligent-analysis', module: './src/routes/intelligentAnalysisRoutes.js', name: 'Intelligent Analysis' }
     ];
 
     let loadedCount = 0;
@@ -128,22 +116,24 @@ class FixedMarketDashboardServer {
 
     for (const route of routes) {
       try {
-        console.log(`Loading route: ${route.name} at ${route.path}`);
         const routeModule = await import(route.module);
         this.app.use(route.path, routeModule.default);
-        console.log(`✅ ${route.name} routes loaded successfully`);
         loadedCount++;
+        console.log(`✅ ${route.name} loaded at ${route.path}`);
       } catch (error) {
         console.error(`❌ ${route.name} routes failed:`, error.message);
         failedCount++;
       }
     }
 
-    console.log(`✅ Route loading complete: ${loadedCount} loaded, ${failedCount} failed`);
+    console.log(`\n📊 Route Loading Summary:`);
+    console.log(`   ✅ Loaded: ${loadedCount}`);
+    console.log(`   ❌ Failed: ${failedCount}`);
+    console.log(`   📋 Total: ${routes.length}\n`);
+
   }
 
   setupErrorHandling() {
-    console.log('🛡️  Setting up error handling...');
 
     // 404 handler
     this.app.use((req, res) => {
@@ -173,12 +163,21 @@ class FixedMarketDashboardServer {
       });
     });
 
-    console.log('✅ Error handling configured');
   }
 
   async start(port = process.env.PORT || 5000) {
+    // Initialize Market Environment V2 scheduler
     try {
-      console.log('🏗️  Building production server with all endpoints...');
+      marketEnvironmentScheduler.init();
+      // Check if initial aggregation is needed
+      await marketEnvironmentScheduler.scheduleInitialAggregation();
+      console.log('✅ Market Environment V2 scheduler started');
+    } catch (error) {
+      console.error('⚠️ Scheduler initialization failed:', error);
+      // Continue anyway - scheduler is not critical for server operation
+    }
+
+    try {
       
       // Setup all components
       this.setupMiddleware();
@@ -186,36 +185,12 @@ class FixedMarketDashboardServer {
       await this.setupAllRoutes();
       this.setupErrorHandling();
 
-      console.log('🚀 Starting production server...');
-      
       // Start the server
       this.server = this.app.listen(port, () => {
         const uptime = Date.now() - this.startTime;
         
-        console.log('\n' + '='.repeat(80));
-        console.log('🤖 MARKET DASHBOARD SERVER - ALL ENDPOINTS FIXED!');
-        console.log('='.repeat(80));
-        console.log(`🌍 Server URL: http://localhost:${port}`);
-        console.log(`⚡ Startup time: ${uptime}ms`);
-        console.log('');
-        console.log('✅ FIXED ENDPOINTS:');
-        console.log(`   📊 Risk Positioning: http://localhost:${port}/api/market/risk-positioning`);
-        console.log(`   📈 Comprehensive: http://localhost:${port}/api/market/comprehensive`);
-        console.log(`   💭 Market Sentiment: http://localhost:${port}/api/brave/market-sentiment`);
-        console.log(`   📰 Current Events: http://localhost:${port}/api/ai/ai-analysis`);
-        console.log('');
-        console.log('🤖 ENHANCED AI ENDPOINTS:');
-        console.log(`   📊 Sector Analysis: http://localhost:${port}/api/ai-analysis/sectors`);
-        console.log(`   🌍 Macro Analysis: http://localhost:${port}/api/ai-analysis/macro`);
-        console.log('');
-        console.log('🎯 CORE ENDPOINTS:');
-        console.log(`   📈 Market Data: http://localhost:${port}/api/market/data`);
-        console.log(`   🏦 Macro Data: http://localhost:${port}/api/macroeconomic/all`);
-        console.log(`   🔍 Health: http://localhost:${port}/health`);
-        console.log('');
-        console.log('🎊 All endpoints ready! Frontend should connect successfully.');
-        console.log('='.repeat(80));
-        console.log('');
+        console.log(`🚀 Market Dashboard Server running on http://localhost:${port}`);
+        console.log(`📊 Dashboard: http://localhost:5173`);
       });
 
       // Graceful error handling

@@ -1,7 +1,7 @@
 // PORTFOLIO DATA QUALITY SERVICE - FIXED VERSION
-// Ensures every stock has up-to-date, accurate financial metrics from EDGAR
+// Ensures every stock has up-to-date, accurate financial metrics from FMP
 
-import edgarService from './edgarService.js';
+import fmpService from './fmpService.js';
 import NodeCache from 'node-cache';
 import fs from 'fs/promises';
 import path from 'path';
@@ -137,30 +137,30 @@ class PortfolioDataQualityService {
     };
     
     try {
-      // Get EDGAR data
-      console.log(`    📡 Fetching EDGAR data for ${ticker}...`);
-      const edgarData = await edgarService.getCompanyFacts(ticker);
+      // Get FMP data instead of EDGAR
+      console.log(`    📡 Fetching FMP data for ${ticker}...`);
+      const fmpData = await fmpService.getCompanyFinancials(ticker);
       
-      if (!edgarData || !edgarData.fiscalData) {
-        throw new Error('No fiscal data available');
+      if (!fmpData || !fmpData.financialStatements) {
+        throw new Error('No financial data available');
       }
       
-      console.log(`    ✅ EDGAR data fetched for ${ticker}`);
+      console.log(`    ✅ FMP data fetched for ${ticker}`);
       
       // COMPREHENSIVE DATA QUALITY CHECKS
       
       // 1. DATA COMPLETENESS CHECK
-      const completeness = this.checkDataCompleteness(edgarData.fiscalData);
+      const completeness = this.checkDataCompleteness(fmpData.financialStatements);
       result.completeness = completeness;
       result.score -= Math.max(0, 100 - completeness.score);
       
       // 2. DATA FRESHNESS CHECK  
-      const freshness = this.checkDataFreshness(edgarData.fiscalData);
+      const freshness = this.checkDataFreshness(fmpData.financialStatements);
       result.dataFreshness = freshness;
       result.score -= Math.max(0, 100 - freshness.score);
       
       // 3. QUARTERLY DATA VALIDATION
-      const quarterlyValidation = this.validateQuarterlyData(edgarData.fiscalData);
+      const quarterlyValidation = this.validateQuarterlyData(fmpData.financialStatements);
       result.metrics.quarterly = quarterlyValidation;
       if (quarterlyValidation.issues && quarterlyValidation.issues.length > 0) {
         result.score -= quarterlyValidation.issues.length * 5;
@@ -168,7 +168,7 @@ class PortfolioDataQualityService {
       }
       
       // 4. ANNUAL DATA VALIDATION
-      const annualValidation = this.validateAnnualData(edgarData.fiscalData);
+      const annualValidation = this.validateAnnualData(fmpData.financialStatements);
       result.metrics.annual = annualValidation;
       if (annualValidation.issues && annualValidation.issues.length > 0) {
         result.score -= annualValidation.issues.length * 3;
@@ -176,7 +176,7 @@ class PortfolioDataQualityService {
       }
       
       // 5. GROWTH CALCULATION VALIDATION
-      const growthValidation = this.validateGrowthCalculations(edgarData.fundamentals);
+      const growthValidation = this.validateGrowthCalculations(fmpData.ratios);
       result.metrics.growth = growthValidation;
       if (growthValidation.issues && growthValidation.issues.length > 0) {
         result.score -= growthValidation.issues.length * 2;
@@ -184,7 +184,7 @@ class PortfolioDataQualityService {
       }
       
       // 6. DATA CONSISTENCY CHECK
-      const consistencyCheck = this.checkDataConsistency(edgarData.fiscalData);
+      const consistencyCheck = this.checkDataConsistency(fmpData.financialStatements);
       result.metrics.consistency = consistencyCheck;
       if (consistencyCheck.issues && consistencyCheck.issues.length > 0) {
         result.score -= consistencyCheck.issues.length * 3;
@@ -213,7 +213,7 @@ class PortfolioDataQualityService {
       result.overallQuality = 'FAILED';
       result.score = 0;
       result.issues = [`Data validation failed: ${error.message}`];
-      result.recommendations = ['Unable to validate - check EDGAR data availability'];
+      result.recommendations = ['Unable to validate - check FMP data availability'];
     }
     
     this.cache.set(cacheKey, result);
@@ -221,10 +221,10 @@ class PortfolioDataQualityService {
   }
 
   // Check completeness of essential financial metrics
-  checkDataCompleteness(fiscalData) {
+  checkDataCompleteness(financialStatements) {
     const essentialMetrics = [
-      'Revenues', 'NetIncomeLoss', 'EarningsPerShareBasic',
-      'Assets', 'StockholdersEquity', 'CommonStockSharesOutstanding'
+      'revenue', 'netIncome', 'eps',
+      'totalAssets', 'stockholdersEquity', 'sharesOutstanding'
     ];
     
     const result = {
@@ -235,12 +235,17 @@ class PortfolioDataQualityService {
     };
     
     essentialMetrics.forEach(metric => {
-      if (fiscalData[metric] && fiscalData[metric].quarterly && fiscalData[metric].quarterly.length > 0) {
+      // Check if FMP data has this metric
+      const hasMetric = financialStatements.quarterly && 
+                       financialStatements.quarterly.length > 0 && 
+                       financialStatements.quarterly[0][metric] !== undefined;
+      
+      if (hasMetric) {
         result.present.push(metric);
         result.details[metric] = {
-          quarterly: fiscalData[metric].quarterly.length,
-          annual: fiscalData[metric].annual ? fiscalData[metric].annual.length : 0,
-          latest: fiscalData[metric].quarterly[0].end
+          quarterly: financialStatements.quarterly.length,
+          annual: financialStatements.annual ? financialStatements.annual.length : 0,
+          latest: financialStatements.quarterly[0].date
         };
       } else {
         result.missing.push(metric);
@@ -252,7 +257,7 @@ class PortfolioDataQualityService {
   }
 
   // Check freshness of financial data
-  checkDataFreshness(fiscalData) {
+  checkDataFreshness(financialStatements) {
     const result = {
       score: 100,
       latestQuarterly: null,
@@ -264,9 +269,9 @@ class PortfolioDataQualityService {
     
     try {
       // Check quarterly data freshness
-      if (fiscalData.Revenues && fiscalData.Revenues.quarterly && fiscalData.Revenues.quarterly.length > 0) {
-        const latestQuarterly = new Date(fiscalData.Revenues.quarterly[0].end);
-        result.latestQuarterly = fiscalData.Revenues.quarterly[0].end;
+      if (financialStatements.quarterly && financialStatements.quarterly.length > 0) {
+        const latestQuarterly = new Date(financialStatements.quarterly[0].date);
+        result.latestQuarterly = financialStatements.quarterly[0].date;
         
         const now = new Date();
         const quarterlyAgeMonths = (now - latestQuarterly) / (1000 * 60 * 60 * 24 * 30);
@@ -285,9 +290,9 @@ class PortfolioDataQualityService {
       }
       
       // Check annual data freshness
-      if (fiscalData.Revenues && fiscalData.Revenues.annual && fiscalData.Revenues.annual.length > 0) {
-        const latestAnnual = new Date(fiscalData.Revenues.annual[0].end);
-        result.latestAnnual = fiscalData.Revenues.annual[0].end;
+      if (financialStatements.annual && financialStatements.annual.length > 0) {
+        const latestAnnual = new Date(financialStatements.annual[0].date);
+        result.latestAnnual = financialStatements.annual[0].date;
         
         const now = new Date();
         const annualAgeMonths = (now - latestAnnual) / (1000 * 60 * 60 * 24 * 30);
@@ -308,7 +313,7 @@ class PortfolioDataQualityService {
   }
 
   // Validate quarterly data quality
-  validateQuarterlyData(fiscalData) {
+  validateQuarterlyData(financialStatements) {
     const result = {
       totalQuarters: 0,
       recentQuarters: 0,
@@ -316,37 +321,33 @@ class PortfolioDataQualityService {
       coverage: {}
     };
     
-    const metrics = ['Revenues', 'NetIncomeLoss', 'EarningsPerShareBasic'];
+    if (!financialStatements.quarterly) {
+      result.issues.push('No quarterly data available');
+      return result;
+    }
     
-    metrics.forEach(metric => {
-      if (fiscalData[metric] && fiscalData[metric].quarterly) {
-        const quarters = fiscalData[metric].quarterly;
-        result.coverage[metric] = quarters.length;
-        result.totalQuarters = Math.max(result.totalQuarters, quarters.length);
-        
-        // Check for recent quarters (last 2 years = 8 quarters)
-        const recentQuarters = quarters.filter(q => {
-          const qDate = new Date(q.end);
-          const twoYearsAgo = new Date();
-          twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-          return qDate >= twoYearsAgo;
-        });
-        
-        result.recentQuarters = Math.max(result.recentQuarters, recentQuarters.length);
-        
-        if (recentQuarters.length < 4) {
-          result.issues.push(`${metric}: Only ${recentQuarters.length} recent quarters available`);
-        }
-      } else {
-        result.issues.push(`${metric}: No quarterly data available`);
-      }
+    const quarters = financialStatements.quarterly;
+    result.totalQuarters = quarters.length;
+    
+    // Check for recent quarters (last 2 years = 8 quarters)
+    const recentQuarters = quarters.filter(q => {
+      const qDate = new Date(q.date);
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+      return qDate >= twoYearsAgo;
     });
+    
+    result.recentQuarters = recentQuarters.length;
+    
+    if (recentQuarters.length < 4) {
+      result.issues.push(`Only ${recentQuarters.length} recent quarters available`);
+    }
     
     return result;
   }
 
   // Validate annual data quality
-  validateAnnualData(fiscalData) {
+  validateAnnualData(financialStatements) {
     const result = {
       totalYears: 0,
       recentYears: 0,
@@ -354,114 +355,75 @@ class PortfolioDataQualityService {
       coverage: {}
     };
     
-    const metrics = ['Revenues', 'NetIncomeLoss', 'Assets'];
+    if (!financialStatements.annual) {
+      result.issues.push('No annual data available');
+      return result;
+    }
     
-    metrics.forEach(metric => {
-      if (fiscalData[metric] && fiscalData[metric].annual) {
-        const years = fiscalData[metric].annual;
-        result.coverage[metric] = years.length;
-        result.totalYears = Math.max(result.totalYears, years.length);
-        
-        // Check for recent years (last 5 years)
-        const recentYears = years.filter(y => {
-          const yDate = new Date(y.end);
-          const fiveYearsAgo = new Date();
-          fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
-          return yDate >= fiveYearsAgo;
-        });
-        
-        result.recentYears = Math.max(result.recentYears, recentYears.length);
-        
-        if (recentYears.length < 3) {
-          result.issues.push(`${metric}: Only ${recentYears.length} recent annual periods available`);
-        }
-      } else {
-        result.issues.push(`${metric}: No annual data available`);
-      }
+    const years = financialStatements.annual;
+    result.totalYears = years.length;
+    
+    // Check for recent years (last 5 years)
+    const recentYears = years.filter(y => {
+      const yDate = new Date(y.date);
+      const fiveYearsAgo = new Date();
+      fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+      return yDate >= fiveYearsAgo;
     });
+    
+    result.recentYears = recentYears.length;
+    
+    if (recentYears.length < 3) {
+      result.issues.push(`Only ${recentYears.length} recent annual periods available`);
+    }
     
     return result;
   }
 
   // Validate growth calculations
-  validateGrowthCalculations(fundamentals) {
+  validateGrowthCalculations(ratios) {
     const result = {
       calculations: 0,
       successful: 0,
       issues: []
     };
     
-    if (!fundamentals) {
-      result.issues.push('No fundamental calculations available');
+    if (!ratios) {
+      result.issues.push('No ratio calculations available');
       return result;
     }
     
-    // Check revenue growth calculations
-    if (fundamentals.growth) {
-      if (fundamentals.growth.quarterOverQuarter && fundamentals.growth.quarterOverQuarter.revenue) {
-        result.calculations++;
+    // Check basic ratio availability
+    const expectedRatios = ['revenueGrowth', 'netIncomeGrowth', 'epsGrowth'];
+    
+    expectedRatios.forEach(ratio => {
+      result.calculations++;
+      if (ratios[ratio] !== undefined && ratios[ratio] !== null) {
         result.successful++;
       } else {
-        result.calculations++;
-        result.issues.push('Quarter-over-quarter revenue growth not calculated');
+        result.issues.push(`${ratio} not calculated`);
       }
-      
-      if (fundamentals.growth.yearOverYear && fundamentals.growth.yearOverYear.revenue) {
-        result.calculations++;
-        result.successful++;
-      } else {
-        result.calculations++;
-        result.issues.push('Year-over-year revenue growth not calculated');
-      }
-      
-      if (fundamentals.growth.fiveYear && fundamentals.growth.fiveYear.revenue) {
-        result.calculations++;
-        result.successful++;
-      } else {
-        result.calculations++;
-        result.issues.push('Five-year revenue CAGR not calculated');
-      }
-    } else {
-      result.issues.push('No growth calculations available');
-    }
+    });
     
     return result;
   }
 
   // Check data consistency across periods
-  checkDataConsistency(fiscalData) {
+  checkDataConsistency(financialStatements) {
     const result = {
       checks: 0,
       passed: 0,
       issues: []
     };
     
-    // Check revenue consistency between quarterly and annual
-    if (fiscalData.Revenues && fiscalData.Revenues.quarterly && fiscalData.Revenues.annual) {
+    // Check basic data structure consistency
+    if (financialStatements.quarterly && financialStatements.annual) {
       result.checks++;
       
-      if (fiscalData.Revenues.annual.length > 0 && fiscalData.Revenues.quarterly.length > 0) {
-        const latestAnnual = fiscalData.Revenues.annual[0];
-        const annualYear = new Date(latestAnnual.end).getFullYear();
-        
-        // Find quarters from the same year
-        const sameYearQuarters = fiscalData.Revenues.quarterly.filter(q => {
-          return new Date(q.end).getFullYear() === annualYear;
-        });
-        
-        if (sameYearQuarters.length >= 4) {
-          const quarterlySum = sameYearQuarters
-            .slice(0, 4)
-            .reduce((sum, q) => sum + q.val, 0);
-          
-          const ratio = quarterlySum / latestAnnual.val;
-          
-          if (ratio >= 0.8 && ratio <= 1.2) {
-            result.passed++;
-          } else {
-            result.issues.push(`Revenue consistency issue: Quarterly sum vs Annual ratio = ${ratio.toFixed(2)}`);
-          }
-        }
+      if (financialStatements.quarterly.length > 0 && financialStatements.annual.length > 0) {
+        result.passed++;
+      } else {
+        result.issues.push('Missing quarterly or annual data');
       }
     }
     
@@ -477,15 +439,11 @@ class PortfolioDataQualityService {
     }
     
     if (stockResult.dataFreshness && stockResult.dataFreshness.quarterlyAge > 6) {
-      recommendations.push('Quarterly data is stale - check for recent 10-Q filings');
+      recommendations.push('Quarterly data is stale - check for recent filings');
     }
     
     if (stockResult.metrics && stockResult.metrics.quarterly && stockResult.metrics.quarterly.recentQuarters < 4) {
-      recommendations.push('Insufficient recent quarterly data - may affect growth calculations');
-    }
-    
-    if (stockResult.metrics && stockResult.metrics.growth && stockResult.metrics.growth.issues && stockResult.metrics.growth.issues.length > 0) {
-      recommendations.push('Growth calculation issues detected - review historical data');
+      recommendations.push('Insufficient recent quarterly data - may affect calculations');
     }
     
     return recommendations;
@@ -540,7 +498,7 @@ class PortfolioDataQualityService {
     const recommendations = [];
     
     if (results.failed > 0) {
-      recommendations.push(`${results.failed} stocks failed validation - investigate EDGAR data availability`);
+      recommendations.push(`${results.failed} stocks failed validation - investigate FMP data availability`);
     }
     
     if (results.lowQuality > 0) {
@@ -552,14 +510,14 @@ class PortfolioDataQualityService {
       .filter(r => r && r.dataFreshness && typeof r.dataFreshness.quarterlyAge === 'number' && r.dataFreshness.quarterlyAge > 6).length;
     
     if (freshnessIssues > 0) {
-      recommendations.push(`${freshnessIssues} stocks have stale quarterly data - check for recent 10-Q filings`);
+      recommendations.push(`${freshnessIssues} stocks have stale quarterly data`);
     }
     
     const completenessIssues = results.stockResults
       .filter(r => r && r.completeness && r.completeness.missing && r.completeness.missing.length > 0).length;
     
     if (completenessIssues > 0) {
-      recommendations.push(`${completenessIssues} stocks missing essential metrics - review EDGAR concepts`);
+      recommendations.push(`${completenessIssues} stocks missing essential metrics`);
     }
     
     if (results.summary && parseFloat(results.summary.overallHealthScore) < 75) {

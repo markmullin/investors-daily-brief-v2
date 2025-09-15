@@ -1,9 +1,17 @@
 {
+  "name": "investors-daily-brief",
+  "version": "1.0.0",
+  "description": "Netflix of Financial Education - 3-page financial dashboard",
+  "type": "module",
+  "scripts": {
+    "start": "echo 'Use npm run start:backend or npm run start:frontend'",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install"
+  },
   "dependencies": {
-    "@llama-node/core": "^0.1.6",
-    "@llama-node/llama-cpp": "^0.1.6",
-    "node-llama-cpp": "^3.5.0",
     "axios": "^1.6.7",
-    "dotenv": "^16.4.1"
+    "dotenv": "^16.4.1",
+    "node-fetch": "^3.3.2"
   }
 }

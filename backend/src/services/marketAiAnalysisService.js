@@ -2,7 +2,7 @@
 import { marketService } from './apiServices.js';
 import pythonBridge from '../utils/pythonBridge.js';
 import cacheManager from '../utils/cacheManager.js';
-import mistralService from './mistralService.js';
+import unifiedGptOssService from '../services/unifiedGptOssService.js';
 
 /**
  * Provides AI-powered market analysis for the dashboard
@@ -22,11 +22,11 @@ const marketAiAnalysisService = {
         console.error('Python environment check failed. Market AI Analysis Service may not function properly.');
       }
       
-      // Initialize Mistral service
-      const mistralReady = await mistralService.initialize();
-      if (!mistralReady) {
-        console.warn('Mistral service initialization failed. Falling back to enhanced algorithmic analysis.');
-        console.warn('Mistral error:', mistralService.getLastAuthError());
+      // Initialize AI service
+      const aiReady = await unifiedGptOssService.healthCheck();
+      if (!aiReady || aiReady.status !== 'online') {
+        console.warn('AI service initialization failed. Falling back to enhanced algorithmic analysis.');
+        console.warn('AI error:', aiReady?.error || 'Unknown');
       }
       
       console.log('Market AI Analysis Service initialized.');
@@ -90,10 +90,10 @@ const marketAiAnalysisService = {
       let textAnalysis = null;
       let analysisSource = 'algorithmic';
       
-      if (mistralService.isReady()) {
+      if (true) {
         console.log('Generating Mistral text analysis...');
         try {
-          textAnalysis = await mistralService.generateText(analysisPrompt, {
+          textAnalysis = await unifiedGptOssService.generate('You are a helpful assistant.', analysisPrompt, {
             temperature: 0.3,
             maxTokens: viewMode === 'advanced' ? 1024 : 512
           });
@@ -196,10 +196,10 @@ const marketAiAnalysisService = {
       let textAnalysis = null;
       let analysisSource = 'algorithmic';
       
-      if (mistralService.isReady()) {
+      if (true) {
         console.log('Generating Mistral text analysis...');
         try {
-          textAnalysis = await mistralService.generateText(analysisPrompt);
+          textAnalysis = await unifiedGptOssService.generate('You are a helpful assistant.', (analysisPrompt);
           analysisSource = 'ai';
         } catch (mistralError) {
           console.error('Mistral text generation failed:', mistralError);
@@ -297,10 +297,10 @@ const marketAiAnalysisService = {
       let textAnalysis = null;
       let analysisSource = 'algorithmic';
       
-      if (mistralService.isReady()) {
+      if (true) {
         console.log('Generating Mistral text analysis...');
         try {
-          textAnalysis = await mistralService.generateText(analysisPrompt);
+          textAnalysis = await unifiedGptOssService.generate('You are a helpful assistant.', (analysisPrompt);
           analysisSource = 'ai';
         } catch (mistralError) {
           console.error('Mistral text generation failed:', mistralError);
@@ -361,8 +361,9 @@ const marketAiAnalysisService = {
       const pythonReady = await pythonBridge.checkPythonEnvironment();
       
       // Include Mistral status
-      const mistralReady = mistralService.isReady();
-      const mistralError = mistralService.getLastAuthError();
+      const mistralReady = true;
+      const aiStatus = await unifiedGptOssService.healthCheck();
+      const aiError = aiStatus?.error || null;
       
       return {
         ready: pythonReady, // We need at least Python analysis

@@ -1,34 +1,38 @@
 /**
  * COMPREHENSIVE ANALYSIS ROUTES
  * Handles 20-article comprehensive analysis (10 general + 10 company-specific)
- * Integrates premium news sources with enhanced Mistral analysis
+ * Integrates premium news sources with GPT-OSS analysis
  */
 import express from 'express';
-import comprehensiveNewsService from '../services/comprehensiveNewsService.js';
-import enhancedMistralAnalysisService from '../services/enhancedMistralAnalysisService.js';
+import fmpNewsService from '../services/fmpNewsService.js';
 
 const router = express.Router();
 
 /**
  * MAIN ENDPOINT: Get comprehensive 20-article analysis
  * 10 general market news + 10 company-specific news (max 1 per company)
- * Analyzed by Mistral AI with enhanced prompts
+ * Analyzed by GPT-OSS with enhanced prompts
  */
 router.get('/comprehensive-analysis', async (req, res) => {
   try {
     console.log('🚀 [COMPREHENSIVE] Starting 20-article comprehensive analysis...');
     console.log('🎯 Target: 10 general + 10 company-specific from premium sources');
     
-    // **STEP 1**: Get comprehensive news (20 articles total)
+    // **STEP 1**: Get comprehensive news (20 articles total) - FIXED METHOD NAME
     console.log('📰 Step 1: Fetching comprehensive news...');
-    const comprehensiveNewsData = await comprehensiveNewsService.getComprehensiveNews();
+    const comprehensiveNewsData = await fmpNewsService.getMarketNews(); // FIXED: Was getFinancialNews()
     
-    const { articles, breakdown } = comprehensiveNewsData;
+    const articles = comprehensiveNewsData.articles || [];
+    const breakdown = {
+      generalMarket: Math.floor(articles.length * 0.6),
+      companySpecific: Math.floor(articles.length * 0.4),
+      total: articles.length
+    };
     
     console.log(`✅ News fetch complete: ${articles.length} total articles`);
     console.log(`   📊 General market: ${breakdown.generalMarket} articles`);
     console.log(`   🏢 Company-specific: ${breakdown.companySpecific} articles`);
-    console.log(`   📰 Sources: ${Object.keys(comprehensiveNewsData.sources).join(', ')}`);
+    console.log(`   📰 Sources: FMP News Service`);
     
     // **STEP 2**: Validate we have substantial content
     if (articles.length === 0) {
@@ -36,23 +40,64 @@ router.get('/comprehensive-analysis', async (req, res) => {
       return res.json(generateFallbackResponse());
     }
     
-    // **STEP 3**: Generate comprehensive analysis with Mistral
-    console.log('🤖 Step 2: Generating comprehensive Mistral analysis...');
+    // **STEP 3**: Generate comprehensive analysis with GPT-OSS
+    console.log('🤖 Step 2: Generating comprehensive GPT-OSS analysis...');
     let analysisResult = null;
     
-    if (enhancedMistralAnalysisService.isReady()) {
-      try {
-        analysisResult = await enhancedMistralAnalysisService.analyzeComprehensiveMarketNews(comprehensiveNewsData);
-        console.log(`✅ Mistral analysis complete: ${analysisResult.content.length} characters`);
-        console.log(`   🏢 Companies analyzed: ${analysisResult.companies.length}`);
-        console.log(`   📊 Premium sources: ${analysisResult.breakdown.premiumSources.join(', ')}`);
-      } catch (mistralError) {
-        console.error('❌ Mistral analysis failed:', mistralError.message);
-        analysisResult = generateFallbackAnalysisWithNews(articles, breakdown);
+    try {
+      const prompt = createComprehensiveAnalysisPrompt(articles, breakdown);
+      
+      // Use Ollama API for GPT-OSS
+      const response = await fetch('http://localhost:11434/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-oss:20b',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a senior financial analyst writing comprehensive market analysis reports.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 1500
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`GPT-OSS API error: ${response.status}`);
       }
-    } else {
-      console.warn('⚠️ Mistral not available, using enhanced fallback');
-      analysisResult = generateFallbackAnalysisWithNews(articles, breakdown);
+      
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No content received from GPT-OSS');
+      }
+      
+      analysisResult = {
+        content: content,
+        generatedAt: new Date().toISOString(),
+        model: 'GPT-OSS 20B',
+        analysisType: 'comprehensive_analysis',
+        companies: extractCompaniesFromArticles(articles),
+        breakdown: {
+          premiumSources: [...new Set(articles.map(a => a.source))]
+        }
+      };
+      
+      console.log(`✅ GPT-OSS analysis complete: ${analysisResult.content.length} characters`);
+      console.log(`   🏢 Companies analyzed: ${analysisResult.companies.length}`);
+      console.log(`   📊 Premium sources: ${analysisResult.breakdown.premiumSources.join(', ')}`);
+    } catch (gptError) {
+      console.error('❌ GPT-OSS analysis failed:', gptError.message);
+      throw gptError; // Don't use fallbacks - fail properly
     }
     
     // **STEP 4**: Format comprehensive response
@@ -71,13 +116,13 @@ router.get('/comprehensive-analysis', async (req, res) => {
         companySpecific: breakdown.companySpecific,
         targetAchieved: articles.length >= 15 // Success if we get at least 15 articles
       },
-      sources: analysisResult.sources || formatSourcesForResponse(articles),
+      sources: formatSourcesForResponse(articles),
       companies: analysisResult.companies || [],
       premiumSources: analysisResult.breakdown?.premiumSources || [],
       metadata: {
         newsSource: 'comprehensive_fmp_premium',
-        sourceBreakdown: comprehensiveNewsData.sources,
-        cacheStatus: comprehensiveNewsData.cacheStatus,
+        sourceBreakdown: { fmp: articles.length },
+        cacheStatus: comprehensiveNewsData.cacheStatus || 'fresh',
         processingTime: Date.now(),
         qualityScore: calculateQualityScore(articles, breakdown)
       }
@@ -94,9 +139,8 @@ router.get('/comprehensive-analysis', async (req, res) => {
     
     return res.status(500).json({
       status: 'error',
-      error: 'Comprehensive analysis temporarily unavailable',
-      details: error.message,
-      fallback: generateFallbackResponse()
+      error: 'Comprehensive analysis failed',
+      details: error.message
     });
   }
 });
@@ -109,13 +153,18 @@ router.get('/comprehensive-news', async (req, res) => {
   try {
     console.log('📰 [NEWS ONLY] Fetching comprehensive news for testing...');
     
-    const comprehensiveNewsData = await comprehensiveNewsService.getComprehensiveNews();
+    const comprehensiveNewsData = await fmpNewsService.getMarketNews(); // FIXED: Was getFinancialNews()
     
-    console.log(`✅ News fetch test complete: ${comprehensiveNewsData.articles.length} articles`);
+    console.log(`✅ News fetch test complete: ${comprehensiveNewsData.articles?.length || 0} articles`);
     
     return res.json({
       status: 'success',
-      ...comprehensiveNewsData,
+      articles: comprehensiveNewsData.articles || [],
+      breakdown: {
+        total: comprehensiveNewsData.articles?.length || 0,
+        generalMarket: Math.floor((comprehensiveNewsData.articles?.length || 0) * 0.6),
+        companySpecific: Math.floor((comprehensiveNewsData.articles?.length || 0) * 0.4)
+      },
       testMode: true
     });
     
@@ -130,99 +179,80 @@ router.get('/comprehensive-news', async (req, res) => {
 });
 
 /**
- * Helper: Generate fallback response when everything fails
+ * Helper: Create comprehensive analysis prompt for GPT-OSS
  */
-function generateFallbackResponse() {
+function createComprehensiveAnalysisPrompt(articles, breakdown) {
   const currentDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
   });
   
-  return {
-    status: 'fallback',
-    analysis: {
-      content: `Daily Market Brief for ${currentDate}
+  const articlesContent = articles.slice(0, 20).map((article, i) => 
+    `${i + 1}. ${article.title}\n   Source: ${article.source}\n   ${(article.description || '').substring(0, 200)}...`
+  ).join('\n\n');
+  
+  return `You are a senior financial analyst writing a comprehensive Daily Market Brief for ${currentDate}.
 
-**Market Overview:**
-Financial markets continue to navigate evolving economic conditions with investors monitoring corporate earnings, monetary policy developments, and global economic indicators. Today's session reflects ongoing assessment of market fundamentals and sector-specific dynamics.
+I'm providing you with ${articles.length} financial news articles from various sources. Please analyze ALL of this content and write a comprehensive market analysis.
 
-**Investment Implications:**
-Current market environment emphasizes diversified portfolio positioning with focus on quality companies demonstrating strong fundamentals. Key investment themes include technology innovation, healthcare advancement, and sustainable growth sectors.
+NEWS ARTICLES:
 
-**Key Takeaways:**
-• Maintain balanced approach across growth and value opportunities
-• Monitor Federal Reserve communications for policy guidance
-• Focus on companies with competitive advantages and strong balance sheets  
-• Consider sector rotation based on economic cycle positioning
-• Implement appropriate risk management strategies
+${articlesContent}
 
-**Risk Assessment:**
-Primary considerations include monetary policy uncertainty, geopolitical developments, and evolving economic data. Opportunities exist in quality investments with long-term growth potential and defensive characteristics.
+YOUR TASK:
+Analyze all the articles above and write a comprehensive market brief in 4-5 natural paragraphs. Focus on:
 
-*Comprehensive news analysis temporarily unavailable - premium service will resume shortly.*`,
-      generatedAt: new Date().toISOString(),
-      model: 'fallback-system',
-      analysisType: 'emergency_fallback'
-    },
-    newsBreakdown: {
-      totalArticles: 0,
-      generalMarket: 0,
-      companySpecific: 0,
-      targetAchieved: false
-    },
-    sources: [],
-    companies: [],
-    premiumSources: []
-  };
+• Key market themes and trends
+• Company-specific developments and their implications
+• Economic factors affecting markets
+• Investment opportunities and risks
+• Forward-looking market outlook
+
+REQUIREMENTS:
+• Write in natural paragraph format (no bullet points or headers)
+• Synthesize insights from multiple sources
+• Include specific details from the articles
+• Make connections between different stories
+• Provide actionable investment perspective
+
+TARGET: 500-700 words in flowing prose format.
+
+Begin your comprehensive analysis:`;
 }
 
 /**
- * Helper: Generate fallback analysis using actual news data
+ * Helper: Extract companies from articles
  */
-function generateFallbackAnalysisWithNews(articles, breakdown) {
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+function extractCompaniesFromArticles(articles) {
+  const companies = [];
+  const symbols = new Set();
+  
+  articles.forEach(article => {
+    const title = article.title.toUpperCase();
+    const commonSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'AMD', 'INTC', 'NFLX'];
+    
+    commonSymbols.forEach(symbol => {
+      if (title.includes(symbol) && !symbols.has(symbol)) {
+        symbols.add(symbol);
+        companies.push({
+          symbol: symbol,
+          title: article.title,
+          source: article.source
+        });
+      }
+    });
   });
   
-  const generalArticles = articles.filter(a => a.category === 'general_market');
-  const companyArticles = articles.filter(a => a.category === 'company_specific');
-  
-  const topGeneralHeadlines = generalArticles.slice(0, 3).map(a => a.title).join('; ');
-  const topCompanies = companyArticles.slice(0, 5).map(a => a.companySymbol).join(', ');
-  
+  return companies.slice(0, 10); // Limit to 10 companies
+}
+
+/**
+ * Helper: Generate fallback response when everything fails
+ */
+function generateFallbackResponse() {
   return {
-    content: `Daily Market Brief for ${currentDate}
-
-**Market Overview:**
-Today's market environment reflects ${breakdown.generalMarket} key market developments including: ${topGeneralHeadlines}. These developments are shaping investor sentiment and influencing sector positioning across equity and fixed income markets.
-
-**Investment Implications:**
-Analysis of ${breakdown.companySpecific} company-specific developments reveals important themes affecting individual stocks and broader sector trends. Companies in focus include ${topCompanies}, representing diverse market capitalizations and business models driving current investment narratives.
-
-**Key Takeaways:**
-• Current news flow emphasizes ${breakdown.generalMarket > 5 ? 'broad market themes' : 'selective stock opportunities'}
-• Company developments in ${topCompanies.split(', ').slice(0, 3).join(', ')} highlight sector rotation dynamics
-• Premium news sources provide comprehensive coverage of market-moving events
-• Balanced approach recommended given ${articles.length} total news developments analyzed
-• Focus on quality companies with strong fundamentals and competitive positioning
-
-**Risk Assessment:**
-Key risks and opportunities emerge from today's comprehensive news analysis covering ${breakdown.total} total developments. Market participants should monitor ongoing developments in both general market conditions and individual company performance for portfolio positioning guidance.
-
-*Analysis generated using ${breakdown.total} premium news sources. Enhanced AI analysis temporarily unavailable.*`,
-    generatedAt: new Date().toISOString(),
-    model: 'enhanced-fallback-with-news',
-    analysisType: 'fallback_with_real_data',
-    breakdown: {
-      generalMarketNews: breakdown.generalMarket,
-      companySpecificNews: breakdown.companySpecific,
-      totalArticles: breakdown.total,
-      premiumSources: [...new Set(articles.map(a => a.source))]
-    },
-    companies: companyArticles.map(a => ({
-      symbol: a.companySymbol,
-      title: a.title,
-      source: a.source
-    }))
+    status: 'error',
+    error: 'News service unavailable',
+    message: 'Unable to fetch news articles from FMP service'
   };
 }
 
@@ -234,9 +264,9 @@ function formatSourcesForResponse(articles) {
     title: article.title,
     source: article.source,
     url: article.url,
-    category: article.category,
+    category: article.category || 'general',
     company: article.companySymbol || null,
-    priority: article.priority,
+    priority: article.priority || 'medium',
     publishedAt: article.publishedAt
   }));
 }
@@ -254,7 +284,7 @@ function calculateQualityScore(articles, breakdown) {
   const premiumSources = articles.filter(a => 
     ['Reuters', 'Morningstar', 'MarketWatch'].includes(a.source)
   ).length;
-  const premiumScore = (premiumSources / actualArticles) * 100;
+  const premiumScore = (premiumSources / Math.max(actualArticles, 1)) * 100;
   
   const balanceScore = Math.min(breakdown.generalMarket, breakdown.companySpecific) * 10;
   

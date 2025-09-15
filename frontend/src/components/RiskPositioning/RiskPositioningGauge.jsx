@@ -184,7 +184,7 @@ const RiskPositioningGauge = ({
         sentimentResponse,
         fundamentalsResponse
       ] = await Promise.all([
-        fetch('/api/macroeconomic/all'),           // FRED data
+        fetch('/api/macroeconomic/simple'),       // FRED data
         fetch('/api/market/comprehensive'),       // FMP market data with fundamentals
         fetch('/api/market/sectors'),             // FMP sector data
         fetch('/api/brave/market-sentiment'),     // Brave sentiment data

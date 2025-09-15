@@ -1,5 +1,0 @@
-// Quick fix for line 121 in AIInsights.jsx
-// Change this line:
-// const response = await fetch('http://localhost:5000/api/ai/ai-analysis');
-// To this:
-const response = await fetch('http://localhost:5000/api/ai/simple-analysis');

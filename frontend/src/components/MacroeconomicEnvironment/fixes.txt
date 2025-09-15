@@ -1,0 +1,82 @@
+// Complete fix for MacroeconomicEnvironment.jsx
+// Fixing all three issues: Housing data, Monetary dual axis, and Real Personal Income
+
+// First, let me create a patch that properly updates the money supply section
+const moneySupplyFix = `
+          // Process Money Supply with both absolute and YoY for each metric
+          const moneySupplyData = [];
+          
+          // Use absolute data dates as the base to ensure full 2 years
+          const baseDates = [...new Set([
+            ...m2Absolute.map(d => d.date),
+            ...moneyMarketFunds.map(d => d.date)
+          ])].sort();
+          
+          baseDates.forEach(date => {
+            const m2Point = m2YoY.find(d => d.date === date);
+            const m2AbsPoint = m2Absolute.find(d => d.date === date);
+            const mmfPoint = moneyMarketFunds.find(d => d.date === date);
+            const mmfYoYPoint = mmfYoY.find(d => d.date === date);
+            
+            moneySupplyData.push({
+              date: date,
+              M2_YOY: m2Point ? m2Point.value : null,
+              MMF_YOY: mmfYoYPoint ? mmfYoYPoint.value : null,
+              // CRITICAL FIX: Convert from billions to trillions by dividing by 1000
+              MONEY_MARKET_FUNDS: mmfPoint ? mmfPoint.value / 1000 : null, // Convert to trillions
+              M2_ABSOLUTE: m2AbsPoint ? m2AbsPoint.value / 1000 : null // Convert to trillions
+            });
+          });
+`;
+
+const laborConsumerFix = `
+        // Group 6: Labor Market & Consumer Health - FIXED with proper data keys
+        const laborData = [];
+        
+        // Get unemployment data
+        const unemployment = cleanDataset(laborConsumerData.data?.UNRATE || []);
+        
+        // FIX: Check multiple possible keys for Real Personal Income
+        const realIncome = cleanDataset(
+          laborConsumerData.data?.W875RX1 || 
+          laborConsumerData.data?.REAL_PERSONAL_INCOME || 
+          laborConsumerData.data?.REAL_INCOME_YOY || 
+          []
+        );
+        
+        // Get retail sales data
+        const retailSales = cleanDataset(
+          laborConsumerData.data?.RSXFS || 
+          laborConsumerData.data?.RETAIL_YOY || 
+          laborConsumerData.data?.RETAIL_SALES_YOY || 
+          []
+        );
+        
+        console.log('👥 LABOR CONSUMER - Data availability:');
+        console.log('  Unemployment:', unemployment.length, 'points');
+        console.log('  Real Income:', realIncome.length, 'points');
+        console.log('  Retail Sales:', retailSales.length, 'points');
+        
+        // Combine labor consumer data
+        const laborDates = [...new Set([
+          ...unemployment.map(d => d.date),
+          ...realIncome.map(d => d.date),
+          ...retailSales.map(d => d.date)
+        ])].sort();
+        
+        laborDates.forEach(date => {
+          const unempPoint = unemployment.find(d => d.date === date);
+          const incomePoint = realIncome.find(d => d.date === date);
+          const retailPoint = retailSales.find(d => d.date === date);
+          
+          laborData.push({
+            date: date,
+            unemployment: unempPoint ? unempPoint.value : null,
+            realIncome: incomePoint ? incomePoint.value : null,
+            retailSales: retailPoint ? retailPoint.value : null
+          });
+        });
+        
+        console.log('👥 Labor Consumer sample:', laborData[laborData.length - 1]);
+        laggingResults[LAGGING_INDICATORS.LABOR_CONSUMER] = laborData;
+`;

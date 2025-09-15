@@ -14,6 +14,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import dataQualityRoutes from './routes/dataQualityRoutes.js';
+import { checkDatabaseHealth } from './config/database.js';
 
 // Convert ESM __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -64,17 +65,51 @@ app.use(compression());
 // Apply logging middleware
 app.use(loggingMiddleware);
 
-// Health check route - no auth required
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    apis: {
-      eod: Boolean(process.env.EOD_API_KEY),
-      brave: Boolean(process.env.BRAVE_API_KEY)
-    },
-    version: '3.1.0'
-  });
+// Health check route - UPDATED with Redis status
+app.get('/health', async (req, res) => {
+  try {
+    const dbHealth = await checkDatabaseHealth();
+    
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      apis: {
+        fmp: Boolean(process.env.FMP_API_KEY),
+        brave: Boolean(process.env.BRAVE_API_KEY),
+        fred: Boolean(process.env.FRED_API_KEY),
+        mistral: Boolean(process.env.MISTRAL_API_KEY)
+      },
+      database: {
+        postgres: dbHealth.postgres,
+        redis: dbHealth.redis,
+        influx: dbHealth.influx,
+        cacheType: dbHealth.cacheType
+      },
+      cache: {
+        type: dbHealth.cacheType,
+        redis_enabled: process.env.REDIS_ENABLED === 'true',
+        redis_connected: dbHealth.redis
+      },
+      version: '3.1.0'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      apis: {
+        fmp: Boolean(process.env.FMP_API_KEY),
+        brave: Boolean(process.env.BRAVE_API_KEY)
+      },
+      database: {
+        postgres: false,
+        redis: false,
+        influx: false,
+        cacheType: 'error'
+      },
+      version: '3.1.0'
+    });
+  }
 });
 
 // Apply timeout middleware with specific durations for different endpoints

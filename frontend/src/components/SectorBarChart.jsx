@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { useViewMode } from '../context/ViewModeContext';
 import InfoTooltip from './InfoTooltip';
+import EducationIcon from './AI/EducationIcon';
+import AnalysisDropdown from './AI/AnalysisDropdown';
 
 /**
  * Sector Bar Chart Component
@@ -11,6 +13,10 @@ import InfoTooltip from './InfoTooltip';
  */
 const SectorBarChart = ({ data = [] }) => {
   const { viewMode } = useViewMode();
+  const [analysisDropdown, setAnalysisDropdown] = useState({
+    isOpen: false,
+    position: { top: 0, left: 0 }
+  });
 
   // Sort sectors by performance
   const sortedData = [...data].sort((a, b) => {
@@ -23,8 +29,33 @@ const SectorBarChart = ({ data = [] }) => {
   const maxChange = Math.max(...sortedData.map(d => Math.abs(d.changePercent || d.change_p || 0)));
   const scale = maxChange > 0 ? 100 / maxChange : 1;
 
+  // Handle education analysis requests
+  const handleEducationAnalysis = async (event, { context, data }) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setAnalysisDropdown({
+      isOpen: true,
+      position: {
+        top: rect.bottom,
+        left: rect.left + rect.width / 2
+      }
+    });
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="relative">
+      {/* Chart Header with Education Icon */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-800">Sector Performance</h3>
+        <EducationIcon
+          context="sector_rotation"
+          data={sortedData}
+          onAnalysisRequest={handleEducationAnalysis}
+          className="ml-2"
+        />
+      </div>
+      
+      {/* Sector Bars */}
+      <div className="space-y-3">
       {sortedData.map((sector, index) => {
         const change = sector.changePercent || sector.change_p || 0;
         const isPositive = change > 0;
@@ -76,15 +107,25 @@ const SectorBarChart = ({ data = [] }) => {
           </div>
         );
       })}
-      
-      {/* X-axis */}
-      <div className="mt-4 border-t pt-2">
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>-{maxChange.toFixed(1)}%</span>
-          <span>0%</span>
-          <span>+{maxChange.toFixed(1)}%</span>
         </div>
-      </div>
+        
+        {/* X-axis */}
+        <div className="mt-4 border-t pt-2">
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>-{maxChange.toFixed(1)}%</span>
+            <span>0%</span>
+            <span>+{maxChange.toFixed(1)}%</span>
+          </div>
+        </div>
+
+        {/* Analysis Dropdown */}
+        <AnalysisDropdown
+          isOpen={analysisDropdown.isOpen}
+          onClose={() => setAnalysisDropdown({ isOpen: false, position: { top: 0, left: 0 } })}
+          context="sector_rotation"
+          data={sortedData}
+          position={analysisDropdown.position}
+        />
     </div>
   );
 };

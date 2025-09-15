@@ -1,0 +1,26 @@
+/* Hide old analysis error messages while keeping IntelligentAnalysis components */
+
+/* Hide any analysis error containers */
+.analysis-error,
+.analysis-unavailable,
+.analysis-failed {
+  display: none !important;
+}
+
+/* Hide specific error message styles */
+.bg-red-50.border-red-200,
+.bg-blue-50.border-blue-200,
+.bg-yellow-50.border-yellow-200 {
+  /* Only hide if it contains analysis errors - will be handled by JavaScript */
+}
+
+/* Ensure IntelligentAnalysis components with brain icons remain visible */
+div:has(.lucide-brain) {
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Clean up empty containers */
+div:empty {
+  display: none;
+}

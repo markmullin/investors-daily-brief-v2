@@ -1,11 +1,15 @@
-// Enhanced CSV Parser with intelligent account aggregation detection and filtering
+// Enhanced CSV Parser with STOCK SPLIT CORRECTION integrated
+// This fixes the NVIDIA $850 → $85 split issue and similar problems
+
+import { applySplitAdjustments, hasKnownSplits, calculateCumulativeSplitRatio } from './stockSplitDatabase.js';
 
 export function parsePositionsCSV(csvText, accountName = 'Unknown') {
-  console.log('*** ENHANCED: Parsing positions CSV for account:', accountName);
+  console.log('*** STOCK SPLIT ENHANCED: Parsing positions CSV for account:', accountName);
   
   const lines = csvText.split(/\r?\n/);
   const transactions = [];
   const warnings = [];
+  const splitAdjustments = []; // Track what splits were applied
   
   // Try to detect position format more broadly - FIXED: Better detection for simple position files
   let headerIndex = -1;
@@ -94,6 +98,7 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
   
   let skippedCount = 0;
   let importedCount = 0;
+  let splitCorrectionCount = 0;
   const positionSummary = [];
   const costBasisIssues = [];
   const skippedPositions = []; // Track what was skipped and why
@@ -103,9 +108,9 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
     if (row.length < 3) return;
     
     let symbol = row[colMap.symbol]?.toString().toUpperCase().trim() || '';
-    const quantity = parseFloat(row[colMap.quantity]?.replace(/[,$]/g, '')) || 0;
+    const rawQuantity = parseFloat(row[colMap.quantity]?.replace(/[,$]/g, '')) || 0;
     const costBasisTotal = parseFloat(row[colMap.costBasis]?.replace(/[$,()]/g, '')) || 0;
-    const avgCost = parseFloat(row[colMap.avgCost]?.replace(/[$,()]/g, '')) || 0;
+    const rawAvgCost = parseFloat(row[colMap.avgCost]?.replace(/[$,()]/g, '')) || 0;
     const currentValue = parseFloat(row[colMap.currentValue]?.replace(/[$,()]/g, '')) || 0;
     const currentPrice = parseFloat(row[colMap.currentPrice]?.replace(/[$,()]/g, '')) || 0;
     const positionDate = row[colMap.date]?.toString().trim() || new Date().toISOString().split('T')[0];
@@ -128,13 +133,13 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
         reason: isExternalPosition.reason,
         accountSource: accountSource,
         institution: institution,
-        quantity: quantity,
+        quantity: rawQuantity,
         currentValue: currentValue
       });
       skippedPositions.push({ 
         symbol, 
         reason: `External account (${isExternalPosition.reason})`, 
-        quantity,
+        quantity: rawQuantity,
         accountSource: accountSource
       });
       skippedCount++;
@@ -147,9 +152,9 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
     
     // Debug specific symbols
     if (symbol === 'NVDA' || symbol === 'NVIDIA' || symbol.includes('NVIDIA')) {
-      console.log(`*** NVIDIA DEBUG ***`);
+      console.log(`*** NVIDIA STOCK SPLIT DEBUG ***`);
       console.log(`Raw data:`, row);
-      console.log(`Symbol: ${symbol}, Qty: ${quantity}, AvgCost: ${avgCost}, CostBasis: ${costBasisTotal}, CurrentValue: ${currentValue}`);
+      console.log(`Symbol: ${symbol}, RawQty: ${rawQuantity}, RawAvgCost: ${rawAvgCost}, CostBasis: ${costBasisTotal}, CurrentValue: ${currentValue}`);
       console.log(`AccountSource: ${accountSource}, Institution: ${institution}, External: ${external}`);
       console.log(`IsExternal: ${isExternalPosition.isExternal}, Reason: ${isExternalPosition.reason}`);
     }
@@ -159,15 +164,15 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
         symbol.includes('SWEEP') || symbol.includes('MONEY MARKET') || symbol.includes('CASH') ||
         symbol.includes('FDIC')) {
       console.log(`❌ Skipping invalid position: ${symbol} (invalid symbol)`);
-      skippedPositions.push({ symbol, reason: 'Invalid symbol', quantity });
+      skippedPositions.push({ symbol, reason: 'Invalid symbol', quantity: rawQuantity });
       skippedCount++;
       return;
     }
     
     // Enhanced quantity filtering
-    if (quantity <= 0) {
-      console.log(`❌ Skipping zero/negative quantity: ${symbol} (qty: ${quantity})`);
-      skippedPositions.push({ symbol, reason: 'Zero or negative quantity', quantity });
+    if (rawQuantity <= 0) {
+      console.log(`❌ Skipping zero/negative quantity: ${symbol} (qty: ${rawQuantity})`);
+      skippedPositions.push({ symbol, reason: 'Zero or negative quantity', quantity: rawQuantity });
       skippedCount++;
       return;
     }
@@ -175,7 +180,7 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
     // Skip closed positions if detected
     if (status.includes('closed') || positionType.includes('closed')) {
       console.log(`❌ Skipping closed position: ${symbol} (status: ${status || positionType})`);
-      skippedPositions.push({ symbol, reason: 'Closed position', quantity });
+      skippedPositions.push({ symbol, reason: 'Closed position', quantity: rawQuantity });
       skippedCount++;
       return;
     }
@@ -186,73 +191,127 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
     }
     
     // ENHANCED: More aggressive cost basis calculation
-    let pricePerShare = 0;
+    let rawPricePerShare = 0;
     
     // Method 1: Use average cost if available
-    if (avgCost > 0) {
-      pricePerShare = avgCost;
-      console.log(`${symbol}: Using avgCost/price ${pricePerShare}`);
+    if (rawAvgCost > 0) {
+      rawPricePerShare = rawAvgCost;
+      console.log(`${symbol}: Using rawAvgCost/price ${rawPricePerShare}`);
     }
     // Method 2: Calculate from cost basis total
-    else if (costBasisTotal > 0 && quantity > 0) {
-      pricePerShare = costBasisTotal / quantity;
-      console.log(`${symbol}: Calculated from costBasisTotal ${costBasisTotal}/${quantity} = ${pricePerShare}`);
+    else if (costBasisTotal > 0 && rawQuantity > 0) {
+      rawPricePerShare = costBasisTotal / rawQuantity;
+      console.log(`${symbol}: Calculated from costBasisTotal ${costBasisTotal}/${rawQuantity} = ${rawPricePerShare}`);
     }
     // Method 3: Try to derive from current value (risky but better than nothing)
-    else if (currentValue > 0 && currentPrice > 0 && quantity > 0) {
+    else if (currentValue > 0 && currentPrice > 0 && rawQuantity > 0) {
       // This is the current market value, not cost basis, but it's a fallback
-      pricePerShare = currentValue / quantity;
-      console.log(`${symbol}: Using currentValue fallback ${currentValue}/${quantity} = ${pricePerShare}`);
+      rawPricePerShare = currentValue / rawQuantity;
+      console.log(`${symbol}: Using currentValue fallback ${currentValue}/${rawQuantity} = ${rawPricePerShare}`);
       costBasisIssues.push(`${symbol}: No cost basis found, using current market value as fallback`);
     }
     
     // ENHANCED: Better validation and error reporting
-    if (pricePerShare <= 0) {
+    if (rawPricePerShare <= 0) {
       console.log(`❌ SKIPPING ${symbol} - no valid cost basis found:`);
-      console.log(`   AvgCost: ${avgCost}, CostBasisTotal: ${costBasisTotal}, CurrentValue: ${currentValue}`);
+      console.log(`   AvgCost: ${rawAvgCost}, CostBasisTotal: ${costBasisTotal}, CurrentValue: ${currentValue}`);
       console.log(`   Raw avgCost: "${row[colMap.avgCost]}", Raw costBasis: "${row[colMap.costBasis]}"`);
-      skippedPositions.push({ symbol, reason: 'No valid cost basis data', quantity });
+      skippedPositions.push({ symbol, reason: 'No valid cost basis data', quantity: rawQuantity });
       skippedCount++;
       costBasisIssues.push(`${symbol}: No valid cost basis data found - check your CSV export settings`);
       return;
     }
     
-    // ENHANCED: Sanity check for unrealistic prices
-    if (pricePerShare > 10000) {
-      console.log(`⚠️  WARNING: ${symbol} has very high cost basis: $${pricePerShare.toFixed(2)} - please verify`);
-      costBasisIssues.push(`${symbol}: Unusually high cost basis $${pricePerShare.toFixed(2)} - please verify`);
+    // *** STOCK SPLIT CORRECTION LOGIC ***
+    console.log(`🔍 CHECKING STOCK SPLITS for ${symbol}: ${rawQuantity} shares @ $${rawPricePerShare.toFixed(2)}`);
+    
+    // Try to apply split adjustments (this is the core fix for NVIDIA etc.)
+    const splitResult = applySplitAdjustments(symbol, rawQuantity, rawPricePerShare, positionDate);
+    
+    const finalQuantity = splitResult.adjustedQuantity;
+    const finalPrice = splitResult.adjustedPrice;
+    
+    if (splitResult.splitInfo.applied) {
+      console.log(`✅ STOCK SPLIT APPLIED to ${symbol}:`);
+      console.log(`   Before: ${rawQuantity} shares @ $${rawPricePerShare.toFixed(2)} = $${(rawQuantity * rawPricePerShare).toFixed(2)}`);
+      console.log(`   After:  ${finalQuantity} shares @ $${finalPrice.toFixed(2)} = $${(finalQuantity * finalPrice).toFixed(2)}`);
+      console.log(`   Split ratio: ${splitResult.splitInfo.cumulativeRatio}:1`);
+      
+      splitAdjustments.push({
+        symbol,
+        originalQuantity: rawQuantity,
+        originalPrice: rawPricePerShare,
+        adjustedQuantity: finalQuantity,
+        adjustedPrice: finalPrice,
+        splitRatio: splitResult.splitInfo.cumulativeRatio,
+        method: splitResult.splitInfo.method
+      });
+      
+      splitCorrectionCount++;
+    } else {
+      console.log(`ℹ️  No split correction needed for ${symbol}`);
     }
     
-    // Import the position
+    // ENHANCED: Sanity check for unrealistic prices (after split adjustment)
+    if (finalPrice > 10000) {
+      console.log(`⚠️  WARNING: ${symbol} has very high cost basis: $${finalPrice.toFixed(2)} - please verify`);
+      costBasisIssues.push(`${symbol}: Unusually high cost basis $${finalPrice.toFixed(2)} - please verify`);
+    }
+    
+    // Import the position (using split-adjusted values)
     const accountDisplayName = accountName; // Always use provided account name
     
     transactions.push({
       date: positionDate, // Use actual date from CSV or today's date
       action: 'BUY',
       symbol: symbol,
-      quantity: quantity,
-      price: pricePerShare,
+      quantity: finalQuantity, // SPLIT-ADJUSTED QUANTITY
+      price: finalPrice, // SPLIT-ADJUSTED PRICE
       fees: 0,
       account: accountDisplayName,
       isPositionImport: true, // Flag to indicate this is from position import
       currentValue: currentValue, // Store current value for validation
       originalRow: row.slice(0, 5), // Store first 5 columns for debugging
-      nativePosition: true // Flag to indicate this is a native position, not external
+      nativePosition: true, // Flag to indicate this is a native position, not external
+      splitAdjusted: splitResult.splitInfo.applied, // Flag to indicate split was applied
+      splitInfo: splitResult.splitInfo // Store split information for debugging
     });
     
     positionSummary.push({
       symbol: symbol,
-      quantity: quantity,
-      avgCost: pricePerShare,
-      totalValue: quantity * pricePerShare,
+      quantity: finalQuantity, // SPLIT-ADJUSTED
+      avgCost: finalPrice, // SPLIT-ADJUSTED
+      totalValue: finalQuantity * finalPrice,
       currentValue: currentValue,
       account: accountDisplayName,
-      method: avgCost > 0 ? 'avgCost' : costBasisTotal > 0 ? 'calculated' : 'fallback'
+      method: rawAvgCost > 0 ? 'avgCost' : costBasisTotal > 0 ? 'calculated' : 'fallback',
+      splitAdjusted: splitResult.splitInfo.applied,
+      splitRatio: splitResult.splitInfo.cumulativeRatio
     });
     
-    console.log(`✅ Imported native position: ${symbol} - ${quantity} shares @ $${pricePerShare.toFixed(2)} (${accountDisplayName})`);
+    if (splitResult.splitInfo.applied) {
+      console.log(`✅ Imported SPLIT-CORRECTED position: ${symbol} - ${finalQuantity} shares @ $${finalPrice.toFixed(2)} (${accountDisplayName}) [${splitResult.splitInfo.cumulativeRatio}:1 split applied]`);
+    } else {
+      console.log(`✅ Imported native position: ${symbol} - ${finalQuantity} shares @ $${finalPrice.toFixed(2)} (${accountDisplayName})`);
+    }
+    
     importedCount++;
   });
+  
+  // *** NEW: Add split correction summary ***
+  if (splitCorrectionCount > 0) {
+    warnings.push({
+      type: 'split_corrections_applied',
+      message: `Applied stock split corrections to ${splitCorrectionCount} positions: ${splitAdjustments.map(adj => `${adj.symbol} (${adj.splitRatio}:1)`).join(', ')}`,
+      severity: 'info',
+      splitAdjustments: splitAdjustments
+    });
+    
+    console.log('\n*** STOCK SPLIT CORRECTIONS APPLIED ***');
+    splitAdjustments.forEach(adj => {
+      console.log(`- ${adj.symbol}: ${adj.originalQuantity} → ${adj.adjustedQuantity} shares, $${adj.originalPrice.toFixed(2)} → $${adj.adjustedPrice.toFixed(2)}/share (${adj.splitRatio}:1 split)`);
+    });
+  }
   
   // *** NEW: Add detailed external positions summary ***
   if (externalPositions.length > 0) {
@@ -295,14 +354,15 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
   
   // Add warning about position imports
   if (importedCount > 0) {
+    const splitNote = splitCorrectionCount > 0 ? ` Stock split corrections applied to ${splitCorrectionCount} positions.` : '';
     warnings.push({
       type: 'position_import',
-      message: `Imported ${importedCount} native ${accountName} positions. External/linked account positions were automatically filtered out for clean account separation.`,
+      message: `Imported ${importedCount} native ${accountName} positions. External/linked account positions were automatically filtered out for clean account separation.${splitNote}`,
       severity: 'info'
     });
   }
   
-  console.log(`*** ENHANCED: Position import summary: ${importedCount} native imported, ${skippedCount} filtered (${externalPositions.length} external) ***`);
+  console.log(`*** STOCK SPLIT ENHANCED: Position import summary: ${importedCount} native imported, ${skippedCount} filtered (${externalPositions.length} external), ${splitCorrectionCount} split-corrected ***`);
   
   return {
     format: 'positions',
@@ -314,6 +374,7 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
       importedCount,
       skippedCount,
       externalFilteredCount: externalPositions.length,
+      splitCorrectionCount, // NEW: Track split corrections
       dateRange: {
         start: new Date().toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0]
@@ -324,6 +385,7 @@ export function parsePositionsCSV(csvText, accountName = 'Unknown') {
     costBasisIssues,
     skippedPositions, // Return skipped positions for UI display
     externalPositions, // Return external positions for UI display
+    splitAdjustments, // NEW: Return split adjustments for UI display
     accountAnalysis // Return analysis for debugging
   };
 }
@@ -449,9 +511,9 @@ function isPositionFromExternalAccount(symbol, accountSource, institution, exter
   return { isExternal: false, reason: 'Native position' };
 }
 
-// Enhanced main parser that handles both transactions and positions
+// Enhanced main parser that handles both transactions and positions WITH STOCK SPLIT SUPPORT
 export function parsePortfolioCSV(csvText, accountName = 'Unknown') {
-  console.log('*** ENHANCED: Starting CSV parse for account:', accountName);
+  console.log('*** STOCK SPLIT ENHANCED: Starting CSV parse for account:', accountName);
   console.log('First 500 chars:', csvText.substring(0, 500));
   
   // First, check if this is a positions file by looking at the content
@@ -500,7 +562,7 @@ export function parsePortfolioCSV(csvText, accountName = 'Unknown') {
   // FIXED: Enhanced detection logic for simple position files
   // If we have ANY position indicators and no action column, it's likely a positions file
   if (positionIndicatorCount >= 1 && !hasActionColumn) {
-    console.log('*** ENHANCED: Detected positions file based on indicators');
+    console.log('*** STOCK SPLIT ENHANCED: Detected positions file based on indicators');
     return parsePositionsCSV(csvText, accountName);
   }
   
@@ -508,19 +570,19 @@ export function parsePortfolioCSV(csvText, accountName = 'Unknown') {
   if ((firstLine.includes('cost basis') || firstLine.includes('gain/loss') || 
        firstLine.includes('current value') || firstLine.includes('market value')) && 
       !firstLine.includes('action')) {
-    console.log('*** ENHANCED: Detected positions file based on headers');
+    console.log('*** STOCK SPLIT ENHANCED: Detected positions file based on headers');
     return parsePositionsCSV(csvText, accountName);
   }
   
   // CRITICAL FIX: Detect simple position files (Symbol, Quantity, Price format)
   if (firstLine.includes('symbol') && firstLine.includes('quantity') && 
       firstLine.includes('price') && !hasActionColumn && !hasBuySellWords) {
-    console.log('*** ENHANCED: Detected simple positions file (Symbol, Quantity, Price format)');
+    console.log('*** STOCK SPLIT ENHANCED: Detected simple positions file (Symbol, Quantity, Price format)');
     return parsePositionsCSV(csvText, accountName);
   }
   
   // Otherwise, use the transaction parser
-  console.log('*** ENHANCED: Using transaction parser...');
+  console.log('*** STOCK SPLIT ENHANCED: Using transaction parser...');
   
   // Split into lines and handle different line endings
   const lines = csvText.split(/\r?\n/);
@@ -556,30 +618,34 @@ export function parsePortfolioCSV(csvText, accountName = 'Unknown') {
   
   let transactions = [];
   let warnings = [];
+  let splitAdjustments = []; // Track split adjustments for transaction imports too
   
   switch (format) {
     case 'schwab':
       const schwabResult = parseSchwabCSV(dataRows, headers, accountName);
       transactions = schwabResult.transactions || schwabResult;
       warnings = schwabResult.warnings || [];
+      splitAdjustments = schwabResult.splitAdjustments || [];
       break;
     case 'fidelity':
       const fidelityResult = parseFidelityCSV(dataRows, headers, accountName);
       transactions = fidelityResult.transactions || fidelityResult;
       warnings = fidelityResult.warnings || [];
+      splitAdjustments = fidelityResult.splitAdjustments || [];
       break;
     case 'generic':
       // For generic format, use Schwab parser as fallback
       const genericResult = parseSchwabCSV(dataRows, headers, accountName);
       transactions = genericResult.transactions || genericResult;
       warnings = genericResult.warnings || [];
+      splitAdjustments = genericResult.splitAdjustments || [];
       break;
     default:
       console.error('Unknown format. Headers:', headers);
       throw new Error('Unable to detect CSV format. Please ensure your CSV has columns for: Symbol, Quantity, Price, and Date. Detected headers: ' + headers.join(', '));
   }
   
-  console.log('*** ENHANCED: Final transactions:', transactions.length);
+  console.log('*** STOCK SPLIT ENHANCED: Final transactions:', transactions.length);
   if (transactions.length > 0) {
     console.log('First transaction:', transactions[0]);
   }
@@ -590,12 +656,14 @@ export function parsePortfolioCSV(csvText, accountName = 'Unknown') {
     summary: {
       totalTransactions: transactions.length,
       symbols: [...new Set(transactions.map(t => t.symbol))],
+      splitCorrectionCount: splitAdjustments.length, // NEW: Track split corrections
       dateRange: {
         start: transactions.reduce((min, t) => t.date < min ? t.date : min, transactions[0]?.date || ''),
         end: transactions.reduce((max, t) => t.date > max ? t.date : max, transactions[0]?.date || '')
       }
     },
-    warnings
+    warnings,
+    splitAdjustments // NEW: Return split adjustments
   };
 }
 
@@ -632,12 +700,14 @@ export function detectBrokerFormat(headers) {
   return 'unknown';
 }
 
-// Parse Schwab CSV format - ENHANCED to handle buy/sell only
+// Parse Schwab CSV format - ENHANCED to handle buy/sell only WITH SPLIT SUPPORT
 export function parseSchwabCSV(rows, headers, accountName = 'Schwab') {
-  console.log('*** ENHANCED: Parsing Schwab CSV with', rows.length, 'rows for account:', accountName);
+  console.log('*** STOCK SPLIT ENHANCED: Parsing Schwab CSV with', rows.length, 'rows for account:', accountName);
   const transactions = [];
   const warnings = [];
+  const splitAdjustments = [];
   let skippedTransactions = 0;
+  let splitCorrectionCount = 0;
   
   // Find column indices (case-insensitive)
   const colMap = {};
@@ -677,8 +747,9 @@ export function parseSchwabCSV(rows, headers, accountName = 'Schwab') {
     }
     
     let symbol = row[colMap.symbol]?.toString().toUpperCase().trim() || '';
-    const quantity = parseFloat(row[colMap.quantity]) || 0;
-    const price = parseFloat(row[colMap.price]) || 0;
+    const rawQuantity = parseFloat(row[colMap.quantity]) || 0;
+    const rawPrice = parseFloat(row[colMap.price]) || 0;
+    const transactionDate = row[colMap.date] || new Date().toISOString().split('T')[0];
     
     // Special handling for BRK
     if (symbol === 'BRK/B' || symbol === 'BRK-B') {
@@ -686,23 +757,53 @@ export function parseSchwabCSV(rows, headers, accountName = 'Schwab') {
     }
     
     // If no price column, try to extract from amount
-    let finalPrice = price;
+    let finalPrice = rawPrice;
     if (finalPrice === 0 && colMap.amount !== undefined) {
       const amount = Math.abs(parseFloat(row[colMap.amount]) || 0);
-      if (amount > 0 && quantity > 0) {
+      if (amount > 0 && rawQuantity > 0) {
         finalPrice = amount / quantity;
       }
     }
     
-    if (symbol && quantity > 0 && finalPrice > 0) {
+    if (symbol && rawQuantity > 0 && finalPrice > 0) {
+      // *** STOCK SPLIT CORRECTION FOR TRANSACTIONS ***
+      console.log(`🔍 CHECKING STOCK SPLITS for transaction ${symbol}: ${rawQuantity} shares @ $${finalPrice.toFixed(2)} on ${transactionDate}`);
+      
+      const splitResult = applySplitAdjustments(symbol, rawQuantity, finalPrice, transactionDate);
+      
+      const adjustedQuantity = splitResult.adjustedQuantity;
+      const adjustedPrice = splitResult.adjustedPrice;
+      
+      if (splitResult.splitInfo.applied) {
+        console.log(`✅ TRANSACTION SPLIT APPLIED to ${symbol}:`);
+        console.log(`   Before: ${rawQuantity} shares @ $${finalPrice.toFixed(2)}`);
+        console.log(`   After:  ${adjustedQuantity} shares @ $${adjustedPrice.toFixed(2)}`);
+        console.log(`   Split ratio: ${splitResult.splitInfo.cumulativeRatio}:1`);
+        
+        splitAdjustments.push({
+          symbol,
+          originalQuantity: rawQuantity,
+          originalPrice: finalPrice,
+          adjustedQuantity: adjustedQuantity,
+          adjustedPrice: adjustedPrice,
+          splitRatio: splitResult.splitInfo.cumulativeRatio,
+          method: splitResult.splitInfo.method,
+          transactionDate: transactionDate
+        });
+        
+        splitCorrectionCount++;
+      }
+      
       transactions.push({
-        date: row[colMap.date] || new Date().toISOString().split('T')[0],
+        date: transactionDate,
         action: isBuy ? 'BUY' : 'SELL',
         symbol: symbol,
-        quantity: quantity,
-        price: finalPrice,
+        quantity: adjustedQuantity, // SPLIT-ADJUSTED
+        price: adjustedPrice, // SPLIT-ADJUSTED
         fees: parseFloat(row[colMap.fees]) || 0,
-        account: accountName
+        account: accountName,
+        splitAdjusted: splitResult.splitInfo.applied,
+        splitInfo: splitResult.splitInfo
       });
     }
   });
@@ -715,16 +816,26 @@ export function parseSchwabCSV(rows, headers, accountName = 'Schwab') {
     });
   }
   
-  console.log('*** ENHANCED: Parsed', transactions.length, 'Schwab transactions');
-  return { transactions, warnings };
+  if (splitCorrectionCount > 0) {
+    warnings.push({
+      type: 'split_corrections_applied',
+      message: `Applied stock split corrections to ${splitCorrectionCount} transactions: ${splitAdjustments.map(adj => `${adj.symbol} (${adj.splitRatio}:1)`).join(', ')}`,
+      severity: 'info'
+    });
+  }
+  
+  console.log('*** STOCK SPLIT ENHANCED: Parsed', transactions.length, 'Schwab transactions with', splitCorrectionCount, 'split corrections');
+  return { transactions, warnings, splitAdjustments };
 }
 
-// Parse Fidelity CSV format
+// Parse Fidelity CSV format WITH SPLIT SUPPORT
 export function parseFidelityCSV(rows, headers, accountName = 'Fidelity') {
-  console.log('*** ENHANCED: Parsing Fidelity CSV with', rows.length, 'rows for account:', accountName);
+  console.log('*** STOCK SPLIT ENHANCED: Parsing Fidelity CSV with', rows.length, 'rows for account:', accountName);
   const transactions = [];
   const warnings = [];
+  const splitAdjustments = [];
   let skippedTransactions = 0;
+  let splitCorrectionCount = 0;
   
   // Find column indices (case-insensitive and flexible)
   const colMap = {};
@@ -767,8 +878,9 @@ export function parseFidelityCSV(rows, headers, accountName = 'Fidelity') {
     }
     
     let symbol = row[colMap.symbol]?.toString().toUpperCase().trim() || '';
-    const quantity = Math.abs(parseFloat(row[colMap.quantity]) || 0); // Fidelity might use negative for sells
-    let price = parseFloat(row[colMap.price]) || 0;
+    const rawQuantity = Math.abs(parseFloat(row[colMap.quantity]) || 0); // Fidelity might use negative for sells
+    let rawPrice = parseFloat(row[colMap.price]) || 0;
+    const transactionDate = row[colMap.date] || new Date().toISOString().split('T')[0];
     
     // Special handling for BRK
     if (symbol === 'BRK/B' || symbol === 'BRK-B') {
@@ -776,22 +888,52 @@ export function parseFidelityCSV(rows, headers, accountName = 'Fidelity') {
     }
     
     // If no price, try to calculate from amount
-    if (price === 0 && colMap.amount !== undefined) {
+    if (rawPrice === 0 && colMap.amount !== undefined) {
       const amount = Math.abs(parseFloat(row[colMap.amount]) || 0);
-      if (amount > 0 && quantity > 0) {
-        price = amount / quantity;
+      if (amount > 0 && rawQuantity > 0) {
+        rawPrice = amount / rawQuantity;
       }
     }
     
-    if (symbol && quantity > 0 && price > 0) {
+    if (symbol && rawQuantity > 0 && rawPrice > 0) {
+      // *** STOCK SPLIT CORRECTION FOR FIDELITY TRANSACTIONS ***
+      console.log(`🔍 CHECKING STOCK SPLITS for Fidelity transaction ${symbol}: ${rawQuantity} shares @ $${rawPrice.toFixed(2)} on ${transactionDate}`);
+      
+      const splitResult = applySplitAdjustments(symbol, rawQuantity, rawPrice, transactionDate);
+      
+      const adjustedQuantity = splitResult.adjustedQuantity;
+      const adjustedPrice = splitResult.adjustedPrice;
+      
+      if (splitResult.splitInfo.applied) {
+        console.log(`✅ FIDELITY TRANSACTION SPLIT APPLIED to ${symbol}:`);
+        console.log(`   Before: ${rawQuantity} shares @ $${rawPrice.toFixed(2)}`);
+        console.log(`   After:  ${adjustedQuantity} shares @ $${adjustedPrice.toFixed(2)}`);
+        console.log(`   Split ratio: ${splitResult.splitInfo.cumulativeRatio}:1`);
+        
+        splitAdjustments.push({
+          symbol,
+          originalQuantity: rawQuantity,
+          originalPrice: rawPrice,
+          adjustedQuantity: adjustedQuantity,
+          adjustedPrice: adjustedPrice,
+          splitRatio: splitResult.splitInfo.cumulativeRatio,
+          method: splitResult.splitInfo.method,
+          transactionDate: transactionDate
+        });
+        
+        splitCorrectionCount++;
+      }
+      
       transactions.push({
-        date: row[colMap.date] || new Date().toISOString().split('T')[0],
+        date: transactionDate,
         action: action,
         symbol: symbol,
-        quantity: quantity,
-        price: price,
+        quantity: adjustedQuantity, // SPLIT-ADJUSTED
+        price: adjustedPrice, // SPLIT-ADJUSTED
         fees: parseFloat(row[colMap.fees]) || 0,
-        account: accountName
+        account: accountName,
+        splitAdjusted: splitResult.splitInfo.applied,
+        splitInfo: splitResult.splitInfo
       });
     }
   });
@@ -804,6 +946,14 @@ export function parseFidelityCSV(rows, headers, accountName = 'Fidelity') {
     });
   }
   
-  console.log('*** ENHANCED: Parsed', transactions.length, 'Fidelity transactions');
-  return { transactions, warnings };
+  if (splitCorrectionCount > 0) {
+    warnings.push({
+      type: 'split_corrections_applied',
+      message: `Applied stock split corrections to ${splitCorrectionCount} Fidelity transactions: ${splitAdjustments.map(adj => `${adj.symbol} (${adj.splitRatio}:1)`).join(', ')}`,
+      severity: 'info'
+    });
+  }
+  
+  console.log('*** STOCK SPLIT ENHANCED: Parsed', transactions.length, 'Fidelity transactions with', splitCorrectionCount, 'split corrections');
+  return { transactions, warnings, splitAdjustments };
 }

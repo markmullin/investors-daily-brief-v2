@@ -23,6 +23,7 @@ if (result.error) {
   
   // Log API key availability (without revealing the keys)
   const apiKeys = {
+    FMP: process.env.FMP_API_KEY ? 'Available' : 'Not set',
     EOD: process.env.EOD_API_KEY ? 'Available' : 'Not set',
     BRAVE: process.env.BRAVE_API_KEY ? 'Available' : 'Not set',
     MISTRAL: process.env.MISTRAL_API_KEY ? 'Available' : 'Not set',
@@ -38,7 +39,7 @@ if (result.error) {
 export default {
   // Check if all required API keys are set
   checkApiKeys() {
-    const requiredKeys = ['EOD_API_KEY', 'BRAVE_API_KEY', 'MISTRAL_API_KEY', 'FRED_API_KEY'];
+    const requiredKeys = ['FMP_API_KEY', 'EOD_API_KEY', 'BRAVE_API_KEY', 'MISTRAL_API_KEY', 'FRED_API_KEY'];
     const missingKeys = requiredKeys.filter(key => !process.env[key]);
     
     if (missingKeys.length > 0) {

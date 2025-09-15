@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, PieChart, RefreshCw, Activity, Bug, Database, X, AlertCircle, BarChart3, ChevronUp, ChevronDown } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import CSVUploadModal from './CSVUploadModal';
+import EducationIcon from './AI/EducationIcon';
+import AnalysisDropdown from './AI/AnalysisDropdown';
 import './PortfolioTracker.css';
 
 // FIXED: Get correct API base URL for production vs development
@@ -16,10 +18,34 @@ console.log('🔧 PortfolioTracker API Configuration:', {
   currentHost: window.location.hostname
 });
 
-// Modern chrome-like color palette
+// 🎨 VIBRANT COLOR PALETTES - FIXED: Beautiful colors instead of grayscale
 const COLORS = {
-  primary: ['#6b7280', '#4b5563', '#374151', '#1f2937', '#111827', '#9ca3af', '#d1d5db', '#e5e7eb'],
-  gradient: ['#374151', '#4b5563', '#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb', '#f3f4f6', '#f9fafb']
+  // Vibrant sector colors for pie chart
+  sectors: [
+    '#3B82F6', // Blue
+    '#10B981', // Green  
+    '#F59E0B', // Yellow
+    '#EF4444', // Red
+    '#8B5CF6', // Purple
+    '#F97316', // Orange
+    '#06B6D4', // Cyan
+    '#84CC16', // Lime
+    '#EC4899', // Pink
+    '#6366F1', // Indigo
+    '#14B8A6', // Teal
+    '#F43F5E'  // Rose
+  ],
+  // Gradient colors for holdings bar chart
+  holdings: [
+    '#4F46E5', // Indigo
+    '#7C3AED', // Violet
+    '#2563EB', // Blue
+    '#0891B2', // Cyan
+    '#059669', // Emerald
+    '#65A30D', // Lime
+    '#CA8A04', // Yellow
+    '#EA580C'  // Orange
+  ]
 };
 
 // Sector mapping for stocks
@@ -96,6 +122,10 @@ function PortfolioTracker() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [spyData, setSpyData] = useState(null);
   const [spyDataLoading, setSpyDataLoading] = useState(false);
+  const [analysisDropdown, setAnalysisDropdown] = useState({
+    isOpen: false,
+    position: { top: 0, left: 0 }
+  });
   
   // FIXED: Enhanced fetch with better error handling - uses correct API URL
   const fetchPortfolio = useCallback(async (isRefresh = false, showLoadingState = true) => {
@@ -133,31 +163,56 @@ function PortfolioTracker() {
     }
   }, []);
 
-  // FIXED: SPY data fetch using correct API URL
+  // 🔧 FIXED: SPY data fetch with corrected endpoint and enhanced error handling
   const fetchSpyData = useCallback(async () => {
     setSpyDataLoading(true);
-    console.log('\n🔍 ===== FIXED SPY CALCULATION START =====');
+    console.log('\n🔍 ===== SPY DATA FETCH START =====');
     
     try {
-      // Use cache busting parameter only (no custom headers to avoid CORS issues)
+      // 🎯 FIXED: Remove .US suffix and use correct endpoint
       const timestamp = Date.now();
-      const url = `${API_BASE_URL}/api/market/history/SPY.US?period=5y&cachebust=${timestamp}`;
+      const url = `${API_BASE_URL}/api/market/history/SPY?period=5y&cachebust=${timestamp}`;
       
       console.log(`📡 Fetching SPY data from: ${url}`);
       
-      // Simple fetch without custom headers to avoid CORS preflight issues
       const response = await fetch(url);
-      
       console.log(`📊 Response status: ${response.status}`);
       
       if (!response.ok) {
+        // 🔧 ENHANCED: Try alternative endpoints if primary fails
+        console.log(`⚠️ Primary SPY endpoint failed, trying alternatives...`);
+        
+        // Try quote endpoint as fallback
+        try {
+          const quoteResponse = await fetch(`${API_BASE_URL}/api/market/quote/SPY`);
+          if (quoteResponse.ok) {
+            const quoteData = await quoteResponse.json();
+            console.log(`✅ Got SPY quote as fallback: $${quoteData.price}`);
+            
+            // Create basic return data with current price only
+            setSpyData({
+              '1W': null, '1M': null, '3M': null, '1Y': null, '3Y': null, '5Y': null, 'ALL': null,
+              currentPrice: quoteData.price,
+              error: 'Historical data unavailable, showing current price only'
+            });
+            return;
+          }
+        } catch (fallbackError) {
+          console.error(`❌ Fallback quote also failed:`, fallbackError.message);
+        }
+        
         throw new Error(`SPY API failed with status ${response.status}: ${response.statusText}`);
       }
       
       const historicalData = await response.json();
       console.log(`📊 Raw data received: ${JSON.stringify(historicalData).length} characters`);
       console.log(`📊 Data type: ${Array.isArray(historicalData) ? 'Array' : typeof historicalData}`);
-      console.log(`📊 Data length: ${historicalData.length}`);
+      
+      if (Array.isArray(historicalData)) {
+        console.log(`📊 Data length: ${historicalData.length}`);
+      } else {
+        console.log(`📊 Data structure:`, Object.keys(historicalData || {}));
+      }
       
       if (!historicalData || !Array.isArray(historicalData) || historicalData.length === 0) {
         console.error('❌ Invalid SPY data format:', historicalData);
@@ -282,15 +337,15 @@ function PortfolioTracker() {
         stack: err.stack
       });
       
-      // Set error state but don't crash the app
+      // 🔧 ENHANCED: Better error state with more informative messages
       setSpyData({
         '1W': null, '1M': null, '3M': null, '1Y': null, '3Y': null, '5Y': null, 'ALL': null,
-        error: err.message
+        error: err.message.includes('SPY API failed') ? 'S&P 500 data service unavailable' : err.message
       });
       
     } finally {
       setSpyDataLoading(false);
-      console.log('🔍 ===== FIXED SPY CALCULATION END =====\n');
+      console.log('🔍 ===== SPY DATA FETCH END =====\n');
     }
   }, []);
   
@@ -308,7 +363,7 @@ function PortfolioTracker() {
     return () => clearInterval(interval);
   }, [fetchPortfolio, fetchSpyData]);
 
-  // Calculate sector allocation
+  // Calculate sector allocation with vibrant colors
   const sectorAllocation = useMemo(() => {
     if (!portfolio?.holdings) return [];
     
@@ -332,7 +387,8 @@ function PortfolioTracker() {
       .map((sector, index) => ({
         ...sector,
         percentage: (sector.value / portfolio.summary.totalValue) * 100,
-        color: COLORS.primary[index % COLORS.primary.length]
+        // 🎨 FIXED: Use vibrant colors instead of grayscale
+        color: COLORS.sectors[index % COLORS.sectors.length]
       }));
   }, [portfolio]);
 
@@ -540,6 +596,18 @@ function PortfolioTracker() {
   const currentReturn = timeBasedReturns[selectedTimePeriod] || 0;
   const spyReturn = spyData?.[selectedTimePeriod];
   const outperformance = (spyReturn !== null && spyReturn !== undefined) ? currentReturn - spyReturn : null;
+
+  // Handle education analysis requests
+  const handleEducationAnalysis = async (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setAnalysisDropdown({
+      isOpen: true,
+      position: {
+        top: rect.bottom,
+        left: rect.left + rect.width / 2
+      }
+    });
+  };
   
   return (
     <>
@@ -549,6 +617,18 @@ function PortfolioTracker() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <h2 className="text-2xl font-semibold text-gray-900">Portfolio Analytics</h2>
+              <EducationIcon
+                context="portfolio_analysis"
+                data={{
+                  summary,
+                  currentReturn,
+                  selectedTimePeriod,
+                  outperformance,
+                  sectors: portfolio?.sectorBreakdown || {}
+                }}
+                onAnalysisRequest={handleEducationAnalysis}
+                className="ml-2"
+              />
               {lastUpdated && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-md">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -577,7 +657,7 @@ function PortfolioTracker() {
                 <div className="flex items-center gap-2 px-3 py-1 bg-red-50 border border-red-200 rounded-md">
                   <AlertCircle size={14} className="text-red-600" />
                   <span className="text-sm text-red-700">
-                    S&P 500 data unavailable
+                    {spyData.error.includes('service unavailable') ? 'S&P 500 service offline' : 'S&P 500 data unavailable'}
                   </span>
                 </div>
               )}
@@ -720,7 +800,7 @@ function PortfolioTracker() {
               </div>
             </div>
 
-            {/* S&P 500 Benchmark Card - FIXED WITH PRODUCTION API */}
+            {/* S&P 500 Benchmark Card - FIXED */}
             <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-gray-200 rounded-lg">
@@ -737,7 +817,7 @@ function PortfolioTracker() {
                   ) : spyReturn !== null && spyReturn !== undefined ? (
                     formatPercent(spyReturn)
                   ) : (
-                    <span className="text-red-600 text-lg">Error</span>
+                    <span className="text-red-600 text-lg">N/A</span>
                   )}
                 </p>
                 <p className="text-sm text-gray-600">
@@ -757,7 +837,7 @@ function PortfolioTracker() {
                 )}
                 {spyData?.error && (
                   <p className="text-xs text-red-600">
-                    {spyData.error.substring(0, 30)}...
+                    Service offline
                   </p>
                 )}
               </div>
@@ -850,9 +930,9 @@ function PortfolioTracker() {
           </div>
         </div>
 
-        {/* CHROME STYLE: Clean charts section */}
+        {/* 🎨 COLORFUL CHARTS SECTION - FIXED */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Sector Allocation Pie Chart */}
+          {/* Sector Allocation Pie Chart - VIBRANT COLORS */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Sector Allocation</h3>
@@ -912,7 +992,7 @@ function PortfolioTracker() {
             )}
           </div>
 
-          {/* Top Holdings Bar Chart */}
+          {/* Top Holdings Bar Chart - COLORFUL GRADIENT */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Top Holdings</h3>
@@ -926,7 +1006,12 @@ function PortfolioTracker() {
                   <BarChart 
                     data={sortedHoldings
                       .sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0))
-                      .slice(0, 8)}
+                      .slice(0, 8)
+                      .map((holding, index) => ({
+                        ...holding,
+                        // 🎨 FIXED: Add vibrant color to each bar
+                        color: COLORS.holdings[index % COLORS.holdings.length]
+                      }))}
                     margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" strokeWidth={1} />
@@ -945,7 +1030,7 @@ function PortfolioTracker() {
                       axisLine={false}
                     />
                     <Tooltip 
-                      formatter={(value) => [formatCurrency(value), 'Market Value']}
+                      formatter={(value, name, props) => [formatCurrency(value), 'Market Value']}
                       labelStyle={{ color: '#374151' }}
                       contentStyle={{ 
                         backgroundColor: 'white', 
@@ -956,9 +1041,16 @@ function PortfolioTracker() {
                     />
                     <Bar 
                       dataKey="currentValue" 
-                      fill="#6b7280"
                       radius={[4, 4, 0, 0]}
-                    />
+                    >
+                      {/* 🎨 FIXED: Each bar gets a different vibrant color */}
+                      {sortedHoldings
+                        .sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0))
+                        .slice(0, 8)
+                        .map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS.holdings[index % COLORS.holdings.length]} />
+                        ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1363,6 +1455,21 @@ function PortfolioTracker() {
           </div>
         </div>
       )}
+
+      {/* Analysis Dropdown */}
+      <AnalysisDropdown
+        isOpen={analysisDropdown.isOpen}
+        onClose={() => setAnalysisDropdown({ isOpen: false, position: { top: 0, left: 0 } })}
+        context="portfolio_analysis"
+        data={{
+          summary,
+          currentReturn,
+          selectedTimePeriod,
+          outperformance,
+          sectors: portfolio?.sectorBreakdown || {}
+        }}
+        position={analysisDropdown.position}
+      />
     </>
   );
 }

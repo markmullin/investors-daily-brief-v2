@@ -1,0 +1,25 @@
+{
+  "models": {
+    "gpt-oss-20b": {
+      "name": "GPT-OSS 20B",
+      "path": "models/gpt-oss-20b-Q4_K_M.gguf",
+      "temperature": 0.7,
+      "maxTokens": 400,
+      "timeout": 180000,
+      "description": "Large 20B model for comprehensive analysis"
+    },
+    "qwen3-8b": {
+      "name": "Qwen 3 8B",
+      "path": "models/qwen3-8b/qwen3-8b-instruct-q4_k_m.gguf",
+      "temperature": 0.6,
+      "maxTokens": 500,
+      "timeout": 45000,
+      "description": "Enhanced 8B model for superior analysis"
+    }
+  },
+  "activeModel": "qwen3-8b",
+  "llamaServer": {
+    "url": "http://localhost:8080",
+    "healthCheckInterval": 30000
+  }
+}

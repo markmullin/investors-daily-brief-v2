@@ -1,0 +1,74 @@
+/**
+ * Helper: Create structured analysis prompt for Mistral
+ * Generates deeper analysis with more context per story, no sector redundancy
+ */
+function createStructuredAnalysisPrompt(articles, summary) {
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+  });
+  
+  const articlesContent = articles.slice(0, 15).map((article, i) => 
+    `${i + 1}. ${article.title}\n   Source: ${article.source}\n   ${(article.description || '').substring(0, 200)}...`
+  ).join('\n\n');
+  
+  return `You are a senior financial analyst writing a Daily Market Brief for ${currentDate}.
+
+I'm providing you with ${articles.length} carefully curated financial news articles from premium financial sources.
+
+NEWS ARTICLES:
+
+${articlesContent}
+
+YOUR TASK:
+Write a comprehensive market analysis with deeper insights and context for each major story.
+
+CRITICAL REQUIREMENTS:
+
+1. STRUCTURE: Write 3-4 clear paragraphs, separated by double line breaks
+2. DEPTH: Provide 2-3 sentences of analysis per major story, not just headlines
+3. CONTEXT: Explain WHY events matter and their implications for investors
+4. NO SECTOR RECAP: Do not write general sector summary lines - focus on specific stories
+5. PLAIN TEXT ONLY: No *, #, _, \`, special symbols anywhere
+
+CONTENT GUIDELINES:
+- First paragraph: Bold opening on overall market performance with specific details
+- Analyze 2-3 major company stories with context about business impact and investor implications
+- Include economic policy developments with explanations of market impact
+- Conclude with forward-looking investment considerations
+
+EXAMPLE DEPTH (what we want):
+Instead of: "Apple reported strong earnings."
+Write: "Apple reported quarterly revenue of 85 billion dollars, beating analyst estimates by 3 percent and demonstrating the resilience of iPhone demand despite economic headwinds. The company's Services segment grew 12 percent year-over-year, highlighting Apple's successful transition toward recurring revenue streams that provide more predictable cash flows for investors."
+
+TONE: Professional but accessible, explaining not just what happened but why it matters for investment decisions.
+
+Write 500-800 words with this deeper analytical approach. Begin your analysis:`;
+}
+
+/**
+ * Helper: Create structured fallback analysis with deeper insights
+ */
+function createStructuredFallbackAnalysis(articles, summary) {
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+  });
+  
+  const companyDiversity = summary.companyDiversity || { uniqueCompanies: 0 };
+  const sectorDiversity = summary.sectorDiversity || { sectorsRepresented: 0 };
+  const breakdown = summary.breakdown || {};
+  
+  const topArticles = articles.slice(0, 3);
+  const companies = articles.filter(a => a.symbol).map(a => a.symbol).slice(0, 3);
+  
+  const fallbackContent = `Markets showed mixed performance on ${currentDate} as investors weighed corporate earnings results against ongoing concerns about economic policy and international trade developments. Major indices reflected this cautious optimism, with technology and healthcare names leading advances while traditional value sectors faced headwinds from changing interest rate expectations.
+
+${topArticles.length > 0 ? `${topArticles[0].title.replace(/[#*_\`<>\[\]|]/g, '')}` : 'Corporate earnings announcements dominated market attention'}. This development reflects broader themes around corporate adaptability and operational efficiency in the current economic environment. The market's reaction suggests investors are increasingly focused on companies that demonstrate pricing power and margin expansion capabilities, particularly those with strong competitive positioning in their respective industries.
+
+Federal Reserve monetary policy continues to influence trading patterns as market participants analyze recent economic data releases for clues about future policy direction. Recent indicators suggest a measured approach to economic management, with particular attention to employment trends and inflation dynamics that could impact both consumer spending patterns and corporate investment decisions. This policy backdrop creates both opportunities and challenges for different asset classes and investment strategies.
+
+${companies.length > 0 ? `Key companies including ${companies.join(', ')} are navigating industry-specific challenges while pursuing growth initiatives that could reshape their competitive landscapes.` : 'Multiple companies across various sectors are implementing strategic initiatives to strengthen their market positions.'} These corporate actions reflect management teams' confidence in their ability to execute operational improvements and capture market share, even as they face headwinds from supply chain complexities and evolving consumer preferences. Investment implications include increased focus on companies with strong balance sheets and proven execution capabilities.
+
+Looking ahead, market participants should monitor corporate guidance updates, regulatory policy announcements, and international economic developments that could influence sector rotation and investment flows. The current environment rewards careful analysis of individual company fundamentals alongside broader economic indicators, with particular attention to businesses that demonstrate resilience and adaptability in changing market conditions.`;
+
+  return ultraAggressiveCleanAIContent(fallbackContent);
+}

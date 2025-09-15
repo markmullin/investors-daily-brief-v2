@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip uninstall:*)",
+      "Bash(pip install:*)",
+      "Bash(git clone:*)",
+      "Bash(cmake:*)",
+      "Bash(powershell:*)",
+      "Bash(unzip:*)",
+      "Bash(/c/Users/mulli/Documents/cmake-3.30.5-windows-x86_64/bin/cmake.exe -B build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=89)",
+      "Bash(/c/Users/mulli/Documents/cmake-3.30.5-windows-x86_64/bin/cmake.exe -B build -G \"MinGW Makefiles\" -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=89)",
+      "WebSearch",
+      "Bash(./llama-server.exe:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(llama-server.exe:*)",
+      "Bash(cmd //c:*)",
+      "Bash(cmd /c:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(ldd:*)",
+      "Bash(timeout:*)",
+      "Bash(tasklist)",
+      "Bash(npm run dev:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(set VITE_PORT=5173)",
+      "Bash(npx vite:*)",
+      "Bash(ollama list:*)",
+      "Bash(ollama search:*)",
+      "Bash(ollama:*)",
+      "Bash(setx:*)",
+      "Bash(npm start)",
+      "Bash(npm run test:analysis:*)",
+      "Bash(tree:*)",
+      "Bash(pkill:*)",
+      "Bash(PORT=5001 npm start)",
+      "Bash(grep:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\Users\\mulli",
+      "C:\\Users\\mulli\\Documents",
+      "C:\\"
+    ]
+  }
+}

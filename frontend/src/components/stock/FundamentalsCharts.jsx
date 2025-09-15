@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Building } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine, Legend, ComposedChart, Bar 
 } from 'recharts';
+import EducationIcon from '../AI/EducationIcon';
+import AnalysisDropdown from '../AI/AnalysisDropdown';
 
 /**
  * Custom tooltip for fundamentals charts - FIXED null checking

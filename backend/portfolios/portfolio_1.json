@@ -1,0 +1,615 @@
+{
+  "id": "portfolio_1",
+  "name": "My Investment Portfolio",
+  "created_date": "2025-07-06",
+  "total_value": 0,
+  "transactions": [
+    {
+      "id": "txn_1751841394998_0",
+      "date": "2024-01-15",
+      "symbol": "AAPL",
+      "action": "BUY",
+      "quantity": 10,
+      "price": 150,
+      "fees": 0,
+      "account": "Test Account",
+      "total": 1500,
+      "isPositionImport": false
+    },
+    {
+      "id": "txn_1751841394998_1",
+      "date": "2024-02-15",
+      "symbol": "MSFT",
+      "action": "BUY",
+      "quantity": 5,
+      "price": 300,
+      "fees": 0,
+      "account": "Test Account",
+      "total": 1500,
+      "isPositionImport": false
+    },
+    {
+      "id": "txn_1751841394998_2",
+      "date": "2024-03-15",
+      "symbol": "NVDA",
+      "action": "BUY",
+      "quantity": 20,
+      "price": 400,
+      "fees": 0,
+      "account": "Test Account",
+      "total": 8000,
+      "isPositionImport": false
+    },
+    {
+      "id": "txn_1751841414635_0",
+      "date": "2024-01-15",
+      "symbol": "AAPL",
+      "action": "BUY",
+      "quantity": 100,
+      "price": 175.5,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 17550,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_1",
+      "date": "2024-02-20",
+      "symbol": "MSFT",
+      "action": "BUY",
+      "quantity": 50,
+      "price": 380.25,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 19012.5,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_2",
+      "date": "2024-01-30",
+      "symbol": "GOOGL",
+      "action": "BUY",
+      "quantity": 25,
+      "price": 140.75,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 3518.75,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_3",
+      "date": "2023-12-15",
+      "symbol": "NVDA",
+      "action": "BUY",
+      "quantity": 300,
+      "price": 85,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 25500,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_4",
+      "date": "2023-11-01",
+      "symbol": "SPY",
+      "action": "BUY",
+      "quantity": 200,
+      "price": 450,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 90000,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_5",
+      "date": "2024-01-10",
+      "symbol": "QQQ",
+      "action": "BUY",
+      "quantity": 75,
+      "price": 350,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 26250,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_6",
+      "date": "2024-03-05",
+      "symbol": "TSLA",
+      "action": "BUY",
+      "quantity": 40,
+      "price": 210.5,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 8420,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_7",
+      "date": "2024-02-14",
+      "symbol": "META",
+      "action": "BUY",
+      "quantity": 35,
+      "price": 480.25,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 16808.75,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_8",
+      "date": "2024-01-25",
+      "symbol": "AMZN",
+      "action": "BUY",
+      "quantity": 20,
+      "price": 155.75,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 3115,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_9",
+      "date": "2023-12-20",
+      "symbol": "BRK.B",
+      "action": "BUY",
+      "quantity": 15,
+      "price": 420.5,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 6307.5,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_10",
+      "date": "2024-01-05",
+      "symbol": "VTI",
+      "action": "BUY",
+      "quantity": 100,
+      "price": 240,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 24000,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_11",
+      "date": "2024-02-28",
+      "symbol": "AMD",
+      "action": "BUY",
+      "quantity": 80,
+      "price": 180.75,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 14460,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_12",
+      "date": "2024-03-10",
+      "symbol": "NFLX",
+      "action": "BUY",
+      "quantity": 25,
+      "price": 520.25,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 13006.25,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_13",
+      "date": "2024-01-20",
+      "symbol": "JPM",
+      "action": "BUY",
+      "quantity": 45,
+      "price": 175.5,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 7897.5,
+      "isPositionImport": true
+    },
+    {
+      "id": "txn_1751841414635_14",
+      "date": "2023-12-10",
+      "symbol": "JNJ",
+      "action": "BUY",
+      "quantity": 60,
+      "price": 158.25,
+      "fees": 0,
+      "account": "Taxable Account",
+      "total": 9495,
+      "isPositionImport": true
+    }
+  ],
+  "holdings": {
+    "AAPL": {
+      "symbol": "AAPL",
+      "quantity": 110,
+      "avgCost": 173.1818181818182,
+      "totalCost": 19050,
+      "accounts": {
+        "Test Account": {
+          "quantity": 10,
+          "totalCost": 1500,
+          "avgCost": 150
+        },
+        "Taxable Account": {
+          "quantity": 100,
+          "totalCost": 17550,
+          "avgCost": 175.5
+        }
+      },
+      "currentPrice": 211.18,
+      "currentValue": 23229.8,
+      "costBasis": 19050,
+      "gain": 4179.799999999999,
+      "gainPercent": 21.94120734908136,
+      "dayChange": 127.6,
+      "dayChangePercent": 0.55233,
+      "previousClose": 210.02,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.183Z",
+      "priceError": null
+    },
+    "MSFT": {
+      "symbol": "MSFT",
+      "quantity": 55,
+      "avgCost": 372.95454545454544,
+      "totalCost": 20512.5,
+      "accounts": {
+        "Test Account": {
+          "quantity": 5,
+          "totalCost": 1500,
+          "avgCost": 300
+        },
+        "Taxable Account": {
+          "quantity": 50,
+          "totalCost": 19012.5,
+          "avgCost": 380.25
+        }
+      },
+      "currentPrice": 510.05,
+      "currentValue": 28052.75,
+      "costBasis": 20512.5,
+      "gain": 7540.25,
+      "gainPercent": 36.759293113954904,
+      "dayChange": -90.75,
+      "dayChangePercent": -0.32245,
+      "previousClose": 511.7,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.183Z",
+      "priceError": null
+    },
+    "NVDA": {
+      "symbol": "NVDA",
+      "quantity": 320,
+      "avgCost": 104.6875,
+      "totalCost": 33500,
+      "accounts": {
+        "Test Account": {
+          "quantity": 20,
+          "totalCost": 8000,
+          "avgCost": 400
+        },
+        "Taxable Account": {
+          "quantity": 300,
+          "totalCost": 25500,
+          "avgCost": 85
+        }
+      },
+      "currentPrice": 172.41,
+      "currentValue": 55171.2,
+      "costBasis": 33500,
+      "gain": 21671.199999999997,
+      "gainPercent": 64.69014925373133,
+      "dayChange": -188.79999999999998,
+      "dayChangePercent": -0.34104,
+      "previousClose": 173,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.184Z",
+      "priceError": null
+    },
+    "GOOGL": {
+      "symbol": "GOOGL",
+      "quantity": 25,
+      "avgCost": 140.75,
+      "totalCost": 3518.75,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 25,
+          "totalCost": 3518.75,
+          "avgCost": 140.75
+        }
+      },
+      "currentPrice": 185.06,
+      "currentValue": 4626.5,
+      "costBasis": 3518.75,
+      "gain": 1107.75,
+      "gainPercent": 31.481349911190055,
+      "dayChange": 37,
+      "dayChangePercent": 0.80619,
+      "previousClose": 183.58,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.184Z",
+      "priceError": null
+    },
+    "SPY": {
+      "symbol": "SPY",
+      "quantity": 200,
+      "avgCost": 450,
+      "totalCost": 90000,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 200,
+          "totalCost": 90000,
+          "avgCost": 450
+        }
+      },
+      "currentPrice": 627.58,
+      "currentValue": 125516.00000000001,
+      "costBasis": 90000,
+      "gain": 35516.000000000015,
+      "gainPercent": 39.46222222222224,
+      "dayChange": -92,
+      "dayChangePercent": -0.07324374,
+      "previousClose": 628.04,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.184Z",
+      "priceError": null
+    },
+    "QQQ": {
+      "symbol": "QQQ",
+      "quantity": 75,
+      "avgCost": 350,
+      "totalCost": 26250,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 75,
+          "totalCost": 26250,
+          "avgCost": 350
+        }
+      },
+      "currentPrice": 561.26,
+      "currentValue": 42094.5,
+      "costBasis": 26250,
+      "gain": 15844.5,
+      "gainPercent": 60.36,
+      "dayChange": -40.5,
+      "dayChangePercent": -0.09611962,
+      "previousClose": 561.8,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.184Z",
+      "priceError": null
+    },
+    "TSLA": {
+      "symbol": "TSLA",
+      "quantity": 40,
+      "avgCost": 210.5,
+      "totalCost": 8420,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 40,
+          "totalCost": 8420,
+          "avgCost": 210.5
+        }
+      },
+      "currentPrice": 329.65,
+      "currentValue": 13186,
+      "costBasis": 8420,
+      "gain": 4766,
+      "gainPercent": 56.60332541567696,
+      "dayChange": 409.6,
+      "dayChangePercent": 3.20591,
+      "previousClose": 319.41,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.185Z",
+      "priceError": null
+    },
+    "META": {
+      "symbol": "META",
+      "quantity": 35,
+      "avgCost": 480.25,
+      "totalCost": 16808.75,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 35,
+          "totalCost": 16808.75,
+          "avgCost": 480.25
+        }
+      },
+      "currentPrice": 704.28,
+      "currentValue": 24649.8,
+      "costBasis": 16808.75,
+      "gain": 7841.049999999999,
+      "gainPercent": 46.648620510150955,
+      "dayChange": 100.45,
+      "dayChangePercent": 0.40918,
+      "previousClose": 701.41,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.185Z",
+      "priceError": null
+    },
+    "AMZN": {
+      "symbol": "AMZN",
+      "quantity": 20,
+      "avgCost": 155.75,
+      "totalCost": 3115,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 20,
+          "totalCost": 3115,
+          "avgCost": 155.75
+        }
+      },
+      "currentPrice": 226.13,
+      "currentValue": 4522.6,
+      "costBasis": 3115,
+      "gain": 1407.6000000000004,
+      "gainPercent": 45.18780096308188,
+      "dayChange": 45,
+      "dayChangePercent": 1.005,
+      "previousClose": 223.88,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.185Z",
+      "priceError": null
+    },
+    "BRK.B": {
+      "symbol": "BRK.B",
+      "quantity": 15,
+      "avgCost": 420.5,
+      "totalCost": 6307.5,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 15,
+          "totalCost": 6307.5,
+          "avgCost": 420.5
+        }
+      },
+      "currentPrice": 420.5,
+      "currentValue": 6307.5,
+      "costBasis": 6307.5,
+      "gain": 0,
+      "gainPercent": 0,
+      "dayChange": 0,
+      "dayChangePercent": 0,
+      "previousClose": 420.5,
+      "hasLivePrice": false,
+      "priceTimestamp": null,
+      "priceError": "No data from FMP"
+    },
+    "VTI": {
+      "symbol": "VTI",
+      "quantity": 100,
+      "avgCost": 240,
+      "totalCost": 24000,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 100,
+          "totalCost": 24000,
+          "avgCost": 240
+        }
+      },
+      "currentPrice": 309.09,
+      "currentValue": 30908.999999999996,
+      "costBasis": 24000,
+      "gain": 6908.999999999996,
+      "gainPercent": 28.787499999999984,
+      "dayChange": -17,
+      "dayChangePercent": -0.05496993,
+      "previousClose": 309.26,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.185Z",
+      "priceError": null
+    },
+    "AMD": {
+      "symbol": "AMD",
+      "quantity": 80,
+      "avgCost": 180.75,
+      "totalCost": 14460,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 80,
+          "totalCost": 14460,
+          "avgCost": 180.75
+        }
+      },
+      "currentPrice": 156.99,
+      "currentValue": 12559.2,
+      "costBasis": 14460,
+      "gain": -1900.7999999999993,
+      "gainPercent": -13.145228215767629,
+      "dayChange": -273.6,
+      "dayChangePercent": -2.13204,
+      "previousClose": 160.41,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.185Z",
+      "priceError": null
+    },
+    "NFLX": {
+      "symbol": "NFLX",
+      "quantity": 25,
+      "avgCost": 520.25,
+      "totalCost": 13006.25,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 25,
+          "totalCost": 13006.25,
+          "avgCost": 520.25
+        }
+      },
+      "currentPrice": 1209.24,
+      "currentValue": 30231,
+      "costBasis": 13006.25,
+      "gain": 17224.75,
+      "gainPercent": 132.43440653531954,
+      "dayChange": -1623.2500000000002,
+      "dayChangePercent": -5.09587,
+      "previousClose": 1274.17,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.186Z",
+      "priceError": null
+    },
+    "JPM": {
+      "symbol": "JPM",
+      "quantity": 45,
+      "avgCost": 175.5,
+      "totalCost": 7897.5,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 45,
+          "totalCost": 7897.5,
+          "avgCost": 175.5
+        }
+      },
+      "currentPrice": 291.27,
+      "currentValue": 13107.15,
+      "costBasis": 7897.5,
+      "gain": 5209.65,
+      "gainPercent": 65.96581196581197,
+      "dayChange": 61.650000000000006,
+      "dayChangePercent": 0.47258,
+      "previousClose": 289.9,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.186Z",
+      "priceError": null
+    },
+    "JNJ": {
+      "symbol": "JNJ",
+      "quantity": 60,
+      "avgCost": 158.25,
+      "totalCost": 9495,
+      "accounts": {
+        "Taxable Account": {
+          "quantity": 60,
+          "totalCost": 9495,
+          "avgCost": 158.25
+        }
+      },
+      "currentPrice": 163.7,
+      "currentValue": 9822,
+      "costBasis": 9495,
+      "gain": 327,
+      "gainPercent": 3.4439178515007898,
+      "dayChange": 43.199999999999996,
+      "dayChangePercent": 0.44177,
+      "previousClose": 162.98,
+      "hasLivePrice": true,
+      "priceTimestamp": "2025-07-20T03:28:39.186Z",
+      "priceError": null
+    }
+  },
+  "accounts": {},
+  "summary": {
+    "totalValue": 423985,
+    "totalCost": 296341.25,
+    "totalGain": 127643.75,
+    "totalGainPercent": 43.07323060829365,
+    "dayChange": -1501.4,
+    "dayChangePercent": -0.3528667426267914,
+    "lastUpdated": "2025-07-20T03:28:39.187Z",
+    "pricesFetched": 14,
+    "pricesFailed": 1
+  },
+  "lastSaved": "2025-07-20T03:28:40.189Z",
+  "version": "1.0"
+}

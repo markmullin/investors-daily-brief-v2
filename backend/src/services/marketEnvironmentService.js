@@ -1,5 +1,5 @@
 import { marketService } from './apiServices.js';
-import braveService from './braveService.js';
+import fmpNewsService from './fmpNewsService.js';
 import NodeCache from 'node-cache';
 
 const cache = new NodeCache({ stdTTL: 300 });
@@ -833,62 +833,199 @@ const marketEnvironmentService = {
     return Math.round(Math.max(0, Math.min(100, score)) * 100) / 100;
   },
 
-  // In backend/src/services/marketEnvironmentService.js
-// Find this function:
-// In marketEnvironmentService.js - Update this specific method
-async calculateSentimentScore() {
-  try {
-      let score = 75; // Base score
-      
-      // Get VIX data
-      try {
-          const vixData = await marketService.getDataForSymbols(['VIXY']);
-          const vixy = vixData.VIXY?.close || 20;
-          
-          if (vixy < 35) score += 15;
-          else if (vixy < 40) score += 10;
-          else if (vixy < 45) score += 5;
-          else if (vixy > 60) score -= 15;
-          else if (vixy > 50) score -= 10;
-      } catch (vixError) {
-          console.warn('Error fetching VIX data:', vixError);
-      }
+  // FMP NEWS-BASED SENTIMENT ANALYSIS
+  async calculateSentimentScore() {
+    try {
+        let score = 75; // Base score
+        
+        console.log('📰 Analyzing FMP news sentiment...');
+        
+        // Get VIX data first
+        try {
+            const vixData = await marketService.getDataForSymbols(['VIXY']);
+            const vixy = vixData.VIXY?.close || 20;
+            
+            if (vixy < 35) score += 15;
+            else if (vixy < 40) score += 10;
+            else if (vixy < 45) score += 5;
+            else if (vixy > 60) score -= 15;
+            else if (vixy > 50) score -= 10;
+            
+            console.log(`📊 VIX sentiment factor: ${vixy}, score adjustment: ${score - 75}`);
+        } catch (vixError) {
+            console.warn('Error fetching VIX data:', vixError);
+        }
 
-      // Get sentiment data
-      try {
-          const symbols = ['SPY', 'QQQ', 'IWM'];
-          const sentiments = await Promise.all(
-              symbols.map(async sym => {
-                  try {
-                      return await braveService.getMarketSentiment(sym);
-                  } catch (error) {
-                      console.warn(`Error fetching sentiment for ${sym}:`, error);
-                      return { sentiment: 0.5 };
-                  }
-              })
-          );
+        // Get FMP news for sentiment analysis
+        try {
+            const newsData = await fmpNewsService.getFinancialNews();
+            
+            if (newsData && newsData.articles && newsData.articles.length > 0) {
+                console.log(`📰 Analyzing ${newsData.articles.length} FMP news articles for sentiment`);
+                
+                const sentimentAnalysis = this.analyzeFMPNewsSentiment(newsData.articles);
+                
+                console.log(`📊 FMP News sentiment: ${sentimentAnalysis.score}/100, ${sentimentAnalysis.sentiment}`);
+                console.log(`📈 Positive: ${sentimentAnalysis.positive}, Negative: ${sentimentAnalysis.negative}, Neutral: ${sentimentAnalysis.neutral}`);
+                
+                // Weight sentiment based on news quality
+                const sentimentWeight = 0.7; // 70% weight for FMP news sentiment
+                const sentimentAdjustment = (sentimentAnalysis.score - 50) * sentimentWeight;
+                score += sentimentAdjustment;
+                
+                console.log(`📊 Sentiment adjustment: ${sentimentAdjustment.toFixed(1)}`);
+            } else {
+                console.warn('⚠️ No FMP news articles available for sentiment analysis');
+                // Fallback to market momentum
+                const fallbackSentiment = await this.calculateMarketMomentumSentiment();
+                score += (fallbackSentiment - 50) * 0.3;
+                console.log(`📊 Using market momentum fallback: ${fallbackSentiment}`);
+            }
+        } catch (newsError) {
+            console.warn('Error in FMP news sentiment analysis:', newsError);
+            // Fallback to market momentum
+            const fallbackSentiment = await this.calculateMarketMomentumSentiment();
+            score += (fallbackSentiment - 50) * 0.3;
+            console.log(`📊 Using market momentum fallback due to error: ${fallbackSentiment}`);
+        }
 
-          const validSentiments = sentiments.filter(s => s && typeof s.sentiment === 'number');
-          
-          if (validSentiments.length > 0) {
-              const avgSentiment = validSentiments.reduce((acc, s) => acc + s.sentiment, 0) / validSentiments.length;
-              
-              if (avgSentiment > 0.8) score += 25;
-              else if (avgSentiment > 0.6) score += 15;
-              else if (avgSentiment > 0.4) score += 5;
-              else if (avgSentiment < 0.2) score -= 25;
-              else if (avgSentiment < 0.4) score -= 15;
-          }
-      } catch (sentimentError) {
-          console.warn('Error in sentiment analysis:', sentimentError);
-      }
+        const finalScore = Math.round(Math.max(0, Math.min(100, score)));
+        console.log(`✅ Final sentiment score: ${finalScore}`);
+        return finalScore;
+        
+    } catch (error) {
+        console.error('Error in calculateSentimentScore:', error);
+        return 50; // Default neutral score
+    }
+  },
 
-      return Math.round(Math.max(0, Math.min(100, score)));
-  } catch (error) {
-      console.error('Error in calculateSentimentScore:', error);
-      return 50; // Default neutral score
-  }
-},
+  // Analyze sentiment from FMP news articles
+  analyzeFMPNewsSentiment(articles) {
+    const analysis = {
+        score: 50,
+        sentiment: 'neutral',
+        positive: 0,
+        negative: 0,
+        neutral: 0,
+        themes: []
+    };
+    
+    if (!articles || articles.length === 0) {
+        return analysis;
+    }
+    
+    // High-quality sentiment keywords
+    const positiveKeywords = [
+        // Strong positive
+        'surge', 'soar', 'rally', 'boom', 'breakout', 'record high', 'all-time high',
+        'outperform', 'beat expectations', 'exceed', 'strong earnings', 'robust growth',
+        'bullish', 'optimistic', 'confident', 'upgrade', 'raised guidance',
+        // Market positive
+        'recovery', 'rebound', 'gain', 'advance', 'climb', 'rise', 'increase',
+        'positive outlook', 'strong demand', 'growth potential', 'expansion',
+        'breakthrough', 'innovation', 'acquisition', 'deal', 'partnership'
+    ];
+    
+    const negativeKeywords = [
+        // Strong negative
+        'crash', 'plunge', 'collapse', 'panic', 'sell-off', 'dump', 'massacre',
+        'underperform', 'miss expectations', 'disappointing', 'weak earnings', 'decline',
+        'bearish', 'pessimistic', 'downgrade', 'cut guidance', 'warning',
+        // Market negative
+        'fall', 'drop', 'slide', 'slump', 'tumble', 'retreat', 'correction',
+        'concern', 'worry', 'uncertainty', 'risk', 'threat', 'challenge',
+        'recession', 'inflation', 'volatility', 'instability', 'crisis'
+    ];
+    
+    let totalSentimentScore = 0;
+    let scoredArticles = 0;
+    
+    articles.forEach(article => {
+        const text = `${article.title} ${article.description || ''}`.toLowerCase();
+        let articleScore = 50; // Neutral baseline
+        
+        // Count positive keywords
+        const positiveMatches = positiveKeywords.filter(keyword => 
+            text.includes(keyword.toLowerCase())
+        ).length;
+        
+        // Count negative keywords
+        const negativeMatches = negativeKeywords.filter(keyword => 
+            text.includes(keyword.toLowerCase())
+        ).length;
+        
+        // Score the article
+        if (positiveMatches > negativeMatches) {
+            articleScore = 50 + Math.min(30, positiveMatches * 8);
+            analysis.positive++;
+        } else if (negativeMatches > positiveMatches) {
+            articleScore = 50 - Math.min(30, negativeMatches * 8);
+            analysis.negative++;
+        } else {
+            analysis.neutral++;
+        }
+        
+        totalSentimentScore += articleScore;
+        scoredArticles++;
+        
+        // Track themes for high-impact articles
+        if (Math.abs(articleScore - 50) > 15) {
+            analysis.themes.push({
+                title: article.title,
+                score: articleScore,
+                source: article.source
+            });
+        }
+    });
+    
+    // Calculate overall sentiment score
+    if (scoredArticles > 0) {
+        analysis.score = Math.round(totalSentimentScore / scoredArticles);
+        
+        if (analysis.score >= 65) {
+            analysis.sentiment = 'bullish';
+        } else if (analysis.score >= 55) {
+            analysis.sentiment = 'positive';
+        } else if (analysis.score <= 35) {
+            analysis.sentiment = 'bearish';
+        } else if (analysis.score <= 45) {
+            analysis.sentiment = 'negative';
+        } else {
+            analysis.sentiment = 'neutral';
+        }
+    }
+    
+    return analysis;
+  },
+
+  // Fallback market momentum sentiment
+  async calculateMarketMomentumSentiment() {
+    try {
+        const symbols = ['SPY', 'QQQ', 'IWM'];
+        const marketData = await marketService.getDataForSymbols(symbols);
+        
+        let positiveCount = 0;
+        let totalCount = 0;
+        
+        symbols.forEach(symbol => {
+            const data = marketData[symbol];
+            if (data && typeof data.change_p === 'number') {
+                totalCount++;
+                if (data.change_p > 0) positiveCount++;
+            }
+        });
+        
+        if (totalCount > 0) {
+            const ratio = positiveCount / totalCount;
+            return 30 + (ratio * 40); // Scale to 30-70 range
+        }
+        
+        return 50;
+    } catch (error) {
+        console.warn('Error in market momentum sentiment fallback:', error);
+        return 50;
+    }
+  },
 
   calculateMA(data, period) {
     return data.slice(-period).reduce((sum, day) => sum + day.price, 0) / period;
@@ -997,17 +1134,17 @@ Strategic Outlook: ${this.generateAdvancedOutlook(technical, breadth, sentiment)
   },
 
   getSentimentInsightBasic(score) {
-    if (score >= 70) return "Investors are showing confidence without excessive optimism.";
-    if (score >= 50) return "Investor sentiment is balanced, suggesting room for further gains.";
-    if (score >= 30) return "Investors are showing caution, which can create opportunities.";
-    return "Investor sentiment is very negative, which historically can signal potential turning points.";
+    if (score >= 70) return "News sentiment analysis indicates strong investor confidence with bullish market narratives predominating.";
+    if (score >= 50) return "Financial news sentiment appears balanced, suggesting measured optimism in the market.";
+    if (score >= 30) return "News sentiment shows caution, with mixed signals from financial media coverage.";
+    return "Financial news sentiment is quite negative, reflecting widespread concern among market participants.";
   },
 
   getSentimentInsightAdvanced(score) {
-    if (score >= 70) return "Sentiment metrics indicate strong institutional conviction without extreme readings.";
-    if (score >= 50) return "Sentiment configuration remains constructive with balanced positioning.";
-    if (score >= 30) return "Sentiment indicators reflect increasing risk aversion with defensive positioning.";
-    return "Sentiment measures approach historical extremes suggesting potential capitulation levels.";
+    if (score >= 70) return "FMP news sentiment analysis reveals strong institutional conviction with positive market narratives.";
+    if (score >= 50) return "News sentiment indicators remain constructive with balanced coverage of market developments.";
+    if (score >= 30) return "Financial media sentiment reflects increasing risk aversion with defensive positioning themes.";
+    return "News sentiment analysis indicates widespread pessimism approaching potential capitulation levels.";
   },
 
   getRiskInsightBasic(riskLevel) {
@@ -1053,9 +1190,9 @@ Strategic Outlook: ${this.generateAdvancedOutlook(technical, breadth, sentiment)
     }
     
     if (sentiment > 70) {
-      outlook += "Monitor sentiment extremes for potential shifts.";
+      outlook += "Strong news sentiment supports continued momentum.";
     } else if (sentiment < 30) {
-      outlook += "Sentiment extremes may present contrarian opportunities.";
+      outlook += "Negative news sentiment may present contrarian opportunities.";
     }
     
     return outlook;

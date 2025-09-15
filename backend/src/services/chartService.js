@@ -1,5 +1,5 @@
 // Chart service for generating visualizations based on user prompts
-import mistralService from './mistralService.js';
+import unifiedGptOssService from '../services/unifiedGptOssService.js';
 import pythonService from './pythonService.js';
 import marketDataService from './marketDataService.js';
 
@@ -203,7 +203,7 @@ const chartService = {
     
     try {
       // Use Mistral to analyze the prompt
-      const aiResponse = await mistralService.generateText(aiPrompt);
+      const aiResponse = await unifiedGptOssService.generate('You are a helpful assistant.', (aiPrompt);
       
       // Parse the response (expecting JSON)
       let parsedResponse;

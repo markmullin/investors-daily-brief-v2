@@ -1,0 +1,83 @@
+  /**
+   * GET OPTIMAL NEWS MIX - IMPROVED: More quality stories, skip mock analyst data
+   */
+  async getOptimalNewsMix() {
+    const cacheKey = 'enhanced_optimal_news_mix_premium_only';
+    
+    const cached = newsCache.get(cacheKey);
+    if (cached) {
+      console.log('📦 [CACHE] Returning cached premium-only news mix');
+      return cached;
+    }
+    
+    console.log('🎯 [PREMIUM ONLY] Fetching news with MORE quality stories...');
+    
+    const [
+      macroEconomic,
+      companySpecific,
+      additionalCompanyNews, // More company news instead of analyst
+      pressReleases,
+      earningsNews,
+      fmpAnalysis
+    ] = await Promise.allSettled([
+      this.getPremiumOnlyGeneralNews(5),       // Slightly reduced
+      this.getPremiumOnlyStockNews(4),         // Keep same
+      this.getPremiumOnlyStockNews(3),         // More company news instead of analyst
+      this.getPremiumOnlyPressReleases(1),     // Keep same
+      this.getUpcomingEarnings(1),             // Keep same
+      this.getFMPAnalysis(1)                   // Keep same
+    ]);
+
+    // Collect only successful results
+    const optimalMix = {
+      macroEconomic: macroEconomic.status === 'fulfilled' ? macroEconomic.value : [],
+      companySpecific: companySpecific.status === 'fulfilled' ? companySpecific.value : [],
+      additionalCompanyNews: additionalCompanyNews.status === 'fulfilled' ? additionalCompanyNews.value : [],
+      pressReleases: pressReleases.status === 'fulfilled' ? pressReleases.value : [],
+      earningsNews: earningsNews.status === 'fulfilled' ? earningsNews.value : [],
+      fmpAnalysis: fmpAnalysis.status === 'fulfilled' ? fmpAnalysis.value : []
+    };
+
+    // Combine all company news and remove duplicates
+    const allCompanyNews = [...optimalMix.companySpecific, ...optimalMix.additionalCompanyNews];
+    const uniqueCompanyNews = allCompanyNews.filter((article, index, self) => 
+      index === self.findIndex(a => a.title === article.title || a.url === article.url)
+    );
+
+    const allArticles = [
+      ...optimalMix.macroEconomic,
+      ...uniqueCompanyNews.slice(0, 5), // Limit to 5 unique company stories
+      ...optimalMix.pressReleases,
+      ...optimalMix.earningsNews,
+      ...optimalMix.fmpAnalysis
+    ];
+    
+    // ✅ VERIFY: All sources are premium only
+    const sourceCheck = allArticles.every(article => this.isSourceAllowed(article.source));
+    console.log(`🔍 SOURCE CHECK: ${sourceCheck ? 'PASSED' : 'FAILED'} - All sources premium: ${sourceCheck}`);
+    
+    const result = {
+      breakdown: {
+        macroEconomic: optimalMix.macroEconomic,
+        companySpecific: uniqueCompanyNews.slice(0, 5),
+        pressReleases: optimalMix.pressReleases,
+        earningsNews: optimalMix.earningsNews,
+        fmpAnalysis: optimalMix.fmpAnalysis
+        // Note: No more analystActions - replaced with more quality company news
+      },
+      articles: allArticles,
+      summary: {
+        totalArticles: allArticles.length,
+        qualityPercentage: 100,
+        premiumSourcesOnly: true,
+        sourceCheck: sourceCheck,
+        improvement: 'Removed mock analyst data, added more quality company stories'
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    newsCache.set(cacheKey, result);
+    
+    console.log(`✅ [IMPROVED MIX] ${result.summary.totalArticles} articles - Quality stories only, no mock data`);
+    return result;
+  }

@@ -1198,3 +1198,122 @@
 {"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-16 11:36:05"}
 {"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-16 11:36:05"}
 {"environment":"development","level":"warn","message":"Mistral sentiment analysis failed:","service":"market-dashboard-backend","timestamp":"2025-06-16 11:36:06"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:01"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"Federal Reserve FOMC meeting\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"Federal Reserve FOMC meeting\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for \"stock market news today\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for \"stock market news today\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"Federal Reserve FOMC meeting\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"News sentiment analysis failed:","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"News sentiment analysis failed:","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:02"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:03"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 20:56:03"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:03"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:03"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"Federal Reserve FOMC meeting\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:03"}
+{"environment":"development","level":"warn","message":"Failed to search for \"stock market news today\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:03"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"Federal Reserve FOMC meeting\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:03"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:03"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:03"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"News sentiment analysis failed:","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:00:04"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:22"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:22"}
+{"environment":"development","level":"warn","message":"Failed to search for \"stock market news today\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:22"}
+{"environment":"development","level":"warn","message":"Failed to search for \"stock market news today\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:22"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"Federal Reserve FOMC meeting\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:22"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:22"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"News sentiment analysis failed:","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"News sentiment analysis failed:","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:03:23"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:16:39"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"Federal Reserve FOMC meeting\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:16:40"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:16:40"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:16:40"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:16:40"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:16:41"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:16:41"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:16:41"}
+{"environment":"development","level":"info","message":"✅ Received request for /market-sentiment","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:04"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:04"}
+{"environment":"development","level":"info","message":"✅ Received request for /market-sentiment","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:04"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:04"}
+{"environment":"development","level":"warn","message":"Failed to search for \"stock market news today\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:04"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"Federal Reserve FOMC meeting\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:04"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"Federal Reserve FOMC meeting\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:04"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"News sentiment analysis failed:","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"info","message":"✅ Successfully fetched market sentiment.","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:05"}
+{"environment":"development","level":"info","message":"✅ Successfully fetched market sentiment.","service":"market-dashboard-backend","timestamp":"2025-06-25 21:20:07"}
+{"environment":"development","level":"info","message":"✅ Received request for /market-sentiment","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:18"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:18"}
+{"environment":"development","level":"warn","message":"Failed to search for \"stock market news today\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:19"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:19"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:19"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:19"}
+{"environment":"development","level":"warn","message":"News sentiment analysis failed:","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:19"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"earnings season calendar\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:19"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"economic data releases\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:19"}
+{"environment":"development","level":"warn","message":"Failed to search for events \"geopolitical market impact\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:20"}
+{"environment":"development","level":"info","message":"✅ Successfully fetched market sentiment.","service":"market-dashboard-backend","timestamp":"2025-06-25 21:26:20"}
+{"environment":"development","level":"info","message":"✅ Received request for /market-sentiment","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:18"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:18"}
+{"environment":"development","level":"info","message":"✅ Received request for /market-sentiment","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:18"}
+{"environment":"development","level":"info","message":"Starting enhanced sentiment analysis with FMP API","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:18"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:18"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:19"}
+{"environment":"development","level":"warn","message":"Failed to search for \"stock market news today\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:19"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:19"}
+{"environment":"development","level":"warn","message":"Failed to search for \"Federal Reserve interest rates\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:19"}
+{"environment":"development","level":"warn","message":"Failed to search for \"S&P 500 earnings outlook\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:19"}
+{"environment":"development","level":"warn","message":"Failed to search for \"market volatility news\":","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:19"}
+{"environment":"development","level":"warn","message":"News sentiment analysis failed:","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:19"}
+{"environment":"development","level":"info","message":"✅ Successfully fetched market sentiment.","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:19"}
+{"environment":"development","level":"info","message":"✅ Successfully fetched market sentiment.","service":"market-dashboard-backend","timestamp":"2025-06-25 21:31:21"}

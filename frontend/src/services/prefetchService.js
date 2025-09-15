@@ -94,7 +94,7 @@ class PrefetchService {
         urls.push('/api/market/sectors/1d', '/api/market/sectors/1w');
         break;
       case 'macro':
-        urls.push('/api/macroeconomic/all', '/api/market/macro');
+        urls.push('/api/macroeconomic/simple', '/api/market/macro');
         break;
       case 'relationships':
         urls.push('/api/relationships/correlations');

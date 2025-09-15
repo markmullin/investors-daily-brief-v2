@@ -1,0 +1,158 @@
+  calculateMomentumScore(companyData) {
+    let score = 50;
+    
+    try {
+      if (companyData.growth && companyData.growth.length > 0) {
+        const growth = companyData.growth[0];
+        
+        // Revenue growth momentum (40% weight) - REWARD strong growth
+        if (growth.revenueGrowth > 0.20) score += 25; // Excellent growth
+        else if (growth.revenueGrowth > 0.10) score += 15; // Good growth  
+        else if (growth.revenueGrowth > 0.05) score += 8; // Moderate growth
+        else if (growth.revenueGrowth < -0.05) score -= 20; // Declining revenue
+        
+        // Earnings growth momentum (40% weight) - REWARD earnings acceleration
+        if (growth.netIncomeGrowth > 0.25) score += 25; // Excellent earnings
+        else if (growth.netIncomeGrowth > 0.15) score += 15; // Good earnings
+        else if (growth.netIncomeGrowth > 0.10) score += 8; // Moderate earnings
+        else if (growth.netIncomeGrowth < -0.10) score -= 20; // Declining earnings
+        
+        // Cash flow growth (20% weight)
+        if (growth.freeCashFlowGrowth > 0.20) score += 15; // Excellent FCF
+        else if (growth.freeCashFlowGrowth > 0.10) score += 8; // Good FCF
+        else if (growth.freeCashFlowGrowth < -0.15) score -= 10; // Poor FCF
+      }
+      
+      // Recent price momentum boost
+      if (companyData.quote && companyData.quote.length > 0) {
+        const quote = companyData.quote[0];
+        
+        if (quote.changesPercentage > 10) score += 15; // Strong recent move
+        else if (quote.changesPercentage > 5) score += 8; // Good recent move
+        else if (quote.changesPercentage < -10) score -= 15; // Weak recent move
+      }
+      
+      return Math.max(0, Math.min(100, score));
+      
+    } catch (error) {
+      console.error('❌ Investment momentum score calculation failed:', error);
+      return 50;
+    }
+  }
+
+  calculateValuationScore(companyData) {
+    let score = 50;
+    
+    try {
+      let ratioData = null;
+      
+      if (companyData.ratios && companyData.ratios.length > 0) {
+        ratioData = companyData.ratios[0];
+      } else if (companyData.keyMetrics && companyData.keyMetrics.length > 0) {
+        ratioData = companyData.keyMetrics[0];
+      }
+      
+      if (!ratioData) return 50;
+      
+      // P/E Ratio analysis (30% weight) - PENALIZE expensive P/E
+      if (ratioData.priceEarningsRatio && ratioData.priceEarningsRatio > 0) {
+        const pe = ratioData.priceEarningsRatio;
+        if (pe < 12) score += 20; // Cheap = EXCELLENT for long-term
+        else if (pe < 18) score += 10; // Reasonable = GOOD
+        else if (pe < 25) score -= 5; // Slightly expensive = OK
+        else if (pe < 35) score -= 15; // Expensive = BAD
+        else score -= 25; // Very expensive = TERRIBLE
+      }
+      
+      // P/B Ratio analysis (25% weight) - PENALIZE high P/B
+      if (ratioData.priceToBookRatio && ratioData.priceToBookRatio > 0) {
+        const pb = ratioData.priceToBookRatio;
+        if (pb < 1.5) score += 15; // Cheap book value = GOOD
+        else if (pb < 3) score += 5; // Reasonable = OK  
+        else if (pb < 5) score -= 10; // Expensive = BAD
+        else score -= 20; // Very expensive = TERRIBLE
+      }
+      
+      // EV/EBITDA analysis (25% weight) - PENALIZE high multiples
+      if (ratioData.enterpriseValueMultiple && ratioData.enterpriseValueMultiple > 0) {
+        const evEbitda = ratioData.enterpriseValueMultiple;
+        if (evEbitda < 8) score += 15; // Cheap = EXCELLENT
+        else if (evEbitda < 12) score += 8; // Reasonable = GOOD
+        else if (evEbitda < 18) score -= 5; // Expensive = BAD
+        else score -= 15; // Very expensive = TERRIBLE
+      }
+      
+      // P/S Ratio analysis (20% weight) - PENALIZE high P/S
+      if (ratioData.priceToSalesRatio && ratioData.priceToSalesRatio > 0) {
+        const ps = ratioData.priceToSalesRatio;
+        if (ps < 1.5) score += 10; // Cheap sales multiple = GOOD
+        else if (ps < 3) score += 5; // Reasonable = OK
+        else if (ps < 6) score -= 8; // Expensive = BAD
+        else score -= 15; // Very expensive = TERRIBLE
+      }
+      
+      return Math.max(0, Math.min(100, score));
+      
+    } catch (error) {
+      console.error('❌ Investment valuation score calculation failed:', error);
+      return 50;
+    }
+  }
+
+  calculateFundamentalScore(companyData) {
+    let score = 50;
+    
+    try {
+      if (!companyData.ratios || companyData.ratios.length === 0) return 50;
+      
+      const ratios = companyData.ratios[0];
+      
+      // Return on Equity (30% weight) - REWARD high ROE
+      if (ratios.returnOnEquity && ratios.returnOnEquity > 0) {
+        const roe = ratios.returnOnEquity;
+        if (roe > 0.25) score += 25; // Excellent profitability
+        else if (roe > 0.18) score += 18; // Very good profitability
+        else if (roe > 0.12) score += 12; // Good profitability
+        else if (roe > 0.08) score += 5; // Moderate profitability
+        else score -= 10; // Poor profitability
+      }
+      
+      // Debt management (25% weight) - REWARD low debt
+      if (ratios.debtEquityRatio !== undefined && ratios.debtEquityRatio >= 0) {
+        const de = ratios.debtEquityRatio;
+        if (de < 0.2) score += 20; // Very low debt = EXCELLENT
+        else if (de < 0.4) score += 15; // Low debt = VERY GOOD
+        else if (de < 0.6) score += 10; // Moderate debt = GOOD
+        else if (de < 1.0) score += 0; // Normal debt = OK
+        else if (de < 2.0) score -= 10; // High debt = BAD
+        else score -= 20; // Very high debt = TERRIBLE
+      }
+      
+      // Liquidity (20% weight) - REWARD strong liquidity
+      if (ratios.currentRatio && ratios.currentRatio > 0) {
+        const cr = ratios.currentRatio;
+        if (cr > 2.5) score += 15; // Excellent liquidity
+        else if (cr > 2.0) score += 12; // Very good liquidity
+        else if (cr > 1.5) score += 10; // Good liquidity
+        else if (cr > 1.2) score += 5; // Adequate liquidity  
+        else if (cr > 1.0) score -= 5; // Weak liquidity
+        else score -= 15; // Poor liquidity
+      }
+      
+      // Profitability margins (25% weight) - REWARD high margins
+      if (ratios.netProfitMargin && ratios.netProfitMargin > 0) {
+        const margin = ratios.netProfitMargin;
+        if (margin > 0.20) score += 20; // Excellent margins
+        else if (margin > 0.15) score += 15; // Very good margins
+        else if (margin > 0.10) score += 10; // Good margins
+        else if (margin > 0.05) score += 5; // Moderate margins
+        else score -= 10; // Poor margins
+      }
+      
+      return Math.max(0, Math.min(100, score));
+      
+    } catch (error) {
+      console.error('❌ Investment fundamental score calculation failed:', error);
+      return 50;
+    }
+  }

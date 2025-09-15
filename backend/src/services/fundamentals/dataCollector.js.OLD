@@ -1,0 +1,534 @@
+import fmpService from '../fmpService.js';
+import { db } from '../../config/database.js';
+import { redis } from '../../config/database.js';
+
+class SP500DataCollector {
+  constructor() {
+    this.batchId = null;
+    this.startTime = null;
+    this.stats = {
+      totalCompanies: 0,
+      successfulCompanies: 0,
+      failedCompanies: 0,
+      apiCallsMade: 0,
+      outliersFlagged: 0,
+      estimatesFetched: 0,
+      errors: []
+    };
+    
+    // *** FIXED: Enhanced data quality thresholds ***
+    this.qualityThresholds = {
+      maxReasonableGrowth: 3.0,  // 300% max growth
+      minDenominatorValue: 1000000, // $1M minimum for meaningful calculations
+      maxOutlierStandardDeviations: 3,
+      minHistoricalYears: 2,
+      // *** NEW: ROE validation thresholds ***
+      maxReasonableROE: 1.0,  // 100% ROE maximum (anything higher is likely an error)
+      minROE: -0.5,  // -50% minimum (allow some negative ROE but cap extremes)
+      // *** NEW: Debt-to-equity validation ***
+      maxDebtToEquity: 5.0,  // 5x debt-to-equity maximum
+      minDebtToEquity: 0.0   // Debt-to-equity cannot be negative
+    };
+    
+    this.testSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'];
+    
+    console.log('📊 [FIXED COLLECTOR] Initialized with ENHANCED data quality controls - NO FALLBACKS');
+  }
+
+  /**
+   * *** FIXED: Real analyst estimates calculation ***
+   */
+  async getAnalystEstimates(symbol) {
+    try {
+      console.log(`📊 [ESTIMATES] Fetching real analyst estimates for ${symbol}...`);
+      
+      // Get real analyst estimates from FMP
+      const estimates = await fmpService.makeRequest(`/v3/analyst-estimates/${symbol}`, {}, 1440);
+      
+      if (!estimates || !Array.isArray(estimates) || estimates.length === 0) {
+        console.log(`⚠️ [ESTIMATES] No analyst estimates available for ${symbol}`);
+        return null; // NO FALLBACK
+      }
+
+      // Get current year actual data for comparison
+      const currentIncome = await fmpService.getIncomeStatement(symbol, 'annual', 1);
+      if (!currentIncome || currentIncome.length === 0) {
+        console.log(`⚠️ [ESTIMATES] No current income data for ${symbol}`);
+        return null;
+      }
+
+      const currentYear = currentIncome[0];
+      const currentEstimate = estimates[0];
+      
+      // *** FIXED: Calculate real growth from estimates vs actual ***
+      const projectedRevenueGrowth = this.calculateRealEstimateGrowth(
+        currentYear.revenue, 
+        currentEstimate.estimatedRevenueAvg, 
+        'revenue'
+      );
+      
+      const projectedEarningsGrowth = this.calculateRealEstimateGrowth(
+        currentYear.netIncome, 
+        currentEstimate.estimatedEpsAvg * (currentEstimate.estimatedRevenueAvg / currentYear.revenue), // Estimate net income
+        'earnings'
+      );
+
+      this.stats.estimatesFetched++;
+      
+      console.log(`✅ [ESTIMATES] Real estimates for ${symbol}: Revenue ${projectedRevenueGrowth ? (projectedRevenueGrowth * 100).toFixed(1) + '%' : 'N/A'}, Earnings ${projectedEarningsGrowth ? (projectedEarningsGrowth * 100).toFixed(1) + '%' : 'N/A'}`);
+      
+      return {
+        projectedRevenueGrowth1Y: projectedRevenueGrowth,
+        projectedEarningsGrowth1Y: projectedEarningsGrowth,
+        analystCount: currentEstimate.numberAnalystsEstimatedRevenue || 0,
+        estimateDate: currentEstimate.date,
+        confidence: currentEstimate.numberAnalystsEstimatedRevenue >= 5 ? 'high' : 'low'
+      };
+
+    } catch (error) {
+      console.log(`⚠️ [ESTIMATES] Failed to get estimates for ${symbol}:`, error.message);
+      return null; // NO FALLBACK - expose missing data
+    }
+  }
+
+  /**
+   * *** NEW: Calculate real estimate growth ***
+   */
+  calculateRealEstimateGrowth(currentValue, estimatedValue, type) {
+    if (!currentValue || !estimatedValue || currentValue <= 0) {
+      return null;
+    }
+    
+    const growth = (estimatedValue - currentValue) / Math.abs(currentValue);
+    
+    // Validate growth is reasonable
+    if (Math.abs(growth) > this.qualityThresholds.maxReasonableGrowth) {
+      console.log(`⚠️ [ESTIMATE VALIDATION] ${type} growth ${(growth * 100).toFixed(1)}% exceeds threshold`);
+      return null; // Exclude unrealistic projections
+    }
+    
+    return growth;
+  }
+
+  /**
+   * *** FIXED: Calculate multi-year trends to smooth volatility ***
+   */
+  async getMultiYearTrends(symbol) {
+    try {
+      // Get 3 years of income statements for trend analysis
+      const incomeHistory = await fmpService.getIncomeStatement(symbol, 'annual', 3);
+      
+      if (!incomeHistory || incomeHistory.length < 2) {
+        return null; // NO FALLBACK - require real historical data
+      }
+
+      const sorted = incomeHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+      const current = sorted[0];
+      const twoYearsAgo = sorted[sorted.length - 1];
+
+      if (!current?.revenue || !twoYearsAgo?.revenue) {
+        return null;
+      }
+
+      const years = sorted.length - 1;
+      const revenueCAGR = this.calculateCAGR(twoYearsAgo.revenue, current.revenue, years);
+      const earningsCAGR = current.netIncome && twoYearsAgo.netIncome ? 
+        this.calculateCAGR(Math.abs(twoYearsAgo.netIncome), Math.abs(current.netIncome), years) : null;
+
+      return {
+        yearsAvailable: sorted.length,
+        revenueCAGR: revenueCAGR,
+        earningsCAGR: earningsCAGR,
+        dataQuality: sorted.length >= 3 ? 'good' : 'limited'
+      };
+
+    } catch (error) {
+      console.log(`⚠️ [TRENDS] Failed to get trends for ${symbol}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * *** FIXED: Enhanced validation for ALL metrics including ROE and debt-to-equity ***
+   */
+  validateAllMetrics(symbol, metrics) {
+    const validated = {};
+    
+    // *** FIXED: Validate ROE with proper thresholds ***
+    if (metrics.roe !== null && metrics.roe !== undefined) {
+      if (metrics.roe > this.qualityThresholds.maxReasonableROE) {
+        console.log(`🚨 [ROE OUTLIER] ${symbol}: ROE ${(metrics.roe * 100).toFixed(1)}% exceeds ${this.qualityThresholds.maxReasonableROE * 100}% threshold - FILTERING OUT`);
+        validated.roe = null;
+        this.stats.outliersFlagged++;
+      } else if (metrics.roe < this.qualityThresholds.minROE) {
+        console.log(`🚨 [ROE OUTLIER] ${symbol}: ROE ${(metrics.roe * 100).toFixed(1)}% below ${this.qualityThresholds.minROE * 100}% threshold - FILTERING OUT`);
+        validated.roe = null;
+        this.stats.outliersFlagged++;
+      } else {
+        validated.roe = metrics.roe;
+        console.log(`✅ [ROE VALID] ${symbol}: ROE ${(metrics.roe * 100).toFixed(1)}% passes validation`);
+      }
+    } else {
+      validated.roe = null;
+    }
+    
+    // *** FIXED: Validate debt-to-equity (cannot be negative) ***
+    if (metrics.debtToEquityRatio !== null && metrics.debtToEquityRatio !== undefined) {
+      if (metrics.debtToEquityRatio < this.qualityThresholds.minDebtToEquity) {
+        console.log(`🚨 [DEBT OUTLIER] ${symbol}: Debt-to-equity ${metrics.debtToEquityRatio.toFixed(2)}x is negative - MATHEMATICALLY IMPOSSIBLE - FILTERING OUT`);
+        validated.debtToEquityRatio = null;
+        this.stats.outliersFlagged++;
+      } else if (metrics.debtToEquityRatio > this.qualityThresholds.maxDebtToEquity) {
+        console.log(`🚨 [DEBT OUTLIER] ${symbol}: Debt-to-equity ${metrics.debtToEquityRatio.toFixed(2)}x exceeds ${this.qualityThresholds.maxDebtToEquity}x threshold - FILTERING OUT`);
+        validated.debtToEquityRatio = null;
+        this.stats.outliersFlagged++;
+      } else {
+        validated.debtToEquityRatio = metrics.debtToEquityRatio;
+        console.log(`✅ [DEBT VALID] ${symbol}: Debt-to-equity ${metrics.debtToEquityRatio.toFixed(2)}x passes validation`);
+      }
+    } else {
+      validated.debtToEquityRatio = null;
+    }
+    
+    // *** FIXED: Validate growth metrics ***
+    validated.revenueGrowthYoY = this.validateGrowthMetric(symbol, 'revenue', metrics.revenueGrowthYoY, null);
+    validated.earningsGrowthYoY = this.validateGrowthMetric(symbol, 'earnings', metrics.earningsGrowthYoY, null);
+    validated.fcfGrowthYoY = this.validateGrowthMetric(symbol, 'fcf', metrics.fcfGrowthYoY, null);
+    
+    // *** FIXED: Validate profit margin (0-100%) ***
+    if (metrics.profitMargin !== null && metrics.profitMargin !== undefined) {
+      if (metrics.profitMargin < 0 || metrics.profitMargin > 1) {
+        console.log(`🚨 [MARGIN OUTLIER] ${symbol}: Profit margin ${(metrics.profitMargin * 100).toFixed(1)}% outside 0-100% range - FILTERING OUT`);
+        validated.profitMargin = null;
+        this.stats.outliersFlagged++;
+      } else {
+        validated.profitMargin = metrics.profitMargin;
+      }
+    } else {
+      validated.profitMargin = null;
+    }
+    
+    return validated;
+  }
+
+  /**
+   * *** FIXED: Intelligent outlier detection and filtering ***
+   */
+  validateGrowthMetric(symbol, metricName, value, historicalData) {
+    if (value === null || value === undefined || isNaN(value)) {
+      return null; // NO FALLBACK - preserve nulls
+    }
+
+    // Check for extreme outliers
+    if (Math.abs(value) > this.qualityThresholds.maxReasonableGrowth) {
+      console.log(`🚨 [OUTLIER] ${symbol} ${metricName}: ${(value * 100).toFixed(1)}% exceeds reasonable threshold - FILTERING OUT`);
+      this.stats.outliersFlagged++;
+      return null; // Exclude from rankings
+    }
+
+    return value;
+  }
+
+  /**
+   * *** FIXED: Enhanced data collection with comprehensive validation ***
+   */
+  async collectCompanyFundamentals(symbol) {
+    try {
+      console.log(`📊 [QUALITY] Processing ${symbol} with ENHANCED validation...`);
+      
+      // Get comprehensive data including historical for validation
+      const [profile, keyMetrics, ratios, growth, incomeStatement, estimates, trends] = await Promise.all([
+        fmpService.getCompanyProfile(symbol),
+        fmpService.getKeyMetrics(symbol), 
+        fmpService.getFinancialRatios(symbol),
+        fmpService.getFinancialGrowth(symbol),
+        fmpService.getIncomeStatement(symbol, 'annual'),
+        this.getAnalystEstimates(symbol),
+        this.getMultiYearTrends(symbol)
+      ]);
+
+      this.stats.apiCallsMade += 7;
+
+      // Extract data with NO FALLBACKS
+      const companyData = profile?.[0];
+      const metrics = keyMetrics?.[0];
+      const ratioData = ratios?.[0];
+      const growthData = growth?.[0];
+      const incomeData = incomeStatement;
+
+      if (!companyData?.companyName) {
+        throw new Error(`No company profile data for ${symbol}`);
+      }
+
+      // *** FIXED: Apply comprehensive validation to ALL metrics ***
+      const rawMetrics = {
+        revenueGrowthYoY: growthData?.revenueGrowth,
+        earningsGrowthYoY: growthData?.netIncomeGrowth,
+        fcfGrowthYoY: growthData?.freeCashFlowGrowth,
+        profitMargin: ratioData?.netProfitMargin,
+        roe: ratioData?.returnOnEquity,
+        debtToEquityRatio: ratioData?.debtEquityRatio
+      };
+      
+      const validatedMetrics = this.validateAllMetrics(symbol, rawMetrics);
+
+      // *** FIXED: No more fallbacks - expose data quality ***
+      const fundamentalData = {
+        symbol: symbol,
+        companyName: companyData.companyName,
+        sector: companyData.sector,
+        marketCap: companyData.mktCap,
+        
+        // Quality-validated metrics
+        revenueGrowthYoY: validatedMetrics.revenueGrowthYoY,
+        earningsGrowthYoY: validatedMetrics.earningsGrowthYoY,
+        fcfGrowthYoY: validatedMetrics.fcfGrowthYoY,
+        profitMargin: validatedMetrics.profitMargin,
+        roe: validatedMetrics.roe,
+        debtToEquityRatio: validatedMetrics.debtToEquityRatio,
+        
+        // *** FIXED: Real analyst estimates ***
+        projectedRevenueGrowth1Y: estimates?.projectedRevenueGrowth1Y || null,
+        projectedEarningsGrowth1Y: estimates?.projectedEarningsGrowth1Y || null,
+        
+        // Multi-year context
+        revenueCAGR: trends?.revenueCAGR || null,
+        earningsCAGR: trends?.earningsCAGR || null,
+        
+        // Enhanced data quality metadata
+        dataQuality: {
+          hasOutliers: Object.values(validatedMetrics).some(v => v === null),
+          estimatesAvailable: !!estimates,
+          trendsAvailable: trends?.yearsAvailable || 0,
+          analystCount: estimates?.analystCount || 0,
+          confidence: estimates?.confidence || 'none',
+          validationFlags: {
+            roeFiltered: rawMetrics.roe !== validatedMetrics.roe,
+            debtFiltered: rawMetrics.debtToEquityRatio !== validatedMetrics.debtToEquityRatio,
+            growthFiltered: rawMetrics.revenueGrowthYoY !== validatedMetrics.revenueGrowthYoY ||
+                           rawMetrics.earningsGrowthYoY !== validatedMetrics.earningsGrowthYoY ||
+                           rawMetrics.fcfGrowthYoY !== validatedMetrics.fcfGrowthYoY
+          }
+        },
+        
+        lastUpdated: new Date().toISOString(),
+        dataSource: 'FMP API - Enhanced Quality Validation'
+      };
+
+      const hasOutliers = fundamentalData.dataQuality.hasOutliers;
+      console.log(`${hasOutliers ? '⚠️' : '✅'} [ENHANCED] ${symbol}: ${hasOutliers ? 'Outliers detected and filtered' : 'All metrics validated'}`);
+      
+      return fundamentalData;
+
+    } catch (error) {
+      console.error(`❌ [ENHANCED] Error processing ${symbol}:`, error.message);
+      this.stats.errors.push({ symbol, error: error.message });
+      throw error; // NO FALLBACK - let errors bubble up
+    }
+  }
+
+  /**
+   * *** FIXED: Enhanced test collection with comprehensive validation ***
+   */
+  async testCollection() {
+    try {
+      console.log('🧪 [ENHANCED COLLECTOR] Running comprehensive validation test...');
+      console.log('🔑 [ENHANCED COLLECTOR] Real data with enhanced outlier filtering');
+      
+      this.startTime = new Date();
+      this.stats = {
+        totalCompanies: this.testSymbols.length,
+        successfulCompanies: 0,
+        failedCompanies: 0,
+        apiCallsMade: 0,
+        outliersFlagged: 0,
+        estimatesFetched: 0,
+        errors: []
+      };
+
+      const results = [];
+
+      for (const symbol of this.testSymbols) {
+        try {
+          const fundamentals = await this.collectCompanyFundamentals(symbol);
+          results.push(fundamentals);
+          this.stats.successfulCompanies++;
+          
+          console.log(`✅ [ENHANCED] ${symbol}: ROE ${fundamentals.roe ? (fundamentals.roe * 100).toFixed(1) + '%' : 'FILTERED'}, D/E ${fundamentals.debtToEquityRatio?.toFixed(2) || 'FILTERED'}, Proj Rev ${fundamentals.projectedRevenueGrowth1Y ? (fundamentals.projectedRevenueGrowth1Y * 100).toFixed(1) + '%' : 'N/A'}`);
+          
+        } catch (error) {
+          console.error(`❌ [ENHANCED] Failed ${symbol}:`, error.message);
+          this.stats.failedCompanies++;
+        }
+      }
+
+      const duration = Date.now() - this.startTime.getTime();
+      
+      console.log('✅ [ENHANCED COLLECTOR] Comprehensive validation test completed!');
+      console.log(`📊 Results: ${this.stats.successfulCompanies}/${this.stats.totalCompanies} successful, ${this.stats.outliersFlagged} outliers filtered, ${this.stats.estimatesFetched} real estimates fetched`);
+      console.log(`🔧 Errors: ${this.stats.errors.length} (exposed for debugging)`);
+      
+      return { 
+        success: true, 
+        stats: this.stats,
+        duration: duration,
+        data: results,
+        message: 'Enhanced quality validation with comprehensive outlier filtering'
+      };
+      
+    } catch (error) {
+      console.error('❌ [ENHANCED COLLECTOR] Validation test failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Helper methods
+   */
+  calculateCAGR(startValue, endValue, years) {
+    if (!startValue || !endValue || startValue <= 0 || years <= 0) {
+      return null;
+    }
+    return Math.pow(endValue / startValue, 1 / years) - 1;
+  }
+
+  validateRatio(value, min, max) {
+    if (value === null || value === undefined || isNaN(value)) {
+      return null; // NO FALLBACK
+    }
+    if (value < min || value > max) {
+      console.log(`⚠️ [RANGE] Value ${value} outside range [${min}, ${max}]`);
+      return null; // Exclude invalid ratios
+    }
+    return value;
+  }
+
+  /**
+   * Get S&P 500 company list from FMP API
+   */
+  async getSP500Companies() {
+    try {
+      console.log('📋 [SP500 COLLECTOR] Fetching S&P 500 company list from FMP API...');
+      
+      const sp500List = await fmpService.makeRequest('/v3/sp500_constituent', {}, 1440);
+      
+      if (!sp500List || !Array.isArray(sp500List)) {
+        throw new Error('Invalid S&P 500 list response from FMP API');
+      }
+      
+      console.log(`📊 [SP500 COLLECTOR] Retrieved ${sp500List.length} S&P 500 companies from FMP API`);
+      return sp500List.map(company => ({
+        symbol: company.symbol,
+        name: company.name,
+        sector: company.sector || 'Unknown'
+      }));
+      
+    } catch (error) {
+      console.error('❌ [SP500 COLLECTOR] Failed to get S&P 500 list:', error.message);
+      throw error; // NO FALLBACK - let it fail properly
+    }
+  }
+
+  /**
+   * *** FIXED: Main collection process with enhanced validation ***
+   */
+  async runWeeklyCollection() {
+    try {
+      console.log('🚀 [ENHANCED COLLECTOR] Starting enhanced validation collection...');
+      console.log('🔑 [ENHANCED COLLECTOR] Comprehensive outlier filtering - NO fallbacks');
+      
+      this.startTime = new Date();
+      
+      const companies = await this.getSP500Companies();
+      
+      this.stats = {
+        totalCompanies: companies.length,
+        successfulCompanies: 0,
+        failedCompanies: 0,
+        apiCallsMade: 0,
+        outliersFlagged: 0,
+        estimatesFetched: 0,
+        errors: []
+      };
+
+      const batchSize = 5; // Smaller batches for quality processing
+      const results = [];
+
+      for (let i = 0; i < companies.length; i += batchSize) {
+        const batch = companies.slice(i, i + batchSize);
+        console.log(`📦 [ENHANCED COLLECTOR] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(companies.length/batchSize)} with enhanced validation`);
+
+        for (const company of batch) {
+          try {
+            const fundamentalData = await this.collectCompanyFundamentals(company.symbol);
+            results.push(fundamentalData);
+            this.stats.successfulCompanies++;
+          } catch (error) {
+            console.error(`❌ [ENHANCED COLLECTOR] Failed ${company.symbol}:`, error.message);
+            this.stats.failedCompanies++;
+          }
+          
+          // Rate limiting
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      const duration = Date.now() - this.startTime.getTime();
+      
+      console.log('✅ [ENHANCED COLLECTOR] Enhanced validation collection completed!');
+      console.log(`📊 Final stats: ${this.stats.successfulCompanies}/${this.stats.totalCompanies} successful`);
+      console.log(`⚠️ Quality: ${this.stats.outliersFlagged} outliers filtered, ${this.stats.estimatesFetched} real estimates fetched`);
+      console.log(`❌ Errors: ${this.stats.errors.length} (exposed for debugging)`);
+      
+      return {
+        success: true,
+        stats: this.stats,
+        duration: duration,
+        dataCount: results.length,
+        qualityReport: this.generateQualityReport(),
+        message: 'Enhanced S&P 500 collection with comprehensive outlier filtering'
+      };
+      
+    } catch (error) {
+      console.error('❌ [ENHANCED COLLECTOR] Enhanced collection failed:', error);
+      throw error;
+    }
+  }
+
+  generateQualityReport() {
+    const { totalCompanies, successfulCompanies, outliersFlagged, estimatesFetched, errors } = this.stats;
+    
+    return {
+      dataQualityRate: successfulCompanies / totalCompanies,
+      outlierRate: outliersFlagged / totalCompanies,
+      estimateCoverage: estimatesFetched / successfulCompanies,
+      errorRate: errors.length / totalCompanies,
+      improvements: [
+        'Enhanced ROE validation (max 100%)',
+        'Debt-to-equity cannot be negative',
+        'Real analyst estimates vs random numbers',
+        'Comprehensive metric validation',
+        'Detailed outlier filtering logs'
+      ]
+    };
+  }
+
+  /**
+   * Process fundamental data - LEGACY METHOD (for compatibility)
+   */
+  processFundamentalData(symbol, profile, keyMetrics, ratios, growth, incomeStatement) {
+    // Redirect to new enhanced method
+    return this.collectCompanyFundamentals(symbol);
+  }
+
+  getNextSaturdayNight() {
+    const now = new Date();
+    const nextSaturday = new Date(now);
+    const daysUntilSaturday = (6 - now.getDay() + 7) % 7 || 7;
+    nextSaturday.setDate(now.getDate() + daysUntilSaturday);
+    nextSaturday.setHours(23, 0, 0, 0);
+    return nextSaturday.toISOString();
+  }
+}
+
+export default SP500DataCollector;

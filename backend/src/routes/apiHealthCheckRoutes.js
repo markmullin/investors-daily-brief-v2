@@ -4,7 +4,7 @@ import braveNewsService from '../services/braveNewsService.js';
 import braveInsightsService from '../services/braveInsightsService.js';
 import braveService from '../services/braveService.js';
 import braveAPIManager from '../services/braveAPIManager.js';
-import mistralService from '../services/mistralService.js';
+import unifiedGptOssService from '../services/unifiedGptOssService.js';
 import fredService from '../services/fredService.js';
 
 const router = express.Router();
@@ -64,7 +64,7 @@ router.get('/check', async (req, res) => {
     
     // Check Mistral API
     try {
-      const mistralStatus = await mistralService.checkApiStatus();
+      const mistralStatus = await unifiedGptOssService.healthCheck();
       results.services.mistral = mistralStatus;
     } catch (error) {
       results.services.mistral = {
@@ -172,29 +172,13 @@ router.post('/reset', (req, res) => {
       results.details.braveSentiment = braveService.resetService();
     }
     
-    // Reset Mistral Service
-    if (resetServices.includes('all') || resetServices.includes('mistral')) {
-      // If mistralService has a reset method, call it
-      if (typeof mistralService.reset === 'function') {
-        results.details.mistral = mistralService.reset();
-      } else {
-        // Otherwise clear the cache if available
-        if (mistralService.cache) {
-          const mistralCacheKeys = mistralService.cache.keys();
-          mistralCacheKeys.forEach(key => mistralService.cache.del(key));
-          
-          results.details.mistral = {
-            status: 'reset_complete',
-            clearedCacheItems: mistralCacheKeys.length,
-            message: `Cleared ${mistralCacheKeys.length} cached items from Mistral service`
-          };
-        } else {
-          results.details.mistral = {
-            status: 'not_supported',
-            message: 'Mistral service does not support reset'
-          };
-        }
-      }
+    // Reset AI Service
+    if (resetServices.includes('all') || resetServices.includes('mistral') || resetServices.includes('ai')) {
+      // AI service doesn't have reset or cache methods
+      results.details.ai = {
+        status: 'skipped',
+        message: 'AI service does not support reset operation'
+      };
     }
     
     res.json(results);

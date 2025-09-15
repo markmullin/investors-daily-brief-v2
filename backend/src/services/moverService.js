@@ -1,7 +1,5 @@
-import fetch from 'node-fetch';
+import fmpService from './fmpService.js';
 import { getNewsAndSentiment } from './braveService.js';
-
-const EOD_API_KEY = '678aec6f82cd71.08686199';
 const CACHE_DURATION = 60 * 1000; // 60 seconds
 let moverCache = { data: null, timestamp: 0 };
 
@@ -24,14 +22,8 @@ export const getFocusedMover = async () => {
 
         let marketMovers;
         try {
-            // Get market movers from EOD API
-            const response = await fetch(`https://eodhistoricaldata.com/api/screener?api_token=${EOD_API_KEY}&sort=change_p&order=desc&limit=100&market=US&filter=volume_avg_60d_gt_1000000&filter=price_gt_10`);
-            
-            if (!response.ok) {
-                throw new Error(`API request failed: ${response.statusText}`);
-            }
-            
-            marketMovers = await response.json();
+            // Get market movers from FMP API
+            marketMovers = await fmpService.getGainers();
         } catch (error) {
             console.warn('Using default market mover due to API error:', error);
             marketMovers = [defaultMover];
@@ -48,10 +40,8 @@ export const getFocusedMover = async () => {
         // Get company data with fallback
         let companyData = {};
         try {
-            const companyResponse = await fetch(`https://eodhistoricaldata.com/api/fundamentals/${significantMover.code}?api_token=${EOD_API_KEY}`);
-            if (companyResponse.ok) {
-                companyData = await companyResponse.json();
-            }
+            const profile = await fmpService.getCompanyProfile(significantMover.code || significantMover.symbol);
+            companyData = profile?.[0] || {};
         } catch (error) {
             console.warn('Company data fetch failed:', error);
         }
@@ -69,21 +59,21 @@ export const getFocusedMover = async () => {
             };
         }
 
-        // Build mover analysis with fallback values
+        // Build mover analysis with fallback values (adapted for FMP data structure)
         const moverAnalysis = {
-            symbol: significantMover.code,
-            companyName: companyData?.General?.Name || significantMover.code,
+            symbol: significantMover.symbol || significantMover.code,
+            companyName: companyData?.companyName || significantMover.symbol || significantMover.code,
             price: {
                 current: significantMover.price || 0,
                 change: significantMover.change || 0,
-                changePercent: significantMover.change_p || 0,
+                changePercent: significantMover.changesPercentage || significantMover.change_p || 0,
                 volume: significantMover.volume || 0
             },
             company: {
-                sector: companyData?.General?.Sector || 'Technology',
-                industry: companyData?.General?.Industry || 'Software',
-                marketCap: companyData?.Highlights?.MarketCapitalization || 'N/A',
-                employees: companyData?.General?.FullTimeEmployees || 'N/A'
+                sector: companyData?.sector || 'Technology',
+                industry: companyData?.industry || 'Software',
+                marketCap: companyData?.mktCap || 'N/A',
+                employees: companyData?.fullTimeEmployees || 'N/A'
             },
             analysis: {
                 moveReason: analyzeMoveReason(significantMover, companyData),

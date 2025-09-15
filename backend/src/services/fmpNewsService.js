@@ -1,6 +1,6 @@
 /**
- * FMP PREMIUM NEWS SERVICE - High-Quality Financial News Only
- * OPTIMIZED: Uses FMP Premium API for professional financial news content
+ * FMP PREMIUM NEWS SERVICE - REAL DATA ONLY
+ * Uses only FMP Premium API for real financial news content
  */
 import axios from 'axios';
 import NodeCache from 'node-cache';
@@ -14,40 +14,32 @@ class FmpNewsService {
     this.baseUrl = 'https://financialmodelingprep.com/api';
     
     if (!this.fmpApiKey) {
-      console.warn('⚠️ FMP API key not configured - using fallback news');
+      console.error('❌ FMP API key not configured - service will fail');
     } else {
-      console.log('✅ FMP Premium News Service initialized with professional financial content');
+      console.log('✅ FMP Premium News Service initialized - REAL DATA ONLY');
     }
   }
 
   /**
-   * OPTIMIZED: Get premium financial news from FMP API
+   * Get REAL premium financial news from FMP API ONLY
    */
   async getMarketNews() {
-    const cacheKey = 'fmp_premium_market_news';
+    const cacheKey = 'fmp_real_market_news';
     
     // Check cache first
     const cachedNews = newsCache.get(cacheKey);
     if (cachedNews && cachedNews.articles.length > 0) {
-      console.log('✅ [FAST] Returning cached FMP premium news');
+      console.log('✅ [CACHE] Returning cached real FMP news');
       return cachedNews;
     }
     
-    console.log('🚀 [FMP PREMIUM] Fetching high-quality financial news...');
-    
-    const allArticles = [];
+    console.log('🚀 [FMP REAL] Fetching REAL financial news from FMP API...');
     
     if (!this.fmpApiKey) {
-      console.log('⚠️ No FMP API key - using premium fallback news');
-      const result = {
-        articles: this.generatePremiumFallbackNews(),
-        source: 'fmp_premium_fallback',
-        timestamp: new Date().toISOString(),
-        totalSources: 'premium_structured'
-      };
-      newsCache.set(cacheKey, result);
-      return result;
+      throw new Error('FMP API key not configured - cannot fetch real news');
     }
+    
+    const allArticles = [];
     
     // Fetch from multiple FMP news endpoints in parallel with timeout
     const newsPromises = [
@@ -60,37 +52,47 @@ class FmpNewsService {
     const results = await Promise.allSettled(newsPromises.map(promise => 
       Promise.race([
         promise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('FMP API timeout')), 5000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('FMP API timeout')), 8000))
       ])
     ));
     
-    // Collect all successful results
+    // Collect all successful results - REAL DATA ONLY
     results.forEach((result, index) => {
       if (result.status === 'fulfilled' && Array.isArray(result.value)) {
-        allArticles.push(...result.value);
-        console.log(`✅ [FMP] ${['Stock News', 'General News', 'Articles', 'Press Releases'][index]}: ${result.value.length} items`);
+        const realArticles = result.value.filter(article => 
+          article.title && 
+          article.description && 
+          !article.title.includes('Federal Reserve Policy Analysis') && // Remove any synthetic content
+          !article.title.includes('Technology Sector Analysis') &&
+          !article.title.includes('Market Risk Analysis')
+        );
+        
+        allArticles.push(...realArticles);
+        console.log(`✅ [FMP REAL] ${['Stock News', 'General News', 'Articles', 'Press Releases'][index]}: ${realArticles.length} real items`);
       } else {
         console.log(`⚠️ [FMP] ${['Stock News', 'General News', 'Articles', 'Press Releases'][index]} failed:`, result.reason?.message);
       }
     });
     
-    // Add premium structured news for consistency
-    allArticles.push(...this.generatePremiumFallbackNews());
+    if (allArticles.length === 0) {
+      throw new Error('No real news articles retrieved from FMP API');
+    }
     
-    // Process and deduplicate
-    const processedArticles = this.processArticlesFmp(allArticles);
+    // Process and deduplicate REAL articles only
+    const processedArticles = this.processRealArticlesFmp(allArticles);
     
     const result = {
       articles: processedArticles,
-      source: 'fmp_premium_multi_source',
+      source: 'fmp_real_api_only',
       timestamp: new Date().toISOString(),
-      totalSources: `fmp_professional_${allArticles.length}_sources`
+      totalSources: `fmp_real_${allArticles.length}_sources`,
+      realDataOnly: true
     };
     
     // Cache aggressively
     newsCache.set(cacheKey, result);
     
-    console.log(`✅ [FMP PREMIUM] ${processedArticles.length} high-quality articles ready for AI`);
+    console.log(`✅ [FMP REAL] ${processedArticles.length} REAL articles ready for AI (NO SYNTHETIC DATA)`);
     return result;
   }
 
@@ -101,23 +103,26 @@ class FmpNewsService {
     try {
       const response = await axios.get(`${this.baseUrl}/v3/stock_news`, {
         params: {
-          limit: 20,
+          limit: 30,
           apikey: this.fmpApiKey
         },
-        timeout: 4000
+        timeout: 6000
       });
       
       if (Array.isArray(response.data)) {
-        return response.data.map(item => ({
-          title: item.title || 'Financial News Update',
-          description: item.text || item.summary || '',
-          url: item.url || '#',
-          source: item.site || 'Financial News',
-          publishedAt: item.publishedDate || new Date().toISOString(),
-          priority: 'high',
-          type: 'fmp_stock_news',
-          symbol: item.symbol || null
-        }));
+        return response.data
+          .filter(item => item.title && item.text && item.site) // Only real articles with content
+          .map(item => ({
+            title: item.title,
+            description: item.text,
+            url: item.url || '#',
+            source: item.site,
+            publishedAt: item.publishedDate || new Date().toISOString(),
+            priority: 'high',
+            type: 'fmp_stock_news',
+            symbol: item.symbol || null,
+            realSource: true
+          }));
       }
       
       return [];
@@ -135,22 +140,25 @@ class FmpNewsService {
       const response = await axios.get(`${this.baseUrl}/v4/general_news`, {
         params: {
           page: 0,
-          size: 15,
+          size: 25,
           apikey: this.fmpApiKey
         },
-        timeout: 4000
+        timeout: 6000
       });
       
       if (Array.isArray(response.data)) {
-        return response.data.map(item => ({
-          title: item.title || 'Market Update',
-          description: item.text || item.snippet || '',
-          url: item.url || '#',
-          source: 'FMP General News',
-          publishedAt: item.publishedDate || new Date().toISOString(),
-          priority: 'medium',
-          type: 'fmp_general_news'
-        }));
+        return response.data
+          .filter(item => item.title && item.text) // Only real articles with content
+          .map(item => ({
+            title: item.title,
+            description: item.text,
+            url: item.url || '#',
+            source: 'FMP Financial News',
+            publishedAt: item.publishedDate || new Date().toISOString(),
+            priority: 'medium',
+            type: 'fmp_general_news',
+            realSource: true
+          }));
       }
       
       return [];
@@ -168,22 +176,25 @@ class FmpNewsService {
       const response = await axios.get(`${this.baseUrl}/v4/articles`, {
         params: {
           page: 0,
-          size: 10,
+          size: 15,
           apikey: this.fmpApiKey
         },
-        timeout: 4000
+        timeout: 6000
       });
       
       if (Array.isArray(response.data)) {
-        return response.data.map(item => ({
-          title: item.title || 'Market Analysis',
-          description: item.content || item.text || '',
-          url: item.url || '#',
-          source: 'FMP Professional Analysis',
-          publishedAt: item.date || new Date().toISOString(),
-          priority: 'high',
-          type: 'fmp_analysis'
-        }));
+        return response.data
+          .filter(item => item.title && item.content) // Only real articles with content
+          .map(item => ({
+            title: item.title,
+            description: item.content,
+            url: item.url || '#',
+            source: 'FMP Professional Analysis',
+            publishedAt: item.date || new Date().toISOString(),
+            priority: 'high',
+            type: 'fmp_analysis',
+            realSource: true
+          }));
       }
       
       return [];
@@ -199,28 +210,31 @@ class FmpNewsService {
   async fetchFmpPressReleases() {
     try {
       // Get press releases from major market movers
-      const symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'];
+      const symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA'];
       const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
       
       const response = await axios.get(`${this.baseUrl}/v3/press-releases/${randomSymbol}`, {
         params: {
-          limit: 5,
+          limit: 10,
           apikey: this.fmpApiKey
         },
-        timeout: 4000
+        timeout: 6000
       });
       
       if (Array.isArray(response.data)) {
-        return response.data.map(item => ({
-          title: item.title || 'Corporate Update',
-          description: item.text || '',
-          url: item.url || '#',
-          source: `${randomSymbol} Press Release`,
-          publishedAt: item.date || new Date().toISOString(),
-          priority: 'medium',
-          type: 'fmp_press_release',
-          symbol: randomSymbol
-        }));
+        return response.data
+          .filter(item => item.title && item.text) // Only real press releases with content
+          .map(item => ({
+            title: item.title,
+            description: item.text,
+            url: item.url || '#',
+            source: `${randomSymbol} Official`,
+            publishedAt: item.date || new Date().toISOString(),
+            priority: 'medium',
+            type: 'fmp_press_release',
+            symbol: randomSymbol,
+            realSource: true
+          }));
       }
       
       return [];
@@ -231,64 +245,26 @@ class FmpNewsService {
   }
 
   /**
-   * PREMIUM: High-quality structured news for consistent AI analysis
+   * Process REAL FMP articles with deduplication and quality enhancement
    */
-  generatePremiumFallbackNews() {
-    const currentDate = new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-    });
-    
-    return [
-      {
-        title: 'Federal Reserve Monetary Policy Framework: Interest Rate Decision Analysis',
-        description: 'Federal Reserve officials evaluate monetary policy stance based on economic indicators including employment data, inflation metrics, and GDP growth. Recent FOMC communications provide guidance on interest rate trajectory affecting treasury yields, equity market valuations, and sector rotation strategies for institutional investors.',
-        url: '#',
-        source: 'Federal Reserve Policy Analysis',
-        publishedAt: new Date().toISOString(),
-        priority: 'high',
-        type: 'fmp_premium_structured'
-      },
-      {
-        title: 'Technology Sector Leadership: AI Infrastructure Investment and Earnings Outlook',
-        description: 'Major technology companies including Apple, Microsoft, Google, Amazon, and Nvidia report quarterly results with focus on artificial intelligence infrastructure spending, cloud computing revenue growth, and forward earnings guidance. Technology sector leadership influences broader market sentiment and growth versus value positioning strategies.',
-        url: '#',
-        source: 'Technology Sector Analysis',
-        publishedAt: new Date().toISOString(),
-        priority: 'high',
-        type: 'fmp_premium_structured'
-      },
-      {
-        title: 'Market Risk Assessment: Equity Volatility and Fixed Income Positioning Strategies',
-        description: 'Current market volatility patterns reflect investor assessment of economic growth prospects, geopolitical risk factors, and monetary policy expectations. S&P 500 volatility index movements guide portfolio allocation decisions between growth and defensive positioning across equity and fixed income asset classes.',
-        url: '#',
-        source: 'Market Risk Analysis',
-        publishedAt: new Date().toISOString(),
-        priority: 'high',
-        type: 'fmp_premium_structured'
-      },
-      {
-        title: 'Economic Indicators Impact: Consumer Spending and Business Investment Analysis',
-        description: 'Recent economic data including consumer spending figures, business capital expenditure, and employment statistics provide insights into economic growth momentum. Retail sales data, industrial production metrics, and consumer confidence surveys influence Federal Reserve policy considerations and sector allocation strategies.',
-        url: '#',
-        source: 'Economic Data Analysis',
-        publishedAt: new Date().toISOString(),
-        priority: 'medium',
-        type: 'fmp_premium_structured'
-      }
-    ];
-  }
-
-  /**
-   * Process FMP articles with deduplication and quality enhancement
-   */
-  processArticlesFmp(articles) {
+  processRealArticlesFmp(articles) {
     // Remove duplicates by title
     const uniqueArticles = articles.filter((article, index, self) => 
       index === self.findIndex(a => a.title === article.title)
     );
     
+    // Filter out any remaining synthetic content
+    const realArticles = uniqueArticles.filter(article => 
+      article.realSource === true &&
+      article.description &&
+      article.description.length > 100 && // Substantial content only
+      !article.title.includes('Federal Reserve Policy Analysis') &&
+      !article.title.includes('Technology Sector Analysis') &&
+      !article.title.includes('Market Risk Analysis')
+    );
+    
     // Sort by priority and recency
-    const sortedArticles = uniqueArticles.sort((a, b) => {
+    const sortedArticles = realArticles.sort((a, b) => {
       const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
       const priorityDiff = (priorityOrder[b.priority] || 1) - (priorityOrder[a.priority] || 1);
       
@@ -298,17 +274,18 @@ class FmpNewsService {
       return new Date(b.publishedAt) - new Date(a.publishedAt);
     });
     
-    // Take top 8 articles for AI processing
-    const topArticles = sortedArticles.slice(0, 8);
+    // Take top 10 real articles for AI processing
+    const topArticles = sortedArticles.slice(0, 10);
     
     // Enhance with metadata
     return topArticles.map(article => ({
       ...article,
       contentLength: article.description?.length || 0,
-      hasSubstantialContent: (article.description?.length || 0) > 50,
+      hasSubstantialContent: (article.description?.length || 0) > 100,
       sourceName: this.extractSourceName(article.source),
       marketRelevant: true,
-      fmpSource: true
+      fmpSource: true,
+      realData: true
     }));
   }
 
@@ -318,13 +295,16 @@ class FmpNewsService {
   extractSourceName(source) {
     if (!source) return 'FMP Financial News';
     
-    // Clean up source names
-    if (source.includes('FMP')) return source;
-    if (source.includes('Financial')) return source;
-    if (source.includes('Press Release')) return source;
-    if (source.includes('Analysis')) return source;
+    // Clean up source names but keep real ones
+    const realSources = ['Reuters', 'Bloomberg', 'Barrons', 'MarketWatch', 'CNBC', 'Financial Times'];
+    const foundRealSource = realSources.find(realSource => 
+      source.toLowerCase().includes(realSource.toLowerCase())
+    );
     
-    return `${source} (FMP)`;
+    if (foundRealSource) return foundRealSource;
+    
+    // Return as-is for real sources
+    return source;
   }
 
   /**

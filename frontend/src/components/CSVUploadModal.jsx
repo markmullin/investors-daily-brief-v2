@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { X, Upload, FileText, CheckCircle, AlertCircle, Info, Users, Database, AlertTriangle, DollarSign, TrendingUp } from 'lucide-react';
+import { X, Upload, FileText, CheckCircle, AlertCircle, Info, Users, Database, AlertTriangle, DollarSign, TrendingUp, Wifi, WifiOff } from 'lucide-react';
 import { parsePortfolioCSV } from '../utils/csvParser';
 
-// FIXED: Get correct API base URL for production vs development
+// ENHANCED: Get correct API base URL for production vs development
 const isProduction = window.location.hostname !== 'localhost';
 const API_BASE_URL = isProduction 
   ? 'https://investors-daily-brief.onrender.com'
@@ -23,17 +23,83 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
   const [accountName, setAccountName] = useState('');
   const [mergeMode, setMergeMode] = useState('replace'); // Default to replace for better account isolation
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  
+  // NEW: Enhanced debugging state
+  const [debugInfo, setDebugInfo] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('unknown');
 
   if (!isOpen) return null;
 
-  // *** FIXED: Enhanced account name detection ***
+  // NEW: Test backend connection
+  const testBackendConnection = async () => {
+    setConnectionStatus('testing');
+    try {
+      console.log('🔍 Testing backend connection...');
+      const response = await fetch(`${API_BASE_URL}/health`, { 
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setConnectionStatus('connected');
+        setDebugInfo(prev => ({
+          ...prev,
+          backendConnection: {
+            status: 'success',
+            version: data.version,
+            timestamp: data.timestamp
+          }
+        }));
+        console.log('✅ Backend connection successful:', data.version);
+        return true;
+      } else {
+        setConnectionStatus('error');
+        setDebugInfo(prev => ({
+          ...prev,
+          backendConnection: {
+            status: 'error',
+            httpStatus: response.status,
+            statusText: response.statusText
+          }
+        }));
+        console.log('❌ Backend returned error:', response.status);
+        return false;
+      }
+    } catch (error) {
+      setConnectionStatus('error');
+      setDebugInfo(prev => ({
+        ...prev,
+        backendConnection: {
+          status: 'failed',
+          error: error.message,
+          apiUrl: API_BASE_URL
+        }
+      }));
+      console.log('❌ Backend connection failed:', error.message);
+      return false;
+    }
+  };
+
+  // *** ENHANCED: Account name detection with debugging ***
   const detectAccountName = (file, csvContent) => {
     const fileName = file.name.toLowerCase();
     const contentLower = csvContent.toLowerCase();
-    const firstLines = csvContent.split('\n').slice(0, 10).join(' ').toLowerCase();
+    const firstLines = csvContent.split('\\n').slice(0, 10).join(' ').toLowerCase();
     
     console.log('🔍 Detecting account name from:', fileName);
     console.log('📄 Content sample:', firstLines.substring(0, 200));
+    
+    setDebugInfo(prev => ({
+      ...prev,
+      accountDetection: {
+        fileName,
+        contentSample: firstLines.substring(0, 200),
+        fileSize: file.size
+      }
+    }));
     
     // Priority 1: Filename detection
     if (fileName.includes('fidelity') || fileName.includes('fidel')) {
@@ -101,9 +167,16 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
       setFile(selectedFile);
       setError('');
       setUploadSuccess(false);
+      setDebugInfo({ fileSelected: { name: selectedFile.name, size: selectedFile.size } });
       
-      // *** FIXED: Improved account name detection ***
-      parseFile(selectedFile);
+      // *** ENHANCED: Test connection before parsing ***
+      testBackendConnection().then(connected => {
+        if (connected) {
+          parseFile(selectedFile);
+        } else {
+          setError('Cannot connect to backend server. Please ensure the backend is running on port 5000.');
+        }
+      });
     } else {
       setError('Please select a CSV file');
     }
@@ -114,12 +187,37 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
     try {
       const text = await file.text();
       
-      // *** FIXED: Detect account name from file and content ***
+      console.log('📄 CSV file read successfully, length:', text.length);
+      setDebugInfo(prev => ({
+        ...prev,
+        csvParsing: {
+          fileLength: text.length,
+          lineCount: text.split('\\n').length
+        }
+      }));
+      
+      // *** ENHANCED: Detect account name from file and content ***
       const detectedAccountName = detectAccountName(file, text);
       console.log('🎯 Final detected account name:', detectedAccountName);
       setAccountName(detectedAccountName);
       
       const result = parsePortfolioCSV(text, detectedAccountName);
+      
+      console.log('📊 CSV parsing result:', {
+        transactionCount: result.transactions.length,
+        format: result.format,
+        warningCount: result.warnings?.length || 0
+      });
+      
+      setDebugInfo(prev => ({
+        ...prev,
+        csvParsingResult: {
+          transactionCount: result.transactions.length,
+          format: result.format,
+          warningCount: result.warnings?.length || 0,
+          symbols: result.summary?.symbols || []
+        }
+      }));
       
       if (result.transactions.length === 0) {
         setError('No valid transactions found in the CSV file. Make sure you export transaction history with buy/sell actions, or current positions with cost basis data.');
@@ -128,15 +226,23 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
         setPreview(result);
         setError('');
         
-        // *** FIXED: Auto-set replace mode for position imports ***
+        // *** ENHANCED: Auto-set replace mode for position imports ***
         if (result.format === 'positions') {
           setMergeMode('replace');
           console.log('📊 Position import detected - auto-setting replace mode for clean account data');
         }
       }
     } catch (err) {
+      console.error('❌ CSV parsing error:', err);
       setError(err.message);
       setPreview(null);
+      setDebugInfo(prev => ({
+        ...prev,
+        csvParsingError: {
+          message: err.message,
+          stack: err.stack
+        }
+      }));
     } finally {
       setParsing(false);
     }
@@ -167,9 +273,20 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
     try {
       console.log(`🚀 Uploading ${preview.transactions.length} transactions to account: "${accountName}" with merge mode: ${mergeMode}`);
       
-      // FIXED: Use environment-aware API URL instead of hardcoded localhost
+      // ENHANCED: Use environment-aware API URL with debugging
       const uploadUrl = `${API_BASE_URL}/api/portfolio/portfolio_1/transactions/batch`;
       console.log(`🌐 Upload URL: ${uploadUrl}`);
+      
+      setDebugInfo(prev => ({
+        ...prev,
+        uploadAttempt: {
+          url: uploadUrl,
+          transactionCount: preview.transactions.length,
+          accountName,
+          mergeMode,
+          timestamp: new Date().toISOString()
+        }
+      }));
       
       // Use batch import for better performance
       const response = await fetch(uploadUrl, {
@@ -184,13 +301,35 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
         }),
       });
       
+      console.log('📡 Upload response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload transactions');
+        console.error('❌ Upload failed with error:', errorData);
+        
+        setDebugInfo(prev => ({
+          ...prev,
+          uploadError: {
+            status: response.status,
+            statusText: response.statusText,
+            errorData
+          }
+        }));
+        
+        throw new Error(errorData.error || `Upload failed with status ${response.status}`);
       }
       
       const result = await response.json();
-      console.log('✅ Import result:', result);
+      console.log('✅ Upload result:', result);
+      
+      setDebugInfo(prev => ({
+        ...prev,
+        uploadSuccess: {
+          message: result.message,
+          successCount: result.successCount,
+          totalHoldings: result.totalHoldings
+        }
+      }));
       
       // Success!
       setUploadSuccess(true);
@@ -211,6 +350,13 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
     } catch (err) {
       console.error('❌ Upload error:', err);
       setError('Failed to upload transactions: ' + err.message);
+      setDebugInfo(prev => ({
+        ...prev,
+        uploadFinalError: {
+          message: err.message,
+          timestamp: new Date().toISOString()
+        }
+      }));
     } finally {
       setUploading(false);
     }
@@ -223,6 +369,8 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
     setAccountName('');
     setMergeMode('replace'); // Reset to default
     setUploadSuccess(false);
+    setDebugInfo(null);
+    setConnectionStatus('unknown');
     onClose();
   };
 
@@ -231,7 +379,30 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
       <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">📊 Upload Portfolio CSV</h2>
+          <div className="flex items-center space-x-3">
+            <h2 className="text-xl font-semibold">📊 Upload Portfolio CSV</h2>
+            {/* NEW: Connection Status Indicator */}
+            <div className="flex items-center space-x-2">
+              {connectionStatus === 'connected' && (
+                <div className="flex items-center text-green-600">
+                  <Wifi size={16} />
+                  <span className="text-xs ml-1">Connected</span>
+                </div>
+              )}
+              {connectionStatus === 'error' && (
+                <div className="flex items-center text-red-600">
+                  <WifiOff size={16} />
+                  <span className="text-xs ml-1">Disconnected</span>
+                </div>
+              )}
+              {connectionStatus === 'testing' && (
+                <div className="flex items-center text-blue-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-xs ml-1">Testing...</span>
+                </div>
+              )}
+            </div>
+          </div>
           <button
             onClick={handleClose}
             className="p-1 hover:bg-gray-100 rounded"
@@ -242,6 +413,42 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+          {/* NEW: Debug Information Panel */}
+          {debugInfo && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                <Info className="w-4 h-4 mr-2" />
+                Debug Information
+              </h4>
+              <div className="text-sm text-blue-800 space-y-2">
+                {debugInfo.backendConnection && (
+                  <div>
+                    <strong>Backend:</strong> {debugInfo.backendConnection.status === 'success' 
+                      ? `✅ Connected (${debugInfo.backendConnection.version})`
+                      : `❌ ${debugInfo.backendConnection.error || 'Connection failed'}`
+                    }
+                  </div>
+                )}
+                {debugInfo.fileSelected && (
+                  <div>
+                    <strong>File:</strong> {debugInfo.fileSelected.name} ({(debugInfo.fileSelected.size / 1024).toFixed(1)} KB)
+                  </div>
+                )}
+                {debugInfo.csvParsingResult && (
+                  <div>
+                    <strong>Parsing:</strong> {debugInfo.csvParsingResult.transactionCount} transactions, 
+                    {debugInfo.csvParsingResult.symbols.length} symbols ({debugInfo.csvParsingResult.format} format)
+                  </div>
+                )}
+                {debugInfo.uploadAttempt && (
+                  <div>
+                    <strong>Upload:</strong> {debugInfo.uploadAttempt.transactionCount} transactions to {debugInfo.uploadAttempt.accountName}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Success Message */}
           {uploadSuccess && (
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
@@ -277,7 +484,7 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                     <li>• 🔗 <strong>Account Aggregation Detection:</strong> Filters out linked external accounts automatically</li>
                   </ul>
                   <p className="mt-2 text-xs bg-blue-100 p-2 rounded">
-                    🎯 <strong>FIXED:</strong> Now automatically filters out old/transferred positions AND linked external accounts for perfect isolation!
+                    🎯 <strong>ENHANCED:</strong> Now includes comprehensive debugging and connection testing!
                   </p>
                 </div>
               </div>
@@ -301,6 +508,17 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                   </div>
                   <p className="text-xs text-gray-500">CSV file only</p>
                 </div>
+              </div>
+              
+              {/* Test Connection Button */}
+              <div className="mt-4 text-center">
+                <button
+                  onClick={testBackendConnection}
+                  disabled={connectionStatus === 'testing'}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50 text-sm"
+                >
+                  {connectionStatus === 'testing' ? 'Testing Connection...' : 'Test Backend Connection'}
+                </button>
               </div>
               
               {/* Test Files Info */}
@@ -330,7 +548,7 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                 <h3 className="font-medium text-gray-800">🏦 Account Configuration</h3>
               </div>
               
-              {/* *** FIXED: Show detected broker info *** */}
+              {/* *** ENHANCED: Show detected broker info *** */}
               <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-sm text-green-800">
                   <strong>🎯 Auto-Detected Account:</strong> "{accountName}"
@@ -414,6 +632,7 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                        warning.type === 'cost_basis_issues' ? '💰 Cost Basis Notice' : 
                        warning.type === 'skipped_positions' ? '🚫 Filtered Positions' :
                        warning.type === 'external_positions_filtered' ? '🔗 Account Aggregation Detected' :
+                       warning.type === 'split_corrections_applied' ? '🔄 Stock Split Corrections Applied' :
                        '📋 Notice'}
                     </p>
                     <p className="text-sm mt-1">{warning.message}</p>
@@ -426,6 +645,22 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                       <p className="text-xs mt-2 bg-amber-100 p-2 rounded">
                         💡 <strong>Tip:</strong> Check your broker's CSV export settings to include cost basis data for accurate tracking.
                       </p>
+                    )}
+                    {warning.type === 'split_corrections_applied' && warning.splitAdjustments && (
+                      <div className="text-xs mt-2 bg-green-100 p-2 rounded">
+                        <p className="font-medium">🔄 Stock split corrections applied:</p>
+                        <ul className="mt-1 space-y-1">
+                          {warning.splitAdjustments.slice(0, 5).map((adj, idx) => (
+                            <li key={idx}>• <strong>{adj.symbol}</strong>: {adj.originalQuantity} → {adj.adjustedQuantity} shares (${adj.originalPrice.toFixed(2)} → ${adj.adjustedPrice.toFixed(2)})</li>
+                          ))}
+                          {warning.splitAdjustments.length > 5 && (
+                            <li>• ... and {warning.splitAdjustments.length - 5} more corrections</li>
+                          )}
+                        </ul>
+                        <p className="mt-2 text-xs bg-blue-100 p-1 rounded">
+                          🎯 <strong>Perfect! Your NVIDIA and other split stocks now show correct quantities and prices!</strong>
+                        </p>
+                      </div>
                     )}
                     {warning.type === 'external_positions_filtered' && warning.externalPositions && (
                       <div className="text-xs mt-2 bg-green-100 p-2 rounded">
@@ -513,6 +748,17 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                     </ul>
                   </div>
                 )}
+                {error.includes('connect to backend') && (
+                  <div className="text-sm mt-3 bg-red-100 p-3 rounded">
+                    <p className="font-medium">🔧 Backend Connection Issues:</p>
+                    <ul className="mt-2 space-y-1 text-xs">
+                      <li>• Make sure the backend is running: <code>cd backend && npm start</code></li>
+                      <li>• Check if port 5000 is available</li>
+                      <li>• Try refreshing the page and uploading again</li>
+                      <li>• Use the "Test Backend Connection" button above</li>
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -554,6 +800,13 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                       <p className="text-lg">${preview.summary.totalValue.toLocaleString()}</p>
                     </div>
                   )}
+                  {preview.summary.splitCorrectionCount > 0 && (
+                    <div className="bg-blue-100 p-2 rounded">
+                      <p className="font-medium">🔄 Split Corrections</p>
+                      <p className="text-lg">{preview.summary.splitCorrectionCount}</p>
+                      <p className="text-xs">NVIDIA, Tesla, etc.</p>
+                    </div>
+                  )}
                   {(preview.summary.skippedCount > 0 || preview.summary.externalFilteredCount > 0) && (
                     <div className="bg-blue-100 p-2 rounded">
                       <p className="font-medium">🔍 Auto-Filtered</p>
@@ -587,6 +840,11 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                   ) : (
                     <p><strong>📅 Date range:</strong> {preview.summary.dateRange.start} to {preview.summary.dateRange.end}</p>
                   )}
+                  {preview.summary.splitCorrectionCount > 0 && (
+                    <p className="text-xs bg-blue-100 p-1 rounded mt-1">
+                      🎯 <strong>{preview.summary.splitCorrectionCount} stocks corrected for splits</strong> - your NVIDIA, Tesla, and other positions now show accurate quantities!
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -605,6 +863,7 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                       <th className="text-right py-2 px-2">💲 Price</th>
                       <th className="text-right py-2 px-2">💰 Total</th>
                       <th className="text-left py-2 px-2">🏦 Account</th>
+                      <th className="text-left py-2 px-2">🔄 Split</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -626,6 +885,17 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
                           <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                             🏦 {txn.account || accountName}
                           </span>
+                        </td>
+                        <td className="py-2 px-2">
+                          {txn.splitAdjusted ? (
+                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
+                              ✅ Fixed
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                              Original
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -655,6 +925,11 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Database size={16} />
             <span>🔐 Perfect account isolation - each broker separated</span>
+            {debugInfo && debugInfo.uploadSuccess && (
+              <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
+                ✅ {debugInfo.uploadSuccess.successCount} uploaded
+              </span>
+            )}
           </div>
           <div className="flex gap-3">
             <button
@@ -666,7 +941,7 @@ function CSVUploadModal({ isOpen, onClose, onUploadComplete }) {
             {preview && !uploadSuccess && (
               <button
                 onClick={handleUpload}
-                disabled={uploading || !accountName.trim()}
+                disabled={uploading || !accountName.trim() || connectionStatus === 'error'}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {uploading ? (

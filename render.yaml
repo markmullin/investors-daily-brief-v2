@@ -2,36 +2,52 @@ services:
   # Backend API Service
   - type: web
     name: investors-daily-brief
-    env: node
-    plan: starter
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    region: ohio
     envVars:
       - key: NODE_ENV
         value: production
-      - key: FMP_API_KEY
-        sync: false
-      - key: BRAVE_API_KEY
-        sync: false
-      - key: MISTRAL_API_KEY
-        sync: false
-      - key: FRED_API_KEY
-        sync: false
       - key: PORT
         value: 5000
-    healthCheckPath: /health
+      - key: FMP_API_KEY
+        sync: false  # Add via Render dashboard
+      - key: FRED_API_KEY
+        sync: false  # Add via Render dashboard
+      - key: MISTRAL_API_KEY
+        sync: false  # Add via Render dashboard
+      - key: EOD_HISTORICAL_API_KEY
+        sync: false  # Add via Render dashboard
+      - key: BRAVE_API_KEY
+        sync: false  # Add via Render dashboard
+      - key: REDIS_URL
+        sync: false  # Add from existing Redis service
+      - key: DATABASE_URL
+        sync: false  # Add from existing PostgreSQL
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://investorsdailybrief.com
 
-  # Frontend Static Site
-  - type: web
+  # Frontend Service (Main)
+  - type: static
     name: investors-daily-brief-frontend
-    env: static
-    plan: starter
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
     routes:
       - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: NODE_ENV
-        value: production
+        source: /api/*
+        destination: https://investors-daily-brief.onrender.com/api/*
+    customDomains:
+      - name: investorsdailybrief.com
+      - name: www.investorsdailybrief.com
