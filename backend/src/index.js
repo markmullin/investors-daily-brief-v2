@@ -1041,26 +1041,31 @@ const server = app.listen(PORT, async () => {
   console.log(`🤖 Enhanced AI Market Brief: http://localhost:${PORT}/api/ai/enhanced-comprehensive-analysis`);
   console.log(`📰 Enhanced News: http://localhost:${PORT}/api/enhanced-news/enhanced-optimal-mix`);
   
-  // VERIFY REDIS CONNECTION ON STARTUP
-  try {
-    console.log('\n🔧 VERIFYING REDIS CONNECTION...');
-    const dbHealth = await checkDatabaseHealth();
-    
-    if (dbHealth.redis) {
-      console.log('✅ REDIS: Connected and operational');
-      console.log(`📊 Cache Type: ${dbHealth.cacheType}`);
-    } else {
-      console.error('🚨 REDIS: NOT CONNECTED!');
+  // VERIFY REDIS CONNECTION ON STARTUP - ONLY IF REDIS IS ENABLED
+  if (process.env.REDIS_ENABLED !== 'false') {
+    try {
+      console.log('\n🔧 VERIFYING REDIS CONNECTION...');
+      const dbHealth = await checkDatabaseHealth();
       
-      if (process.env.NODE_ENV === 'production') {
-        console.error('🚨 Exiting process - Redis required for production');
-        process.exit(1);
+      if (dbHealth.redis) {
+        console.log('✅ REDIS: Connected and operational');
+        console.log(`📊 Cache Type: ${dbHealth.cacheType}`);
       } else {
-        console.error('⚠️  Development mode: Continuing without Redis');
+        console.error('🚨 REDIS: NOT CONNECTED!');
+        
+        if (process.env.NODE_ENV === 'production') {
+          console.error('🚨 Exiting process - Redis required for production');
+          process.exit(1);
+        } else {
+          console.error('⚠️  Development mode: Continuing without Redis');
+        }
       }
+    } catch (error) {
+      console.error('🚨 DATABASE HEALTH CHECK FAILED:', error.message);
     }
-  } catch (error) {
-    console.error('🚨 DATABASE HEALTH CHECK FAILED:', error.message);
+  } else {
+    console.log('\n⚠️  REDIS DISABLED: Running with in-memory cache only');
+    console.log('📊 Cache Type: NodeCache (in-memory fallback)');
   }
   
   console.log('');
