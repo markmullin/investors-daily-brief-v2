@@ -60,6 +60,9 @@ import analystProjectionsRoutes from './routes/analystProjections.js';
 // 📊 EARNINGS ANALYSIS - AI-powered earnings transcript analysis
 import earningsRoutes from './routes/earningsRoutes.js';
 
+// 📊 COMPLETE EARNINGS ROUTES - For Frontend Compatibility
+import earningsCompleteRoutes from './routes/earningsComplete.js';
+
 // 🎯 THEME EXTRACTION - Investment theme discovery from earnings
 import themeRoutes from './routes/themeRoutes.js';
 
@@ -68,6 +71,9 @@ import aiChatRoutes from './routes/aiChatRoutes.js';
 
 // 📊 FUNDAMENTAL RANKINGS SYSTEM (BEING REPLACED)
 import fundamentalsRoutes from './routes/fundamentals.js';
+
+// 📊 COMPLETE FUNDAMENTALS ROUTES - For Frontend Compatibility
+import fundamentalsCompleteRoutes from './routes/fundamentalsComplete.js';
 
 // 🎯 NEW: AI-POWERED DISCOVERY SYSTEM (REPLACEMENT FOR FUNDAMENTALS)
 import discoveryRoutes from './routes/discovery.js';
@@ -696,17 +702,17 @@ console.log('🎓 EDUCATION routes loaded: /api/education/* (GPU-powered AI expl
 app.use('/api/research', researchRoutes);
 console.log('🔍 RESEARCH CENTER routes loaded: /api/research/*');
 
-// 📊 EARNINGS ANALYSIS ROUTES
-app.use('/api/earnings', earningsRoutes);
-console.log('📊 EARNINGS ANALYSIS routes loaded: /api/earnings/* (AI-powered transcript analysis)');
+// 📊 COMPLETE EARNINGS ROUTES - For Frontend Compatibility
+app.use('/api/earnings', earningsCompleteRoutes);
+console.log('📊 COMPLETE EARNINGS routes loaded: /api/earnings/* (Frontend compatible data)');
 
 // 🎯 THEME EXTRACTION ROUTES
 app.use('/api/themes', themeRoutes);
 console.log('🎯 THEME EXTRACTION routes loaded: /api/themes/* (Investment theme discovery from earnings)');
 
-// 📊 FUNDAMENTAL RANKINGS ROUTES (LEGACY - BEING REPLACED BY DISCOVERY)
-app.use('/api/fundamentals', fundamentalsRoutes);
-console.log('📊 LEGACY FUNDAMENTALS routes loaded: /api/fundamentals/* (BEING REPLACED)');
+// 📊 COMPLETE FUNDAMENTALS ROUTES - For Frontend Compatibility
+app.use('/api/fundamentals', fundamentalsCompleteRoutes);
+console.log('📊 COMPLETE FUNDAMENTALS routes loaded: /api/fundamentals/* (balance-sheet, income, cash-flow, metrics, analyst)');
 
 // CORE MARKET ROUTES
 app.use('/api/market', marketRoutes);
