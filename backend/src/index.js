@@ -646,18 +646,22 @@ console.log('🎯 MARKET ENVIRONMENT V2 routes loaded: /api/market-env/*');
 app.use('/api/ai', enhancedAiRoutes);
 console.log('🤖 ENHANCED AI ADVISOR routes loaded: /api/ai/enhanced-financial-advisor');
 
-// 💾 BACKUP ROUTES
-app.use('/api/fundamentals', backupRoutes);
-console.log('💾 BACKUP routes loaded: /api/fundamentals/backup/*');
+// 📊 COMPLETE FUNDAMENTALS ROUTES - MUST BE FIRST FOR FRONTEND COMPATIBILITY
+app.use('/api/fundamentals', fundamentalsCompleteRoutes);
+console.log('📊 COMPLETE FUNDAMENTALS routes loaded: /api/fundamentals/* (balance-sheet, income, cash-flow, metrics, analyst)');
 
-// 🧠 ADVANCED FUNDAMENTALS WITH ML DATA QUALITY (LEGACY - BEING PHASED OUT)
-app.use('/api/fundamentals', advancedFundamentalsRoutes);
-console.log('🧠 LEGACY FUNDAMENTALS routes loaded: /api/fundamentals/advanced/* (BEING REPLACED)');
+// 💾 BACKUP ROUTES (After Complete Routes)
+app.use('/api/backup', backupRoutes);
+console.log('💾 BACKUP routes loaded: /api/backup/*');
 
-// 🔧 DEBUG ROUTES
-app.use('/api/fundamentals', debugRoutes);
-app.use('/api/fundamentals', debugFundamentalsRoutes);
-console.log('🔧 DEBUG routes loaded: /api/fundamentals/debug/*');
+// 🧠 ADVANCED FUNDAMENTALS WITH ML DATA QUALITY (After Complete Routes)
+app.use('/api/advanced-fundamentals', advancedFundamentalsRoutes);
+console.log('🧠 ADVANCED FUNDAMENTALS routes loaded: /api/advanced-fundamentals/*');
+
+// 🔧 DEBUG ROUTES (After Complete Routes)
+app.use('/api/debug', debugRoutes);
+app.use('/api/debug', debugFundamentalsRoutes);
+console.log('🔧 DEBUG routes loaded: /api/debug/*');
 
 // 🔍 VERIFICATION ROUTES
 app.use('/api/verify', verificationRoutes);
@@ -709,10 +713,6 @@ console.log('📊 COMPLETE EARNINGS routes loaded: /api/earnings/* (Frontend com
 // 🎯 THEME EXTRACTION ROUTES
 app.use('/api/themes', themeRoutes);
 console.log('🎯 THEME EXTRACTION routes loaded: /api/themes/* (Investment theme discovery from earnings)');
-
-// 📊 COMPLETE FUNDAMENTALS ROUTES - For Frontend Compatibility
-app.use('/api/fundamentals', fundamentalsCompleteRoutes);
-console.log('📊 COMPLETE FUNDAMENTALS routes loaded: /api/fundamentals/* (balance-sheet, income, cash-flow, metrics, analyst)');
 
 // CORE MARKET ROUTES
 app.use('/api/market', marketRoutes);
