@@ -11,7 +11,9 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/start.js",
+    "start:original": "node src/index.js",
+    "start:no-redis": "REDIS_ENABLED=false node src/index.js",
     "dev": "nodemon src/index.js",
     "health": "curl http://localhost:5000/health",
     "docs": "echo \"API documentation available at http://localhost:5000/api\"",
