@@ -88,6 +88,7 @@ class FixedMarketDashboardServer {
       
       // RESEARCH & ANALYSIS FEATURES
       { path: '/api/research', module: './src/routes/research.js', name: 'Research Hub' },
+      { path: '/api/research/financial-statements', module: './src/routes/simpleFinancials.js', name: 'Simple Financials' },
       { path: '/api/research/earnings', module: './src/routes/earningsRoutes.js', name: 'Earnings Analysis' },
       { path: '/api/themes', module: './src/routes/themeRoutes.js', name: 'Theme Discovery' },
       
