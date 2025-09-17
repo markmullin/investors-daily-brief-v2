@@ -26,7 +26,7 @@ const CashFlowTab = ({ symbol }) => {
       setError(null);
       
       try {
-        const response = await fetch(`/api/fundamentals/cash-flow/${symbol}?limit=12`);
+        const response = await fetch(`/api/research/financial-statements/cash-flow/${symbol}?limit=12`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch cash flow data: ${response.statusText}`);

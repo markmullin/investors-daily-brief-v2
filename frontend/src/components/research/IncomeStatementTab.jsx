@@ -25,7 +25,7 @@ const IncomeStatementTab = ({ symbol }) => {
       try {
         // Fetch income statement, revenue segments, and cash flow data
         const [incomeResponse, segmentResponse, cashFlowResponse] = await Promise.all([
-          fetch(`/api/fundamentals/income-statement/${symbol}?limit=12`),
+          fetch(`/api/research/financial-statements/income-statement/${symbol}?limit=12`),
           fetch(`/api/research/financial-statements/revenue-segments/${symbol}?limit=12`),
           fetch(`/api/research/financial-statements/cash-flow/${symbol}?limit=12`)
         ]);
