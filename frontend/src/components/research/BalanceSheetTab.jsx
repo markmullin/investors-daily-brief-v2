@@ -23,7 +23,7 @@ const BalanceSheetTab = ({ symbol }) => {
       setError(null);
       
       try {
-        const response = await fetch(`/api/research/financial-statements/balance-sheet/${symbol}?limit=12`);
+        const response = await fetch(`/api/fundamentals/balance-sheet/${symbol}?limit=12`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch balance sheet data: ${response.statusText}`);

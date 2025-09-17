@@ -25,9 +25,9 @@ const AnalystTab = ({ symbol }) => {
       try {
         // Fetch multiple analyst endpoints
         const [ratingsRes, targetsRes, estimatesRes] = await Promise.all([
-          fetch(`/api/research/analyst-ratings/${symbol}`),
-          fetch(`/api/research/price-targets/${symbol}`),
-          fetch(`/api/research/analyst-estimates/${symbol}`)
+          fetch(`/api/fundamentals/analyst/${symbol}`),
+          fetch(`/api/fundamentals/analyst/${symbol}`),
+          fetch(`/api/fundamentals/analyst/${symbol}`)
         ]);
         
         if (!ratingsRes.ok || !targetsRes.ok || !estimatesRes.ok) {
