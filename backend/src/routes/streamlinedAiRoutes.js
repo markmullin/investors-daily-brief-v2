@@ -11,6 +11,47 @@ const router = express.Router();
 console.log('🤖 [INIT] Using Qwen 3 8B model via Ollama for enhanced analysis...');
 
 /**
+ * Helper: Clean AI-generated content from any markdown artifacts
+ */
+function ultraAggressiveCleanAIContent(content) {
+  if (!content) return '';
+  
+  // Remove all markdown formatting
+  let cleaned = content
+    .replace(/#{1,6}\s/g, '') // Remove headers
+    .replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1') // Remove bold/italic
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+    .replace(/```[^`]*```/g, '') // Remove code blocks
+    .replace(/`([^`]+)`/g, '$1') // Remove inline code
+    .replace(/^[-*+]\s/gm, '') // Remove bullet points
+    .replace(/^\d+\.\s/gm, '') // Remove numbered lists
+    .replace(/\|/g, '') // Remove table separators
+    .replace(/^>/gm, '') // Remove blockquotes
+    .replace(/\n{3,}/g, '\n\n') // Normalize line breaks
+    .trim();
+  
+  return cleaned;
+}
+
+/**
+ * Helper: Format clean sources for response
+ */
+function formatCleanSourcesForResponse(articles) {
+  if (!articles || !Array.isArray(articles)) return [];
+  
+  return articles.slice(0, 6).map(article => ({
+    title: article.title || 'Market Update',
+    source: article.source || 'Financial News',
+    description: article.description || article.summary || '',
+    url: article.url || '#',
+    publishedTime: article.publishedTime || article.publishedDate || new Date().toISOString(),
+    company: article.symbol || article.company || null,
+    sector: article.sector || null,
+    category: article.category || 'Market News'
+  }));
+}
+
+/**
  * Helper: Create simple analysis prompt for quick market updates
  */
 function createSimpleAnalysisPrompt(articles, summary) {
