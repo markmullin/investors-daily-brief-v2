@@ -44,10 +44,7 @@ services:
       - path: /*
         name: X-Content-Type-Options
         value: nosniff
-    routes:
-      - type: rewrite
-        source: /api/*
-        destination: https://investors-daily-brief.onrender.com/api/*
+    # Routes removed - frontend calls backend directly
     customDomains:
       - name: investorsdailybrief.com
       - name: www.investorsdailybrief.com
