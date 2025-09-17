@@ -16,9 +16,13 @@ const globalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res, options) => {
+  handler: (req, res) => {
     console.warn(`⚠️ Rate limit exceeded for IP: ${req.ip} on ${req.path}`);
-    res.status(options.statusCode).json(options.message);
+    res.status(429).json({
+      error: 'Too many requests',
+      message: 'Please wait a moment before making another request',
+      retryAfter: 60
+    });
   }
 });
 
@@ -34,9 +38,13 @@ const strictLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res, options) => {
+  handler: (req, res) => {
     console.error(`🚨 Auth rate limit exceeded for IP: ${req.ip} on ${req.path}`);
-    res.status(options.statusCode).json(options.message);
+    res.status(429).json({
+      error: 'Too many authentication attempts',
+      message: 'Please wait before trying again',
+      retryAfter: 60
+    });
   }
 });
 
