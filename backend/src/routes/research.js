@@ -149,6 +149,61 @@ router.get('/metrics/:symbol', async (req, res) => {
 /**
  * *** NEW ANALYST RATINGS ENDPOINT ***
  * Used by: AnalystTab component
+ * Purpose: Get analyst estimates and price targets
+ */
+router.get('/analyst/:symbol', async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    console.log(`📊 [RESEARCH] Getting analyst data for ${symbol}...`);
+    
+    // Fetch analyst estimates from FMP
+    const data = await fmpService.makeRequest(
+      `/v3/analyst-estimates/${symbol}`,
+      { limit: 5 },
+      300
+    );
+    
+    // FMP returns an array of analyst estimates
+    if (data && data.length > 0) {
+      // Get the most recent estimate
+      const latestEstimate = data[0];
+      
+      res.json({
+        symbol,
+        consensusRating: latestEstimate.estimatedRevenueAvg ? 'Buy' : 'N/A',
+        priceTarget: {
+          average: latestEstimate.estimatedEpsAvg || null,
+          high: latestEstimate.estimatedEpsHigh || null,
+          low: latestEstimate.estimatedEpsLow || null
+        },
+        estimates: {
+          revenueEstimate: latestEstimate.estimatedRevenueAvg || null,
+          epsEstimate: latestEstimate.estimatedEpsAvg || null,
+          period: latestEstimate.date || null
+        },
+        numberOfAnalysts: latestEstimate.numberAnalystEstimatedRevenue || 0,
+        data: data
+      });
+    } else {
+      // No analyst data available
+      res.json({
+        symbol,
+        consensusRating: 'N/A',
+        priceTarget: null,
+        estimates: null,
+        numberOfAnalysts: 0,
+        data: []
+      });
+    }
+  } catch (error) {
+    console.error('Analyst data error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * *** ORIGINAL ANALYST RATINGS ENDPOINT ***
+ * Used by: AnalystTab component
  * Purpose: Get analyst rating distribution
  */
 router.get('/analyst-ratings/:symbol', async (req, res) => {
