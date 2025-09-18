@@ -186,18 +186,22 @@ router.get('/enhanced-comprehensive-analysis', async (req, res) => {
     let analysisResult = null;
     
     try {
-      const prompt = createSimpleAnalysisPrompt(articles, summary);
-      console.log('📝 Using simple prompt for quick analysis...');
+      // Check if Ollama is available (only works locally)
+      const isOllamaAvailable = process.env.NODE_ENV !== 'production';
       
-      // Use Ollama API for Qwen
-      const response = await fetch('http://localhost:11434/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'qwen3:8b',
-          messages: [
+      if (isOllamaAvailable) {
+        const prompt = createSimpleAnalysisPrompt(articles, summary);
+        console.log('📝 Using simple prompt for quick analysis...');
+        
+        // Use Ollama API for Qwen (local only)
+        const response = await fetch('http://localhost:11434/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'qwen3:8b',
+            messages: [
             {
               role: 'system',
               content: 'You are a financial analyst writing concise market analysis reports.'
@@ -212,41 +216,46 @@ router.get('/enhanced-comprehensive-analysis', async (req, res) => {
         })
       });
       
-      if (!response.ok) {
-        throw new Error(`Qwen API error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content;
-      
-      if (!content) {
-        throw new Error('No content received from Qwen');
-      }
-      
-      // Clean the content to remove any remaining markdown
-      const cleanContent = ultraAggressiveCleanAIContent(content);
-      
-      analysisResult = {
-        content: cleanContent,
-        generatedAt: new Date().toISOString(),
-        model: 'Qwen 2.5 1.5B',
-        analysisType: 'simple_analysis',
-        enhancedFeatures: {
-          companyDiversification: true,
-          sectorDiversification: true,
-          investmentContext: true,
-          openingDateLine: true,
-          simpleFormat: true,
-          fastAnalysis: true,
-          premiumDesign: true
+        if (!response.ok) {
+          throw new Error(`Qwen API error: ${response.status}`);
         }
-      };
-      
-      console.log(`✅ Simple Qwen analysis complete: ${analysisResult.content.length} characters`);
-      console.log(`   📈 Target achieved: Simple format analysis`);
+        
+        const data = await response.json();
+        const content = data.choices[0]?.message?.content;
+        
+        if (!content) {
+          throw new Error('No content received from Qwen');
+        }
+        
+        // Clean the content to remove any remaining markdown
+        const cleanContent = ultraAggressiveCleanAIContent(content);
+        
+        analysisResult = {
+          content: cleanContent,
+          generatedAt: new Date().toISOString(),
+          model: 'Qwen 2.5 1.5B',
+          analysisType: 'simple_analysis',
+          enhancedFeatures: {
+            companyDiversification: true,
+            sectorDiversification: true,
+            investmentContext: true,
+            openingDateLine: true,
+            simpleFormat: true,
+            fastAnalysis: true,
+            premiumDesign: true
+          }
+        };
+        
+        console.log(`✅ Simple Qwen analysis complete: ${analysisResult.content.length} characters`);
+        console.log(`   📈 Target achieved: Simple format analysis`);
+      } else {
+        // Production environment - use comprehensive fallback directly
+        console.log('🌐 Production environment detected - using comprehensive fallback analysis');
+        throw new Error('Production environment - use fallback');
+      }
       
     } catch (qwenError) {
-      console.error('❌ Qwen analysis failed:', qwenError.message);
+      console.log('🔄 Using fallback analysis:', qwenError.message);
       
       // Create simple fallback analysis
       analysisResult = {

@@ -505,14 +505,14 @@ const AnalystTab = ({ symbol }) => {
                 ${(latestTarget.averagePrice || latestTarget.targetMean || 0).toFixed(2)}
               </div>
               <div className={`text-sm mt-2 flex items-center ${
-                (latestTarget.averagePrice || latestTarget.targetMean) > latestTarget.currentPrice 
+                (latestTarget.averagePrice || latestTarget.targetMean || 0) > (latestTarget.currentPrice || 0) 
                   ? 'text-green-600' : 'text-red-600'
               }`}>
-                {(latestTarget.averagePrice || latestTarget.targetMean) > latestTarget.currentPrice 
+                {(latestTarget.averagePrice || latestTarget.targetMean || 0) > (latestTarget.currentPrice || 0) 
                   ? <TrendingUp className="h-4 w-4 mr-1" /> 
                   : <TrendingDown className="h-4 w-4 mr-1" />
                 }
-                {(((latestTarget.averagePrice || latestTarget.targetMean) - latestTarget.currentPrice) / latestTarget.currentPrice * 100).toFixed(1)}% 
+                {latestTarget.currentPrice ? (((latestTarget.averagePrice || latestTarget.targetMean || 0) - latestTarget.currentPrice) / latestTarget.currentPrice * 100).toFixed(1) : '0.0'}% 
                 {(latestTarget.averagePrice || latestTarget.targetMean) > latestTarget.currentPrice ? 'upside' : 'downside'}
               </div>
             </>
@@ -531,11 +531,11 @@ const AnalystTab = ({ symbol }) => {
             <>
               <div className="text-sm text-gray-600">Revenue</div>
               <div className="text-xl font-bold text-gray-800">
-                ${(estimates[0].estimatedRevenueAvg / 1000000000).toFixed(2)}B
+                ${((estimates[0].estimatedRevenueAvg || estimates[0].estimatedRevenue || 0) / 1000000000).toFixed(2)}B
               </div>
               <div className="text-sm text-gray-600 mt-2">EPS</div>
               <div className="text-xl font-bold text-gray-800">
-                ${estimates[0].estimatedEpsAvg.toFixed(2)}
+                ${(estimates[0].estimatedEpsAvg || estimates[0].estimatedEps || 0).toFixed(2)}
               </div>
             </>
           ) : (
