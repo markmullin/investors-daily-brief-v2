@@ -83,9 +83,11 @@ const AnalystTab = ({ symbol }) => {
         formatter: function(params) {
           let result = 'Price Targets<br/>';
           params.forEach(param => {
-            const upside = ((param.value - currentPrice) / currentPrice * 100).toFixed(1);
+            const paramValue = Number(param.value) || 0;
+            const price = Number(currentPrice) || 1;
+            const upside = ((paramValue - price) / price * 100).toFixed(1);
             const color = upside >= 0 ? 'green' : 'red';
-            result += `${param.marker} ${param.name}: $${param.value.toFixed(2)} `;
+            result += `${param.marker} ${param.name}: ${paramValue.toFixed(2)} `;
             result += `<span style="color: ${color}">(${upside >= 0 ? '+' : ''}${upside}%)</span><br/>`;
           });
           return result;
@@ -255,7 +257,8 @@ const AnalystTab = ({ symbol }) => {
           let result = params[0].axisValue + '<br/>';
           params.forEach(param => {
             if (param.value !== null) {
-              result += `${param.marker} ${param.seriesName}: $${(param.value / 1000000).toFixed(1)}M<br/>`;
+              const value = Number(param.value) || 0;
+              result += `${param.marker} ${param.seriesName}: ${(value / 1000000).toFixed(1)}M<br/>`;
             }
           });
           return result;
@@ -358,8 +361,9 @@ const AnalystTab = ({ symbol }) => {
         formatter: function(params) {
           let result = params[0].axisValue + '<br/>';
           params.forEach(param => {
-            if (param.value !== null) {
-              result += `${param.marker} ${param.seriesName}: $${param.value.toFixed(2)}<br/>`;
+            if (param.value !== null && param.value !== undefined) {
+              const value = Number(param.value) || 0;
+              result += `${param.marker} ${param.seriesName}: ${value.toFixed(2)}<br/>`;
             }
           });
           return result;

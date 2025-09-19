@@ -13,5 +13,18 @@
     "axios": "^1.6.7",
     "dotenv": "^16.4.1",
     "node-fetch": "^3.3.2"
-  }
+  },
+  "main": "check-services.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markmullin/investors-daily-brief-v2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/markmullin/investors-daily-brief-v2/issues"
+  },
+  "homepage": "https://github.com/markmullin/investors-daily-brief-v2#readme"
 }

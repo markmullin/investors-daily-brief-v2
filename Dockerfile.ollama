@@ -1,0 +1,12 @@
+# Ollama Service Dockerfile
+FROM ollama/ollama:latest
+
+# Expose the API port
+EXPOSE 11434
+
+# Download the models we need
+RUN ollama pull qwen2.5:3b
+RUN ollama pull deepseek-r1:8b
+
+# Start Ollama server
+CMD ["serve"]
