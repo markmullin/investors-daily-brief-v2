@@ -679,8 +679,8 @@ app.use('/api/ai-chat', aiChatRoutes);
 console.log('🤖 AI CHAT routes loaded: /api/ai-chat/*');
 
 // ⚡ STREAMLINED AI ROUTES
-app.use('/api/ai', streamlinedAiRoutes);
-console.log('⚡ STREAMLINED AI routes loaded: /api/ai/*');
+app.use('/api/ai-analysis', streamlinedAiRoutes);
+console.log('⚡ STREAMLINED AI routes loaded: /api/ai-analysis/*');
 
 // 🎯 ENHANCED COMPREHENSIVE ANALYSIS ROUTES (NEW - CLEAN FORMATTING)
 app.use('/api/ai', enhancedComprehensiveAnalysisRoutes);
